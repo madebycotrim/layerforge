@@ -18,15 +18,12 @@ import CalculadoraPage from "./pages/Calculadora";
 import Filamentos from "./pages/Filamentos";
 import Impressoras from "./pages/Impressoras";
 
-import NotFound from "./pages/NotFound"; 
-
-const base = import.meta.env.BASE_URL?.replace(/\/$/, "") || "/layerForge";
+import NotFound from "./pages/NotFound";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
-    <Router base={base}>
+    <Router>
       <Switch>
-
         <Route path="/">
           <LandingPage />
         </Route>
@@ -49,7 +46,7 @@ createRoot(document.getElementById("root")).render(
 
         <Route path="/calculadora">
           <CalculadoraPage />
-        </Route>  
+        </Route>
 
         <Route path="/filamentos">
           <Filamentos />
@@ -63,11 +60,9 @@ createRoot(document.getElementById("root")).render(
           <CalculadoraFree />
         </Route>
 
-        {/* 404 fallback */}
         <Route path="*">
           <NotFound />
         </Route>
-
       </Switch>
     </Router>
   </StrictMode>
