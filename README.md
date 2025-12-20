@@ -1,77 +1,83 @@
-<!-- Início: Cabeçalho temático -->
+<!-- Header -->
 <div align="center">
 
-  <!-- Título grande -->
-  <h1 style="margin-bottom:0.2rem;">📊🧠 <strong>PrintLog</strong></h1>
+  <h1 style="margin-bottom:0.15rem; font-weight:700;">
+    📊 PrintLog
+  </h1>
 
-  <!-- Subtítulo -->
-  <p style="margin-top:0; color:#666; font-size:1rem;">
-    Menos planilha. Mais impressão que dá lucro.
-    <br>
-    Controle, registro e lógica para quem vive de impressão 3D.
+  <p style="margin-top:0; color:#8a8a8a; font-size:1rem;">
+    Sistema de controle para impressão 3D.<br>
+    Menos planilha. Mais lucro.
   </p>
 
-  <!-- Linha decorativa simples -->
-  <p style="margin-top:0.4rem;">— — — — —</p>
+  <p style="margin-top:0.6rem;">— — —</p>
 
-  <!-- Badges -->
-  <p style="margin:0.2rem 0;">
-    <code style="background:#111; color:#fff; padding:0.2rem 0.45rem; border-radius:6px;">Cálculo de custos</code>
-    <span style="margin:0 0.35rem;">•</span>
-    <code style="background:#111; color:#fff; padding:0.2rem 0.45rem; border-radius:6px;">Gestão de filamento</code>
-    <span style="margin:0 0.35rem;">•</span>
-    <code style="background:#111; color:#fff; padding:0.2rem 0.45rem; border-radius:6px;">Histórico & métricas</code>
+  <p style="margin:0.4rem 0;">
+    <code style="background:#0f0f0f; color:#eaeaea; padding:0.25rem 0.5rem; border-radius:6px;">Custos reais</code>
+    <span style="margin:0 0.4rem;">•</span>
+    <code style="background:#0f0f0f; color:#eaeaea; padding:0.25rem 0.5rem; border-radius:6px;">Logística</code>
+    <span style="margin:0 0.4rem;">•</span>
+    <code style="background:#0f0f0f; color:#eaeaea; padding:0.25rem 0.5rem; border-radius:6px;">Histórico</code>
   </p>
+
 </div>
 
-<!-- Seção principal -->
+<!-- Conteúdo -->
 <div>
 
-  <h2>🖨️ O que é o PrintLog?</h2>
+  <h2>O que é</h2>
   <p>
-    O <strong>PrintLog</strong> é um sistema de controle para impressão 3D que transforma dados em decisões.
-    Ele registra custos reais, organiza materiais, acompanha o tempo de máquina e mostra, com clareza,
-    se cada impressão está dando lucro — ou prejuízo.
+    <strong>PrintLog</strong> é um sistema operacional para impressão 3D.
+    Ele registra tudo o que importa — custo, tempo, material e resultado —
+    para que cada decisão seja baseada em dados, não em achismo.
   </p>
 
-  <h2>📦 O que ele registra</h2>
-  <ul>
-    <li><strong>Cálculo de custos reais</strong> — energia, tempo, material, depreciação e falhas.</li>
-    <li><strong>Gestão de filamento</strong> — peso, consumo por peça e controle de estoque.</li>
-    <li><strong>Tempo de máquina</strong> — impressão e pós-processamento.</li>
-    <li><strong>Histórico de projetos</strong> — decisões, parâmetros e resultados salvos.</li>
-    <li><strong>Orçamento pronto</strong> — valores claros para enviar direto ao cliente.</li>
-  </ul>
-
-  <h2>📊 Por que usar?</h2>
-  <ul>
-    <li>Chega de achismo — decisões baseadas em dados.</li>
-    <li>Visão clara de lucro por peça.</li>
-    <li>Interface limpa, rápida e focada no essencial.</li>
-    <li>Funciona para hobbyistas e profissionais.</li>
-    <li>Arquitetura pronta para crescer junto com sua farm.</li>
-  </ul>
-
-  <h2>🚀 Como acessar</h2>
   <p>
-    O sistema está publicado como aplicação web.
+    Do hobby à produção profissional, o PrintLog transforma a rotina da impressão
+    em um processo claro, previsível e lucrativo.
+  </p>
+
+  <h2>O que o sistema controla</h2>
+  <ul>
+    <li><strong>Custos reais</strong> — energia, tempo de máquina, material, falhas e margem.</li>
+    <li><strong>Filamentos</strong> — consumo por peça, estoque e alertas.</li>
+    <li><strong>Máquinas</strong> — tempo ativo, status e manutenção.</li>
+    <li><strong>Projetos</strong> — histórico completo de decisões e resultados.</li>
+    <li><strong>Orçamentos</strong> — valores prontos para envio ao cliente.</li>
+  </ul>
+
+  <h2>Por que usar</h2>
+  <ul>
+    <li>Visual limpo, sem ruído.</li>
+    <li>Números claros, em tempo real.</li>
+    <li>Decisões rápidas e confiáveis.</li>
+    <li>Funciona para quem imprime por prazer ou por lucro.</li>
+    <li>Estrutura preparada para crescer junto com sua farm.</li>
+  </ul>
+
+  <h2>Acesso</h2>
+  <p>
+    O PrintLog está disponível como aplicação web.
     <br>
     Acesse:
     <br>
-    <a href="https://mateuscotrim.github.io/printlog" target="_blank">
+    <a href="https://madebycotrim.github.io/printlog" target="_blank">
       https://mateuscotrim.github.io/printlog
     </a>
   </p>
 
-  <h2>🧩 Contribuição</h2>
+  <h2>Comunidade</h2>
   <p>
-    O PrintLog nasce para a comunidade maker.
-    Sugestões, issues e PRs são bem-vindos para tornar o sistema cada vez mais inteligente.
+    PrintLog é feito para makers.
+    Sugestões, melhorias e contribuições ajudam o sistema a evoluir
+    com base em uso real.
   </p>
 
 </div>
 
-<!-- Rodapé -->
-<div align="center" style="margin-top:1.2rem; color:#666;">
-  <small>PrintLog — registre, analise, imprima melhor.</small>
+<!-- Footer -->
+<div align="center" style="margin-top:1.5rem; color:#777;">
+  <small>
+    PrintLog — registre, analise, imprima melhor.
+  </small>
 </div>
