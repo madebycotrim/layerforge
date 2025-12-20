@@ -2,65 +2,76 @@
 <div align="center">
 
   <!-- Título grande -->
-  <h1 style="margin-bottom:0.2rem;">🔥⚒️ <strong>layerForge</strong></h1>
+  <h1 style="margin-bottom:0.2rem;">📊🧠 <strong>PrintLog</strong></h1>
 
   <!-- Subtítulo -->
   <p style="margin-top:0; color:#666; font-size:1rem;">
-    Onde projetos ganham forma no calor da criação — ferramentas práticas para impressão 3D.
+    Menos planilha. Mais impressão que dá lucro.
+    <br>
+    Controle, registro e lógica para quem vive de impressão 3D.
   </p>
 
   <!-- Linha decorativa simples -->
   <p style="margin-top:0.4rem;">— — — — —</p>
 
-  <!-- Badges (texto estilizado simulando badges) -->
+  <!-- Badges -->
   <p style="margin:0.2rem 0;">
     <code style="background:#111; color:#fff; padding:0.2rem 0.45rem; border-radius:6px;">Cálculo de custos</code>
     <span style="margin:0 0.35rem;">•</span>
     <code style="background:#111; color:#fff; padding:0.2rem 0.45rem; border-radius:6px;">Gestão de filamento</code>
     <span style="margin:0 0.35rem;">•</span>
-    <code style="background:#111; color:#fff; padding:0.2rem 0.45rem; border-radius:6px;">Histórico</code>
+    <code style="background:#111; color:#fff; padding:0.2rem 0.45rem; border-radius:6px;">Histórico & métricas</code>
   </p>
 </div>
 
-<!-- Seção principal com layout simples -->
+<!-- Seção principal -->
 <div>
 
-  <h2>🛠️ O que é?</h2>
+  <h2>🖨️ O que é o PrintLog?</h2>
   <p>
-    Uma forja digital para quem trabalha com impressão 3D — calcule custos, organize materiais e gerencie suas máquinas com clareza e rapidez. Projetado para ser direto, confiável e pronto para evoluir.
+    O <strong>PrintLog</strong> é um sistema de controle para impressão 3D que transforma dados em decisões.
+    Ele registra custos reais, organiza materiais, acompanha o tempo de máquina e mostra, com clareza,
+    se cada impressão está dando lucro — ou prejuízo.
   </p>
 
-  <h2>🔥 Recursos da Forja</h2>
+  <h2>📦 O que ele registra</h2>
   <ul>
-    <li><strong>Cálculo de custos</strong> — detalhe real do consumo de energia, tempo e material.</li>
-    <li><strong>Gestão de filamento</strong> — controle peso, uso e estoque do material.</li>
-    <li><strong>Organização de máquinas</strong> — registre e compare parâmetros das suas impressoras.</li>
-    <li><strong>Histórico de moldagens</strong> — salve configurações e resultados para reprodução fácil.</li>
+    <li><strong>Cálculo de custos reais</strong> — energia, tempo, material, depreciação e falhas.</li>
+    <li><strong>Gestão de filamento</strong> — peso, consumo por peça e controle de estoque.</li>
+    <li><strong>Tempo de máquina</strong> — impressão e pós-processamento.</li>
+    <li><strong>Histórico de projetos</strong> — decisões, parâmetros e resultados salvos.</li>
+    <li><strong>Orçamento pronto</strong> — valores claros para enviar direto ao cliente.</li>
   </ul>
 
-  <h2>⚔️ Por que usar?</h2>
+  <h2>📊 Por que usar?</h2>
   <ul>
-    <li>Leve e objetivo — faz o que deve sem enrolação.</li>
-    <li>Resultados imediatos — números e decisões rápidos.</li>
-    <li>Dados persistentes — suas preferências e histórico sempre disponíveis.</li>
-    <li>Pronto para crescer — arquitetura pensada para adicionar ferramentas.</li>
+    <li>Chega de achismo — decisões baseadas em dados.</li>
+    <li>Visão clara de lucro por peça.</li>
+    <li>Interface limpa, rápida e focada no essencial.</li>
+    <li>Funciona para hobbyistas e profissionais.</li>
+    <li>Arquitetura pronta para crescer junto com sua farm.</li>
   </ul>
 
   <h2>🚀 Como acessar</h2>
   <p>
-    O site é publicado como página estática via GitHub Pages. Assim que o deploy finalizar, abra:
+    O sistema está publicado como aplicação web.
     <br>
-    <a href="https://mateuscotrim.github.io/layerForge" target="_blank">https://mateuscotrim.github.io/layerForge</a>
+    Acesse:
+    <br>
+    <a href="https://mateuscotrim.github.io/printlog" target="_blank">
+      https://mateuscotrim.github.io/printlog
+    </a>
   </p>
 
-  <h2>🛡️ Contribuição</h2>
+  <h2>🧩 Contribuição</h2>
   <p>
-    A forja fica mais forte com novas ideias. Sinta-se à vontade para abrir issues, enviar PRs ou propor melhorias.
+    O PrintLog nasce para a comunidade maker.
+    Sugestões, issues e PRs são bem-vindos para tornar o sistema cada vez mais inteligente.
   </p>
 
 </div>
 
-<!-- Rodapé estilizado -->
+<!-- Rodapé -->
 <div align="center" style="margin-top:1.2rem; color:#666;">
-  <small>Feito com fogo e paciência. 🔥⚒️</small>
+  <small>PrintLog — registre, analise, imprima melhor.</small>
 </div>
