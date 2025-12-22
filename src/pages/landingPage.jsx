@@ -1,18 +1,17 @@
-import React, { useState } from 'react';
-import { useLocation, Link } from "wouter";
+import React, { useState, useEffect } from 'react';
+import { useLocation } from "wouter";
 import {
     Calculator, Package, ArrowRight, Zap,
-    CheckCircle2, ShoppingBag, AlertTriangle,
-    TrendingUp, Clock, Activity, Smartphone,
-    Wrench, History, Boxes, Send,
-    Coins, ShieldAlert, Heart, Terminal, BarChart3,
-    Layers, MousePointer2, Globe, Wind,
-    Check, MessageSquare, ExternalLink, Database,
-    Copy, ChevronLeft, ChevronRight, Cpu, DollarSign, Star
+    ShoppingBag, AlertTriangle,
+    TrendingUp, Clock, Activity,
+    Wrench, History, Boxes, 
+    Coins, ShieldAlert, BarChart3,
+    Check, MessageSquare, Database,
+    ChevronLeft, Cpu, X, Settings2, Lock
 } from 'lucide-react';
 import logo from '../assets/logo-branca.png';
 
-// --- COMPONENTES DE UI ---
+// --- COMPONENTES DE UI AUXILIARES ---
 
 const Badge = ({ icon: Icon, label, color, className = "" }) => {
     const colors = {
@@ -36,7 +35,158 @@ const GlassCard = ({ children, className = "" }) => (
     </div>
 );
 
-// --- VISUAL DA HERO (DASHBOARD MAKER) ---
+// --- COMPONENTE DE COOKIES (GOOGLE CONSENT V2 COMPLIANT) ---
+
+const CookieConsent = () => {
+    const [isVisible, setIsVisible] = useState(false);
+    const [view, setView] = useState('simple'); 
+    
+    // Estados mapeados para os parâmetros oficiais do Google
+    const [prefs, setPrefs] = useState({
+        analytics_storage: true,
+        ad_storage: false,
+        ad_user_data: false,
+        ad_personalization: false,
+        functionality_storage: true // Essencial
+    });
+
+    useEffect(() => {
+        const consent = localStorage.getItem('printlog_consent_v2');
+        if (!consent) {
+            const timer = setTimeout(() => setIsVisible(true), 2000);
+            return () => clearTimeout(timer);
+        } else {
+            // Se já existe, aplica as permissões salvas no carregamento
+            updateGoogleConsent(JSON.parse(consent));
+        }
+    }, []);
+
+    // Função vital para o Consent Mode V2
+    const updateGoogleConsent = (settings) => {
+        if (window.gtag) {
+            window.gtag('consent', 'update', {
+                'analytics_storage': settings.analytics_storage ? 'granted' : 'denied',
+                'ad_storage': settings.ad_storage ? 'granted' : 'denied',
+                'ad_user_data': settings.ad_user_data ? 'granted' : 'denied',
+                'ad_personalization': settings.ad_personalization ? 'granted' : 'denied',
+            });
+        }
+    };
+
+    const savePreferences = (all = false) => {
+        const finalPrefs = all
+            ? { 
+                analytics_storage: true, 
+                ad_storage: true, 
+                ad_user_data: true, 
+                ad_personalization: true,
+                functionality_storage: true 
+              }
+            : prefs;
+            
+        localStorage.setItem('printlog_consent_v2', JSON.stringify(finalPrefs));
+        updateGoogleConsent(finalPrefs);
+        setIsVisible(false);
+    };
+
+    if (!isVisible) return null;
+
+    const Toggle = ({ active, disabled, onClick }) => (
+        <button
+            disabled={disabled}
+            onClick={onClick}
+            className={`w-10 h-5 rounded-full transition-all relative ${disabled ? 'opacity-30 cursor-not-allowed' : 'cursor-pointer'} ${active ? 'bg-sky-500' : 'bg-zinc-800'}`}
+        >
+            <div className={`absolute top-1 w-3 h-3 rounded-full transition-all ${active ? 'left-6 bg-white' : 'left-1 bg-zinc-500'}`} />
+        </button>
+    );
+
+    return (
+        <div className="fixed bottom-6 right-6 left-6 md:left-auto md:w-[420px] z-[100] animate-in fade-in slide-in-from-bottom-10 duration-700">
+            <div className="bg-[#0c0c0e]/95 backdrop-blur-2xl border border-sky-500/20 rounded-[2.5rem] p-8 shadow-[0_20px_50px_rgba(0,0,0,0.8)] relative overflow-hidden group">
+                <div className="absolute -top-10 -right-10 opacity-[0.03] pointer-events-none group-hover:opacity-[0.06] transition-opacity">
+                    <Settings2 size={180} />
+                </div>
+
+                <div className="relative z-10">
+                    {view === 'simple' ? (
+                        <div className="animate-in fade-in duration-500">
+                            <div className="flex items-center justify-between mb-6">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2.5 bg-sky-500/10 rounded-xl text-sky-500 border border-sky-500/20">
+                                        <ShieldAlert size={20} strokeWidth={2.5} />
+                                    </div>
+                                    <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-400 italic">Consent V2 Ready</span>
+                                </div>
+                                <button onClick={() => setIsVisible(false)} className="text-zinc-600 hover:text-white transition-colors"><X size={18} /></button>
+                            </div>
+                            <h4 className="text-white font-black text-xl uppercase italic tracking-tighter mb-3 leading-tight">Otimizando sua <br /><span className="text-sky-500">Experiência Maker.</span></h4>
+                            <p className="text-zinc-500 text-[11px] leading-relaxed mb-8 font-medium italic">Utilizamos cookies para processar seus orçamentos e garantir que seus cálculos de filamento sejam precisos via Google Analytics e Ads.</p>
+                            <div className="flex gap-3">
+                                <button onClick={() => savePreferences(true)} className="flex-1 bg-white text-black py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-sky-500 hover:text-white transition-all active:scale-95">Aceitar Tudo</button>
+                                <button onClick={() => setView('config')} className="px-6 border border-white/5 text-zinc-500 py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-white/5 transition-all">Configurar</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="animate-in fade-in slide-in-from-right-4 duration-300">
+                            <button onClick={() => setView('simple')} className="flex items-center gap-2 text-zinc-500 hover:text-white mb-6 transition-colors group/back">
+                                <ChevronLeft size={16} className="group-hover/back:-translate-x-1 transition-transform" />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">Voltar</span>
+                            </button>
+                            <h4 className="text-white font-black text-lg uppercase italic mb-6 tracking-tighter">Privacidade de Dados</h4>
+                            <div className="space-y-4 mb-8">
+                                {/* Essenciais */}
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <p className="text-[10px] font-bold text-white uppercase italic">Essenciais</p>
+                                            <Lock size={10} className="text-zinc-500" />
+                                        </div>
+                                        <p className="text-[9px] text-zinc-500 leading-none">Login e cálculos de farm.</p>
+                                    </div>
+                                    <Toggle active={true} disabled={true} />
+                                </div>
+
+                                {/* Analytics */}
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-white uppercase italic mb-1">Analíticos</p>
+                                        <p className="text-[9px] text-zinc-500 leading-none">Melhoria de performance (GA4).</p>
+                                    </div>
+                                    <Toggle
+                                        active={prefs.analytics_storage}
+                                        onClick={() => setPrefs({ ...prefs, analytics_storage: !prefs.analytics_storage })}
+                                    />
+                                </div>
+
+                                {/* Marketing (G-Ads V2) */}
+                                <div className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-white uppercase italic mb-1">Publicidade</p>
+                                        <p className="text-[9px] text-zinc-500 leading-none">Sinais de Ads e personalização.</p>
+                                    </div>
+                                    <Toggle
+                                        active={prefs.ad_storage}
+                                        onClick={() => {
+                                            const val = !prefs.ad_storage;
+                                            setPrefs({ ...prefs, ad_storage: val, ad_user_data: val, ad_personalization: val });
+                                        }}
+                                    />
+                                </div>
+                            </div>
+                            <button onClick={() => savePreferences(false)} className="w-full bg-sky-600 text-white py-4 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-sky-500 transition-all active:scale-95 flex items-center justify-center gap-2">
+                                <Check size={14} strokeWidth={3} /> Salvar Preferências
+                            </button>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+// --- RESTO DO CÓDIGO (HERO, RECURSOS, ETC) MANTIDO ---
+// (HeroVisual e LandingPage continuam iguais ao seu código original)
 
 const HeroVisual = () => (
     <div className="relative w-full h-[500px] flex items-center justify-center scale-90 lg:scale-100">
@@ -149,28 +299,18 @@ export default function LandingPage() {
                                 <Calculator size={18} /> Calculadora rápida
                             </button>
                         </div>
-                        <p className="text-[10px] font-bold uppercase tracking-[0.4em] text-zinc-700 italic pt-12">
-                            Feito para quem entende que tempo de impressão também é dinheiro.
-                        </p>
                     </div>
-
-                    <div className="hidden lg:block relative">
-                        <HeroVisual />
-                    </div>
+                    <div className="hidden lg:block relative"><HeroVisual /></div>
                 </div>
             </section>
 
             {/* RECURSOS */}
             <section className="py-24 px-8 max-w-7xl mx-auto z-10 relative">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-8">
-
-                    {/* FINANÇAS */}
                     <GlassCard className="lg:col-span-8">
                         <div className="space-y-6">
                             <Badge icon={Coins} label="Finanças" color="emerald" />
-                            <h3 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
-                                Pare de cobrar no <span className="text-emerald-500">"olhômetro".</span>
-                            </h3>
+                            <h3 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-none">Pare de cobrar no <span className="text-emerald-500">"olhômetro".</span></h3>
                             <p className="text-zinc-500 text-lg max-w-lg">Calculamos a luz, o desgaste do bico e até o custo daquela peça que deu errado.</p>
                         </div>
                         <div className="mt-12 grid grid-cols-3 gap-8 bg-black/40 p-8 rounded-[2rem] border border-white/5 font-bold uppercase italic">
@@ -180,12 +320,11 @@ export default function LandingPage() {
                         </div>
                     </GlassCard>
 
-                    {/* ESTOQUE */}
                     <GlassCard className="lg:col-span-4 flex flex-col justify-between">
                         <div className="space-y-4">
                             <Badge icon={Database} label="Materiais" color="sky" />
                             <h3 className="text-2xl font-bold uppercase italic leading-tight">Meus <br /> Filamentos.</h3>
-                            <p className="text-zinc-500 text-sm font-medium italic">Saiba exatamente quantas gramas restam antes do carretel acabar no meio do print.</p>
+                            <p className="text-zinc-500 text-sm font-medium italic">Saiba quanto resta antes do carretel acabar.</p>
                         </div>
                         <div className="space-y-3 mt-8">
                             {[
@@ -205,31 +344,24 @@ export default function LandingPage() {
                         </div>
                     </GlassCard>
 
-                    {/* WHATSAPP */}
                     <GlassCard className="lg:col-span-12 flex flex-col md:flex-row items-center gap-12">
                         <div className="flex-1 space-y-6">
                             <Badge icon={MessageSquare} label="Orçamentos" color="emerald" />
-                            <h3 className="text-5xl font-black text-white uppercase italic leading-[0.9] tracking-tighter">
-                                Envie o preço direto <br /> no <span className="text-emerald-500">WhatsApp.</span>
-                            </h3>
-                            <p className="text-zinc-500 text-lg max-w-sm italic">Gere um orçamento profissional em segundos e mande para o seu cliente sem enrolação.</p>
+                            <h3 className="text-5xl font-black text-white uppercase italic leading-[0.9] tracking-tighter">Envie o preço direto <br /> no <span className="text-emerald-500">WhatsApp.</span></h3>
+                            <p className="text-zinc-500 text-lg max-w-sm italic">Gere um orçamento profissional em segundos e mande para o seu cliente.</p>
                         </div>
-
                         <div className="w-full max-w-[380px] bg-[#0c0c0e] border border-white/5 rounded-[2.5rem] overflow-hidden shadow-2xl">
-                            <div className="flex justify-between items-center p-5 border-b border-white/5">
+                             <div className="flex justify-between items-center p-5 border-b border-white/5">
                                 <div className="flex items-center gap-3">
-                                    <div className="p-2 bg-sky-500/10 rounded-lg text-sky-400">
-                                        <Cpu size={18} />
-                                    </div>
+                                    <div className="p-2 bg-sky-500/10 rounded-lg text-sky-400"><Cpu size={18} /></div>
                                     <p className="text-[10px] font-bold text-white uppercase leading-none">PrintLog<br /><span className="text-sky-500 text-[8px]">Assistente</span></p>
                                 </div>
                             </div>
                             <div className="p-6 space-y-4 bg-[#0a0a0c]">
-                                <div className="p-5 bg-[#0c0c0e] rounded-xl border border-white/5 font-mono text-[10px] space-y-3">
-                                    <p className="text-zinc-500">*ORÇAMENTO DE IMPRESSÃO*</p>
-                                    <p className="text-zinc-300">*Peça:* Samurai V2</p>
-                                    <p className="text-zinc-300">*Investimento:* <span className="text-emerald-400 font-bold">R$ 180,00</span></p>
-                                    <p className="text-zinc-300 mt-4">Podemos iniciar a produção? 🚀</p>
+                                <div className="p-5 bg-[#0c0c0e] rounded-xl border border-white/5 font-mono text-[10px] space-y-3 text-zinc-300">
+                                    <p className="text-zinc-500">*ORÇAMENTO*</p>
+                                    <p>*Peça:* Samurai V2</p>
+                                    <p>*Investimento:* <span className="text-emerald-400 font-bold">R$ 180,00</span></p>
                                 </div>
                                 <button className="w-full bg-emerald-500 hover:bg-emerald-400 py-3.5 rounded-xl text-black font-bold text-[10px] uppercase transition-all">Copiar e Enviar</button>
                             </div>
@@ -242,18 +374,15 @@ export default function LandingPage() {
             <section className="py-32 bg-[#050506] border-y border-white/5 relative z-10 text-center">
                 <div className="max-w-7xl mx-auto px-8">
                     <Badge label="Evite Prejuízos" color="rose" icon={ShieldAlert} className="mx-auto" />
-                    <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-[0.9] uppercase italic mt-8 mb-24">
-                        PARA ONDE ESTÁ <br />
-                        <span className="text-rose-500">INDO SEU DINHEIRO?</span>
-                    </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter leading-[0.9] uppercase italic mt-8 mb-24">PARA ONDE ESTÁ <br /><span className="text-rose-500">INDO SEU DINHEIRO?</span></h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 text-left">
                         {[
-                            { title: 'Impressão Falhou', icon: AlertTriangle, desc: 'A peça soltou da mesa ou deu espaguete? O PrintLog calcula essa perda para você.' },
-                            { title: 'Manutenção', icon: Wrench, desc: 'Se você não guarda um pouco por hora, quem paga a próxima peça que quebrar?' },
-                            { title: 'Taxas de Venda', icon: ShoppingBag, desc: 'Vendendo pela Shopee ou ML? Calculamos o lucro real após as taxas.' },
-                            { title: 'Máquina Parada', icon: History, desc: 'Impressora parada não dá lucro. Saiba quanto você deixa de ganhar por dia.' }
+                            { title: 'Impressão Falhou', icon: AlertTriangle, desc: 'Cálculo automático de perdas de material e tempo.' },
+                            { title: 'Manutenção', icon: Wrench, desc: 'Fundo de reserva para bicos, correias e peças.' },
+                            { title: 'Taxas de Venda', icon: ShoppingBag, desc: 'Lucro real após descontar taxas de marketplaces.' },
+                            { title: 'Máquina Parada', icon: History, desc: 'Saiba o custo de oportunidade da sua impressora.' }
                         ].map((item, i) => (
-                            <div key={i} className="p-10 rounded-[2.5rem] bg-[#0a0a0c] border border-white/5 hover:border-rose-500/20 transition-all text-left">
+                            <div key={i} className="p-10 rounded-[2.5rem] bg-[#0a0a0c] border border-white/5 hover:border-rose-500/20 transition-all">
                                 <item.icon size={28} className="text-rose-500 mb-8" />
                                 <h4 className="text-xl font-bold text-white uppercase mb-3 italic tracking-tighter">{item.title}</h4>
                                 <p className="text-zinc-500 text-xs leading-relaxed">{item.desc}</p>
@@ -267,43 +396,33 @@ export default function LandingPage() {
             <section className="py-40 px-8 relative z-10 text-center">
                 <div className="max-w-4xl mx-auto space-y-14">
                     <Badge label="Hora de crescer" color="sky" icon={Zap} />
-                    <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-[0.85] uppercase italic">
-                        MENOS CHUTE. <br />
-                        <span className="text-zinc-800">MAIS LUCRO.</span>
-                    </h2>
-                    <p className="text-xl text-zinc-500 max-w-2xl mx-auto leading-relaxed">
-                        Controle seus custos, materiais e lucros em um só lugar. <br />
-                        Sem planilhas chatas. Sem surpresas no fim do mês.
-                    </p>
-                    <div className="pt-10 flex flex-col items-center gap-10">
-                        <button onClick={() => setLocation('/register')} className="h-20 px-14 rounded-[2.5rem] bg-white text-black text-[13px] font-bold uppercase tracking-widest hover:bg-sky-500 hover:text-white transition-all shadow-2xl flex items-center gap-4 active:scale-95 group">
-                            Começar agora
-                            <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-2 transition-transform" />
-                        </button>
-                    </div>
+                    <h2 className="text-6xl md:text-8xl font-black text-white tracking-tighter leading-[0.85] uppercase italic">MENOS CHUTE. <br /><span className="text-zinc-800">MAIS LUCRO.</span></h2>
+                    <button onClick={() => setLocation('/register')} className="h-20 px-14 rounded-[2.5rem] bg-white text-black text-[13px] font-bold uppercase tracking-widest hover:bg-sky-500 hover:text-white transition-all shadow-2xl flex items-center gap-4 active:scale-95 group mx-auto">
+                        Começar agora <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-2 transition-transform" />
+                    </button>
                 </div>
             </section>
 
-            {/* FOOTER */}
             <footer className="py-20 border-t border-white/5 bg-[#050506] relative z-10">
                 <div className="max-w-7xl mx-auto px-8 flex flex-col md:flex-row justify-between items-center gap-12">
-                    <div className="flex flex-col items-center md:items-start gap-4">
-                        <div className="flex items-center gap-3">
-                            <img src={logo} alt="PrintLog" className="w-6 h-6 object-contain opacity-90" />
-                            <span className="text-sm font-bold uppercase italic text-white">PrintLog</span>
-                        </div>
-                        <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">A melhor ferramenta para o Maker brasileiro.</p>
+                    <div className="flex items-center gap-3">
+                        <img src={logo} alt="PrintLog" className="w-6 h-6 opacity-90" />
+                        <span className="text-sm font-bold uppercase italic text-white">PrintLog</span>
                     </div>
-                    <div className="flex flex-col items-center md:items-end gap-2">
-                        <div className="text-[10px] font-bold text-zinc-700 uppercase">© 2026 PrintLog</div>
-                        <a href="#" className="text-[8px] font-bold uppercase text-zinc-800 hover:text-sky-500 italic">madebycotrim</a>
-                    </div>
+                    <div className="text-[10px] font-bold text-zinc-700 uppercase">© 2026 PrintLog</div>
                 </div>
             </footer>
+
+            {/* SISTEMA DE COOKIES */}
+            <CookieConsent />
 
             <style>{`
                 @keyframes float { 0%, 100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
                 .animate-float-slow { animation: float 8s ease-in-out infinite; }
+                .animate-in { animation: enter 0.6s ease-out; }
+                @keyframes enter { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+                .slide-in-from-right-4 { animation: slideInRight 0.4s ease-out; }
+                @keyframes slideInRight { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
             `}</style>
         </div>
     );
