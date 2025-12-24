@@ -104,6 +104,8 @@ export default function PrinterModal({ aberto, aoFechar, aoSalvar, dadosIniciais
     const handleSalvar = useCallback(() => {
         const payload = {
             ...form,
+            // Garantimos que se for edição, o ID original seja enviado para o D1 fazer o UPDATE
+            id: dadosIniciais?.id || form.id || null,
             nome: form.nome.trim() || `${form.marca} ${form.modelo}`.trim(),
             potencia: parseNumber(form.potencia),
             preco: parseNumber(form.preco),
@@ -111,7 +113,7 @@ export default function PrinterModal({ aberto, aoFechar, aoSalvar, dadosIniciais
             intervalo_manutencao: parseNumber(form.intervalo_manutencao) || 300
         };
         aoSalvar(payload);
-    }, [form, aoSalvar]);
+    }, [form, aoSalvar, dadosIniciais]);
 
     const isValid = form.nome.trim() !== "" && form.marca && form.modelo && parseNumber(form.potencia) > 0;
 
@@ -206,10 +208,10 @@ export default function PrinterModal({ aberto, aoFechar, aoSalvar, dadosIniciais
                                     />
                                 </div>
                             </div>
-                            <UnifiedInput 
-                                {...CONFIG.apelido} 
-                                value={form.nome} 
-                                onChange={e => setForm({ ...form, nome: e.target.value })} 
+                            <UnifiedInput
+                                {...CONFIG.apelido}
+                                value={form.nome}
+                                onChange={e => setForm({ ...form, nome: e.target.value })}
                             />
                         </section>
 
@@ -235,9 +237,9 @@ export default function PrinterModal({ aberto, aoFechar, aoSalvar, dadosIniciais
 
                     <footer className="p-6 border-t border-white/5 bg-zinc-950/50 flex gap-3">
                         <button onClick={aoFechar} className="flex-1 py-2.5 rounded-lg border border-zinc-800 text-[9px] font-bold uppercase text-zinc-600 hover:text-white transition-all">Cancelar</button>
-                        <button 
-                            disabled={!isValid} 
-                            onClick={handleSalvar} 
+                        <button
+                            disabled={!isValid}
+                            onClick={handleSalvar}
                             className={`flex-[2] py-2.5 rounded-lg text-[9px] font-bold uppercase flex items-center justify-center gap-2 transition-all ${isValid ? "bg-emerald-600 text-white hover:bg-emerald-500" : "bg-zinc-900 text-zinc-700 cursor-not-allowed border border-zinc-800"}`}
                         >
                             <Terminal size={14} /> {dadosIniciais ? "Salvar alterações" : "Salvar na Farm"}

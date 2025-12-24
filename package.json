@@ -9,7 +9,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "dev:remote": "npm run build && npx wrangler pages dev dist --d1 DB=e72abc4f-1170-4b93-bc18-9a251ea7a6f9 --remote"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.59.2",
