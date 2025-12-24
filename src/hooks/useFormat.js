@@ -84,3 +84,4 @@ export function formatDecimal(n, digits = 2) {
         maximumFractionDigits: digits 
     }).format(parseNumber(n));
 }
+

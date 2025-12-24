@@ -1,19 +1,11 @@
 {
   "name": "printlog",
   "compatibility_date": "2025-12-19",
-  "compatibility_flags": [
-    "nodejs_compat"
-  ],
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "printlog-db",
       "database_id": "166176ab-21e7-49a9-92a4-adcbadf16d77"
     }
-  ],
-  "observability": {
-    "enabled": true,
-    "head_sampling_rate": 1
-  },
-  "minify": true
+  ]
 }

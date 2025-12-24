@@ -8,7 +8,7 @@ import {
 
 import MainSidebar from "../components/MainSidebar";
 import { getHistory, clearHistory, removeHistoryEntry } from "../features/calculadora/logic/localHistory";
-import { formatCurrency } from "../lib/format";
+import { formatCurrency } from "../hooks/useFormat";
 
 // --- UTILS ---
 const formatBigNumber = (num) => {
