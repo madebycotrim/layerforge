@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import { 
-  Package, Clock, ShoppingBag, Truck, 
-  Tag, Settings2, BarChart3, Printer, Zap 
+import {
+  Package, Clock, ShoppingBag, Truck,
+  Tag, Settings2, BarChart3
 } from "lucide-react";
 
 // --- LAYOUT & COMPONENTES ---
@@ -23,8 +23,8 @@ import MakersHubWidget from "../features/calculadora/components/cards/makerHub.j
 import useDebounce from "../hooks/useDebounce";
 import { calcularTudo } from "../features/calculadora/logic/calculator";
 import { getPrinters } from "../features/impressoras/logic/printers";
+import { addHistoryEntry } from "../features/calculadora/logic/localHistory";
 
-// --- WRAPPER DE CARDS (Com controle de Stacking Context) ---
 const WrapperCard = ({ children, title, icon: Icon, step, className = "", zIndex = "" }) => (
   <div
     style={{ zIndex: zIndex }}
@@ -60,97 +60,36 @@ export default function CalculadoraPage() {
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [needsConfig, setNeedsConfig] = useState(false);
 
-  // --- ESTADOS DOS INPUTS ---
+  // --- 1. ESTADOS DOS INPUTS ---
   const [printers, setPrinters] = useState([]);
   const [selectedPrinter, setSelectedPrinter] = useState(null);
   const [nomeProjeto, setNomeProjeto] = useState("");
   const [qtdPecas, setQtdPecas] = useState("1");
-  
-  // Material (Single & Multi)
   const [custoRolo, setCustoRolo] = useState("");
   const [pesoModelo, setPesoModelo] = useState("");
   const [selectedFilamentId, setSelectedFilamentId] = useState("manual");
-  const [materialSlots, setMaterialSlots] = useState([
-    { id: 'manual', weight: '', priceKg: '' }
-  ]);
-
-  // Outros Inputs
+  const [materialSlots, setMaterialSlots] = useState([{ id: 'manual', weight: '', priceKg: '' }]);
   const [tempoImpressaoHoras, setTempoImpressaoHoras] = useState("");
   const [tempoImpressaoMinutos, setTempoImpressaoMinutos] = useState("");
   const [tempoTrabalhoHoras, setTempoTrabalhoHoras] = useState("");
   const [tempoTrabalhoMinutos, setTempoTrabalhoMinutos] = useState("");
   const [canalVenda, setCanalVenda] = useState("loja");
   const [taxaMarketplace, setTaxaMarketplace] = useState("0");
-  const [taxaMarketplaceFixa, setTaxaMarketplaceFixa] = useState(""); 
+  const [taxaMarketplaceFixa, setTaxaMarketplaceFixa] = useState("");
   const [custoEmbalagem, setCustoEmbalagem] = useState("");
   const [custoFrete, setCustoFrete] = useState("");
-const [custosExtras, setCustosExtras] = useState([{ nome: "", valor: "" }]);
+  const [custosExtras, setCustosExtras] = useState([{ nome: "", valor: "" }]);
   const [margemLucro, setMargemLucro] = useState("");
   const [imposto, setImposto] = useState("");
   const [desconto, setDesconto] = useState("");
   const [taxaFalha, setTaxaFalha] = useState("");
-  
-
-  // Configurações Globais da Oficina
   const [custoKwh, setCustoKwh] = useState("");
   const [valorHoraHumana, setValorHoraHumana] = useState("");
   const [custoHoraMaquina, setCustoHoraMaquina] = useState("");
   const [taxaSetup, setTaxaSetup] = useState("");
   const [consumoImpressoraKw, setConsumoImpressoraKw] = useState("");
 
-  // --- FUNÇÃO DE RESTAURAÇÃO ---
-  const restaurarDoHistorico = useCallback((registro) => {
-    if (!registro?.data?.entradas) return;
-    const e = registro.data.entradas;
-
-    setNomeProjeto(registro.label || "");
-    setQtdPecas(e.qtdPecas || "1");
-    setCustoRolo(e.custoRolo || "");
-    setPesoModelo(e.pesoModelo || "");
-    setSelectedFilamentId(e.selectedFilamentId || "manual");
-    setMaterialSlots(e.materialSlots || [{ id: 'manual', weight: '', priceKg: '' }]);
-    setTempoImpressaoHoras(e.tempoImpressaoHoras || "");
-    setTempoImpressaoMinutos(e.tempoImpressaoMinutos || "");
-    setTempoTrabalhoHoras(e.tempoTrabalhoHoras || "");
-    setTempoTrabalhoMinutos(e.tempoTrabalhoMinutos || "");
-    setCanalVenda(e.canalVenda || "loja");
-    setTaxaMarketplace(e.taxaMarketplace || "0");
-    setTaxaMarketplaceFixa(e.taxaMarketplaceFixa || "");
-    setCustoEmbalagem(e.custoEmbalagem || "");
-    setCustoFrete(e.custoFrete || "");
-    setCustosExtras(e.custosExtras || "");
-    setMargemLucro(e.margemLucro || "");
-    setImposto(e.imposto || "");
-    setDesconto(e.desconto || "");
-    setTaxaFalha(e.taxaFalha || "");
-    
-    setHistoricoAberto(false);
-  }, []);
-
-  // --- INICIALIZAÇÃO ---
-  useEffect(() => {
-    const list = getPrinters();
-    setPrinters(list);
-    if (list.length > 0) setSelectedPrinter(list[0]);
-    const hasConfig = localStorage.getItem("layerforge_defaults");
-    setNeedsConfig(!hasConfig);
-  }, []);
-
-  useEffect(() => {
-    if (selectedPrinter) {
-      const powerWatts = Number(selectedPrinter.power) || Number(selectedPrinter.potencia) || 0;
-      if (powerWatts > 0) setConsumoImpressoraKw(String(powerWatts / 1000));
-    }
-  }, [selectedPrinter]);
-
-  const handleCyclePrinter = useCallback(() => {
-    if (printers.length <= 1) return;
-    const currentIdx = printers.findIndex(p => p.id === selectedPrinter.id);
-    const nextIdx = (currentIdx + 1) % printers.length;
-    setSelectedPrinter(printers[nextIdx]);
-  }, [printers, selectedPrinter]);
-
-  // --- MOTOR DE CÁLCULO ---
+  // --- 2. OBJETO DE ENTRADAS (Memoizado antes das funções de ação) ---
   const entradas = useMemo(() => ({
     custoRolo, pesoModelo, materialSlots, qtdPecas,
     tempoImpressaoHoras, tempoImpressaoMinutos,
@@ -172,56 +111,131 @@ const [custosExtras, setCustosExtras] = useState([{ nome: "", valor: "" }]);
   const [resultados, setResultados] = useState({});
 
   useEffect(() => {
-    try { setResultados(calcularTudo(entradasDebounced) || {}); }
-    catch (err) { setResultados({}); }
+    try {
+      const res = calcularTudo(entradasDebounced);
+      setResultados(res || {});
+    } catch (err) {
+      setResultados({});
+    }
   }, [entradasDebounced]);
+
+  // --- 3. FUNÇÕES DE AÇÃO ---
+  const handleSalvarNoHistorico = useCallback(() => {
+    if (!nomeProjeto.trim()) {
+      alert("Por favor, insira um nome para o projeto.");
+      return;
+    }
+    addHistoryEntry({
+      label: nomeProjeto,
+      entradas: entradas,
+      resultados: resultados
+    });
+    setHistoricoAberto(true);
+  }, [nomeProjeto, entradas, resultados]);
+
+  const restaurarDoHistorico = useCallback((registro) => {
+    if (!registro?.data?.entradas) return;
+    const e = registro.data.entradas;
+
+    setNomeProjeto(registro.label || "");
+    setQtdPecas(e.qtdPecas || "1");
+    setCustoRolo(e.custoRolo || "");
+    setPesoModelo(e.pesoModelo || "");
+    setTempoImpressaoHoras(e.tempoImpressaoHoras || "");
+    setTempoImpressaoMinutos(e.tempoImpressaoMinutos || "");
+    setTempoTrabalhoHoras(e.tempoTrabalhoHoras || "");
+    setTempoTrabalhoMinutos(e.tempoTrabalhoMinutos || "");
+    setMargemLucro(e.margemLucro || "");
+    setTaxaFalha(e.taxaFalha || "");
+    setDesconto(e.desconto || "");
+    setImposto(e.imposto || "");
+    setCustoEmbalagem(e.custoEmbalagem || "");
+    setCustoFrete(e.custoFrete || "");
+    setCanalVenda(e.canalVenda || "loja");
+    setTaxaMarketplace(e.taxaMarketplace || "0");
+    setTaxaMarketplaceFixa(e.taxaMarketplaceFixa || "");
+    setConsumoImpressoraKw(e.consumoImpressoraKw || "");
+    setValorHoraHumana(e.valorHoraHumana || "");
+    setCustoHoraMaquina(e.custoHoraMaquina || "");
+    setTaxaSetup(e.taxaSetup || "");
+    setSelectedFilamentId(e.selectedFilamentId || "manual");
+    setMaterialSlots(Array.isArray(e.materialSlots) ? e.materialSlots : [{ id: 'manual', weight: '', priceKg: '' }]);
+    setCustosExtras(Array.isArray(e.custosExtras) ? e.custosExtras : [{ nome: "", valor: "" }]);
+
+    // Busca o objeto da impressora no estoque para manter a sincronia
+    if (e.impressoraId && printers.length > 0) {
+      const printerObj = printers.find(p => p.id === e.impressoraId);
+      if (printerObj) setSelectedPrinter(printerObj);
+    }
+
+    setHistoricoAberto(false);
+  }, [printers]);
+
+  useEffect(() => {
+    // 1. Carrega Impressoras
+    const list = getPrinters();
+    setPrinters(list);
+    if (list.length > 0) setSelectedPrinter(list[0]);
+
+    // 2. CARREGA OS PADRÕES DA OFICINA (O que estava faltando!)
+    const savedDefaults = localStorage.getItem("layerforge_defaults");
+    if (savedDefaults) {
+      const d = JSON.parse(savedDefaults);
+      setValorHoraHumana(d.valorHoraHumana || "");
+      setCustoKwh(d.custoKwh || "");
+      setConsumoImpressoraKw(d.consumoImpressoraKw || "");
+      setCustoHoraMaquina(d.custoHoraMaquina || "");
+      setTaxaSetup(d.taxaSetup || "");
+      setNeedsConfig(false);
+    } else {
+      setNeedsConfig(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedPrinter) {
+      const powerWatts = Number(selectedPrinter.power || selectedPrinter.potencia || 0);
+      setConsumoImpressoraKw(powerWatts > 0 ? String(powerWatts / 1000) : "0");
+    }
+  }, [selectedPrinter]);
+
+  const handleCyclePrinter = useCallback(() => {
+    if (printers.length <= 1 || !selectedPrinter) return;
+    const currentIdx = printers.findIndex(p => p.id === selectedPrinter.id);
+    const nextIdx = (currentIdx + 1) % printers.length;
+    setSelectedPrinter(printers[nextIdx]);
+  }, [printers, selectedPrinter]);
 
   return (
     <div className="flex h-screen bg-[#050505] text-zinc-100 font-sans overflow-hidden">
-      
       <MainSidebar onCollapseChange={(collapsed) => setSidebarWidth(collapsed ? 72 : 256)} />
-
       <main className="flex-1 flex flex-row relative h-full min-w-0 z-10 transition-all duration-300" style={{ marginLeft: `${sidebarWidth}px` }}>
-        
-        {/* GRID DE FUNDO */}
         <div className="absolute inset-x-0 top-0 h-[500px] z-0 pointer-events-none opacity-[0.03]"
           style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
         />
-
         <div className="flex-1 flex flex-col h-full min-w-0 relative z-10">
-          
           <Header
-            nomeProjeto={nomeProjeto}
-            setNomeProjeto={setNomeProjeto}
-            qtdPecas={qtdPecas}
-            setQtdPecas={setQtdPecas}
-            printers={printers}
-            selectedPrinterId={selectedPrinter?.id}
-            onCyclePrinter={handleCyclePrinter}
-            onBack={() => window.history.back()}
-            onOpenHistory={() => setHistoricoAberto(true)}
-            onOpenSettings={() => setActiveTab('config')}
+            nomeProjeto={nomeProjeto} setNomeProjeto={setNomeProjeto}
+            qtdPecas={qtdPecas} setQtdPecas={setQtdPecas}
+            printers={printers} selectedPrinterId={selectedPrinter?.id}
+            onCyclePrinter={handleCyclePrinter} onBack={() => window.history.back()}
+            onOpenHistory={() => setHistoricoAberto(true)} onOpenSettings={() => setActiveTab('config')}
             needsConfig={needsConfig}
           />
-
           <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8">
             <div className="max-w-7xl mx-auto">
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-                
-                {/* COLUNA 01 - GASTOS DE MATERIAL E TEMPO */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 items-start">
                 <div className="flex flex-col gap-6 relative z-[30]">
                   <WrapperCard title="Quanto vai de Filamento?" icon={Package} step="01" zIndex="50">
-                    <CardMaterial 
+                    <CardMaterial
                       custoRolo={custoRolo} setCustoRolo={setCustoRolo}
                       pesoModelo={pesoModelo} setPesoModelo={setPesoModelo}
                       selectedFilamentId={selectedFilamentId} setSelectedFilamentId={setSelectedFilamentId}
                       materialSlots={materialSlots} setMaterialSlots={setMaterialSlots}
                     />
                   </WrapperCard>
-                  
                   <WrapperCard title="Tempo de Máquina" icon={Clock} step="02" zIndex="40">
-                    <CardTempo 
+                    <CardTempo
                       tempoImpressaoHoras={tempoImpressaoHoras} setTempoImpressaoHoras={setTempoImpressaoHoras}
                       tempoImpressaoMinutos={tempoImpressaoMinutos} setTempoImpressaoMinutos={setTempoImpressaoMinutos}
                       tempoTrabalhoHoras={tempoTrabalhoHoras} setTempoTrabalhoHoras={setTempoTrabalhoHoras}
@@ -229,46 +243,40 @@ const [custosExtras, setCustosExtras] = useState([{ nome: "", valor: "" }]);
                     />
                   </WrapperCard>
                 </div>
-
-                {/* COLUNA 02 - TAXAS E ENVIO */}
                 <div className="flex flex-col gap-6 relative z-[20]">
                   <WrapperCard title="Taxas de Venda" icon={ShoppingBag} step="03" zIndex="30">
-                    <CardCanal 
+                    <CardCanal
                       canalVenda={canalVenda} setCanalVenda={setCanalVenda}
                       taxaMarketplace={taxaMarketplace} setTaxaMarketplace={setTaxaMarketplace}
                       taxaMarketplaceFixa={taxaMarketplaceFixa} setTaxaMarketplaceFixa={setTaxaMarketplaceFixa}
                     />
                   </WrapperCard>
-                  
                   <WrapperCard title="Embalagem e Frete" icon={Truck} step="04" zIndex="20">
-                    <CardEmbalagem 
-                      custoEmbalagem={custoEmbalagem} setCustoEmbalagem={setCustoEmbalagem}
-                      custoFrete={custoFrete} setCustoFrete={setCustoFrete}
-                      custosExtras={custosExtras} setCustosExtras={setCustosExtras}
+                    <CardEmbalagem
+                      custoEmbalagem={custoEmbalagem}
+                      setCustoEmbalagem={setCustoEmbalagem}
+                      custoFrete={custoFrete}
+                      setCustoFrete={setCustoFrete}
+                      custosExtras={custosExtras}
+                      setCustosExtras={setCustosExtras} // <-- Verifique se esta prop está aqui
                     />
                   </WrapperCard>
                 </div>
-
-                {/* COLUNA 03 - LUCRO E RESULTADO */}
-                <div className="flex flex-col gap-6 relative z-[10]">
+                <div className="flex flex-col gap-6 relative z-[10] h-fit">
                   <WrapperCard title="Lucro e Impostos" icon={Tag} step="05" zIndex="10">
-                    <CardPreco 
+                    <CardPreco
                       margemLucro={margemLucro} setMargemLucro={setMargemLucro}
                       imposto={imposto} setImposto={setImposto}
                       desconto={desconto} setDesconto={setDesconto}
                       taxaFalha={taxaFalha} setTaxaFalha={setTaxaFalha}
                     />
                   </WrapperCard>
-                  
                   <MakersHubWidget resultados={resultados} entradas={entradas} nomeProjeto={nomeProjeto} />
                 </div>
-
               </div>
             </div>
           </div>
         </div>
-
-        {/* PAINEL LATERAL DE RESULTADOS */}
         <aside className="w-[420px] h-full flex flex-col z-40 shrink-0">
           <div className="flex-1 flex flex-col bg-zinc-950/40 backdrop-blur-3xl border-l border-white/5 shadow-2xl overflow-hidden relative">
             <div className="p-5 pb-2 shrink-0 z-10 mt-2">
@@ -280,9 +288,9 @@ const [custosExtras, setCustosExtras] = useState([{ nome: "", valor: "" }]);
             </div>
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pt-2 relative">
               {activeTab === 'resumo' ? (
-                <Summary resultados={resultados} entradas={entradas} salvar={() => setHistoricoAberto(true)} />
+                <Summary resultados={resultados} entradas={entradas} salvar={handleSalvarNoHistorico} />
               ) : (
-                <PainelConfiguracoesCalculo 
+                <PainelConfiguracoesCalculo
                   custoKwh={custoKwh} setCustoKwh={setCustoKwh}
                   valorHoraHumana={valorHoraHumana} setValorHoraHumana={setValorHoraHumana}
                   custoHoraMaquina={custoHoraMaquina} setCustoHoraMaquina={setCustoHoraMaquina}
@@ -296,7 +304,6 @@ const [custosExtras, setCustosExtras] = useState([{ nome: "", valor: "" }]);
           </div>
         </aside>
       </main>
-
       <HistoryDrawer open={historicoAberto} onClose={() => setHistoricoAberto(false)} onRestore={restaurarDoHistorico} />
     </div>
   );

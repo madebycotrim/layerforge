@@ -1,5 +1,3 @@
-// src/features/calculadora/logic/localHistory.js
-
 const STORAGE_KEY = "calculadora_history_v2";
 
 /* Helper para ID único */
@@ -10,14 +8,15 @@ function gerarId() {
 /* Parse seguro para evitar crash */
 function parseSeguro(json) {
   try {
-    return JSON.parse(json);
+    const parsed = JSON.parse(json);
+    return parsed;
   } catch {
     return null;
   }
 }
 
 /* ========================================================
-   FUNÇÃO: LER (getHistory / readHistory)
+   FUNÇÃO: LER (getHistory)
    ======================================================== */
 export function getHistory() {
   try {
@@ -27,32 +26,38 @@ export function getHistory() {
     const parsed = parseSeguro(raw);
     if (!Array.isArray(parsed)) return [];
 
-    return parsed.map((reg) => ({
-      id: reg.id ?? reg.client_id ?? gerarId(),
-      client_id: reg.client_id ?? reg.id,
-      label: reg.label ?? "Projeto sem nome",
-      timestamp: reg.timestamp ?? new Date(reg.created_at || Date.now()).toLocaleString(),
-      created_at: reg.created_at ?? Date.now(),
-      data: {
-        entradas: reg.data?.inputs ?? reg.data?.entradas ?? {},
-        resultados: reg.data?.results ?? reg.data?.resultados ?? {},
-      },
-    }));
+    // Normaliza os dados para garantir compatibilidade com os componentes
+    return parsed.map((reg) => {
+      const id = reg.id || reg.client_id || gerarId();
+      return {
+        id: id,
+        client_id: id,
+        label: reg.label || "Projeto sem nome",
+        timestamp: reg.timestamp || new Date(reg.created_at || Date.now()).toLocaleString('pt-BR'),
+        created_at: reg.created_at || Date.now(),
+        data: {
+          // Garante que entradas e resultados existam como objetos
+          entradas: reg.data?.entradas || reg.data?.inputs || {},
+          resultados: reg.data?.resultados || reg.data?.results || {},
+        },
+      };
+    });
   } catch (err) {
-    console.error("Erro ao ler histórico:", err);
+    console.error("Erro crítico ao ler histórico local:", err);
     return [];
   }
 }
 
 /* ========================================================
-   FUNÇÃO: SOBRESCREVER (writeHistory / gravarHistorico)
+   FUNÇÃO: SOBRESCREVER (writeHistory)
    ======================================================== */
 export function writeHistory(novaLista = []) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(novaLista));
+    const dataString = JSON.stringify(novaLista);
+    localStorage.setItem(STORAGE_KEY, dataString);
     return novaLista;
   } catch (err) {
-    console.error("Erro ao gravar histórico:", err);
+    console.error("Erro ao gravar dados no localStorage:", err);
     return [];
   }
 }
@@ -60,29 +65,25 @@ export function writeHistory(novaLista = []) {
 /* ========================================================
    FUNÇÃO: ADICIONAR (addHistoryEntry)
    ======================================================== */
+// --- TRECHO CORRIGIDO NO localHistory.js ---
+
 export function addHistoryEntry({ label = "", entradas = {}, resultados = {} } = {}) {
   try {
     const atual = getHistory();
-
     const novoRegistro = {
-      id: gerarId(),
-      client_id: gerarId(),
+      id: String(Date.now()),
       label: label || "Projeto sem nome",
       created_at: Date.now(),
       timestamp: new Date().toLocaleString('pt-BR'),
       data: {
-        entradas: entradas,
-        resultados: resultados,
+        entradas: JSON.parse(JSON.stringify(entradas)), // Deep clone para evitar referências vivas
+        resultados: JSON.parse(JSON.stringify(resultados)),
       },
     };
-
     const novaLista = [novoRegistro, ...atual].slice(0, 100);
-    writeHistory(novaLista);
+    localStorage.setItem("calculadora_history_v2", JSON.stringify(novaLista));
     return novoRegistro;
-  } catch (err) {
-    console.error("Erro ao adicionar ao histórico:", err);
-    return null;
-  }
+  } catch (e) { return null; }
 }
 
 /* ========================================================
@@ -91,11 +92,11 @@ export function addHistoryEntry({ label = "", entradas = {}, resultados = {} } =
 export function removeHistoryEntry(id) {
     try {
         const history = getHistory();
-        const updated = history.filter(item => item.id !== id && item.client_id !== id);
+        const updated = history.filter(item => item.id !== id);
         writeHistory(updated);
         return true;
     } catch (err) {
-        console.error("Erro ao remover item:", err);
+        console.error("Erro ao remover item do histórico:", err);
         return false;
     }
 }
@@ -106,23 +107,21 @@ export function removeHistoryEntry(id) {
 export function clearHistory() {
   try {
     localStorage.removeItem(STORAGE_KEY);
+    return true;
   } catch (err) {
-    console.error("Erro ao limpar histórico:", err);
+    console.error("Erro ao resetar histórico:", err);
+    return false;
   }
 }
 
 /* ========================================================
-   ALIASES PARA COMPATIBILIDADE TOTAL
-   Resolve os erros: 'readHistory', 'writeHistory', 'lerHistorico', etc.
+   ALIASES PARA COMPATIBILIDADE INTEGRADA
    ======================================================== */
 export const readHistory = getHistory;
 export const lerHistorico = getHistory;
 export const gravarHistorico = writeHistory;
-
 export const adicionarAoHistorico = addHistoryEntry;
 export const addHistoryRow = addHistoryEntry;
-
 export const limparHistorico = clearHistory;
-
 export const deleteHistoryEntry = removeHistoryEntry;
 export const removeHistoryRow = removeHistoryEntry;

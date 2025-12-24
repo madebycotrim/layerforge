@@ -1,62 +1,71 @@
 import React from "react";
-import { Box, Truck, Plus, X, Wrench, Tag, Trash2 } from "lucide-react";
+import { Box, Truck, Plus, Wrench, Tag, Trash2 } from "lucide-react";
 import { UnifiedInput } from "../../../../components/formInputs";
 
 export default function CustosLogisticos({
-  custoEmbalagem, setCustoEmbalagem,
-  custoFrete, setCustoFrete,
-  custosExtras, setCustosExtras
+  custoEmbalagem,
+  setCustoEmbalagem,
+  custoFrete,
+  setCustoFrete,
+  custosExtras = [],
+  setCustosExtras
 }) {
-  
-  // Cálculo do total dos extras
-  const totalExtras = custosExtras.reduce((acc, item) => acc + (Number(item.valor) || 0), 0);
 
-  const addExtra = () => setCustosExtras([...custosExtras, { nome: "", valor: "" }]);
-  
-  const removeExtra = (index) => setCustosExtras(custosExtras.filter((_, i) => i !== index));
+  const safeExtras = Array.isArray(custosExtras) ? custosExtras : [];
+
+  const totalExtras = safeExtras.reduce((acc, item) => acc + (Number(item?.valor) || 0), 0);
+
+  const addExtra = () => setCustosExtras([...safeExtras, { nome: "", valor: "" }]);
+
+  const removeExtra = (index) => setCustosExtras(safeExtras.filter((_, i) => i !== index));
 
   const updateExtra = (index, campo, valor) => {
-    const novaLista = [...custosExtras];
-    novaLista[index][campo] = valor;
+    const novaLista = safeExtras.map((item, i) =>
+      i === index ? { ...item, [campo]: valor } : item
+    );
     setCustosExtras(novaLista);
   };
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      
+
       {/* 1. INPUTS FIXOS (EMBALAGEM E FRETE) */}
       <div className="grid grid-cols-2 gap-4">
         <UnifiedInput
-          label="Embalagem" 
-          icon={Box} 
+          label="Embalagem"
+          icon={Box}
           suffix="R$"
           type="number"
           placeholder="0.00"
-          value={custoEmbalagem}
+          value={custoEmbalagem || ""}
           onChange={(e) => setCustoEmbalagem(e.target.value)}
         />
         <UnifiedInput
-          label="Frete" 
-          icon={Truck} 
+          label="Frete"
+          icon={Truck}
           suffix="R$"
           type="number"
           placeholder="0.00"
-          value={custoFrete}
+          value={custoFrete || ""}
           onChange={(e) => setCustoFrete(e.target.value)}
         />
       </div>
 
       {/* 2. SEÇÃO DE CUSTOS ADICIONAIS (EXTRAS) */}
       <div className="space-y-3">
-        {/* Header Dinâmico */}
+        {/* Header com Contador de Itens */}
         <div className="flex items-center justify-between px-1 border-b border-white/5 pb-2">
           <div className="flex items-center gap-2">
             <Wrench size={12} className="text-zinc-500" />
             <span className="text-[9px] font-black tracking-[0.2em] text-zinc-500 uppercase">
               Custos Adicionais
             </span>
+            {/* CONTADOR DE ITENS */}
+            <span className="text-[7px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded border border-white/5 font-bold font-mono">
+              {String(safeExtras.length).padStart(2, '0')} ITENS
+            </span>
           </div>
-          
+
           <div className="flex items-center gap-4">
             <div className="flex flex-col items-end">
               <span className="text-[10px] font-mono font-bold text-sky-400">
@@ -64,8 +73,8 @@ export default function CustosLogisticos({
               </span>
               <span className="text-[7px] font-black text-zinc-700 uppercase tracking-tighter">Total Extras</span>
             </div>
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={addExtra}
               className="w-7 h-7 flex items-center justify-center rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-500 hover:bg-sky-500 hover:text-white transition-all active:scale-90"
             >
@@ -74,38 +83,39 @@ export default function CustosLogisticos({
           </div>
         </div>
 
-        {/* Lista de Itens Dinâmicos */}
-        <div className="space-y-2 max-h-[280px] overflow-y-auto pr-1 custom-scrollbar">
-          {custosExtras.map((item, index) => (
-            <div key={index} className="flex items-end gap-2 group animate-in slide-in-from-right-2 duration-300">
-              
-              {/* Descrição do Extra */}
-              <div className="flex-[2]">
+        {/* LISTA COM SCROLL INTERNO CONTROLADO */}
+        {/* max-h-[250px] garante que o card não cresça infinitamente e quebre o layout da página */}
+        <div className="space-y-2 max-h-[234px] overflow-y-auto pr-1 custom-scrollbar overflow-x-hidden">
+          {safeExtras.map((item, index) => (
+            <div key={`extra-${index}`} className="flex items-end gap-2 group animate-in slide-in-from-right-2 duration-300 mb-1">
+
+              {/* DESCRIÇÃO */}
+              <div className="flex-[2] min-w-0">
                 <UnifiedInput
                   placeholder="EX: TINTA, LIXA..."
                   type="text"
                   icon={Tag}
-                  value={item.nome}
+                  value={item.nome || ""}
                   onChange={(e) => updateExtra(index, "nome", e.target.value.toUpperCase())}
                 />
               </div>
 
-              {/* Valor do Extra */}
-              <div className="flex-1">
+              {/* VALOR */}
+              <div className="w-[85px] shrink-0">
                 <UnifiedInput
                   placeholder="0.00"
                   type="number"
                   suffix="R$"
-                  value={item.valor}
+                  value={item.valor || ""}
                   onChange={(e) => updateExtra(index, "valor", e.target.value)}
                 />
               </div>
 
-              {/* Botão Remover - Alinhado com o input (h-11) */}
+              {/* BOTÃO REMOVER */}
               <button
                 type="button"
                 onClick={() => removeExtra(index)}
-                className="h-11 w-10 flex items-center justify-center rounded-xl border border-zinc-800/60 text-zinc-700 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all"
+                className="h-11 w-10 shrink-0 flex items-center justify-center rounded-xl border border-zinc-800/60 text-zinc-700 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all"
                 title="Remover custo"
               >
                 <Trash2 size={14} />
@@ -113,7 +123,7 @@ export default function CustosLogisticos({
             </div>
           ))}
 
-          {custosExtras.length === 0 && (
+          {safeExtras.length === 0 && (
             <div className="py-8 text-center border-2 border-dashed border-zinc-900 rounded-2xl">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
                 Nenhum custo extra adicionado

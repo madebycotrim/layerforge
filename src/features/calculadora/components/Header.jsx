@@ -1,12 +1,14 @@
 import React from "react";
 import {
-  ChevronLeft, Printer, History, Zap,
+  Printer, History, Zap,
   Settings2, ChevronDown
 } from "lucide-react";
 
 export default function Header({
   nomeProjeto,       
-  setNomeProjeto,    
+  setNomeProjeto,
+  qtdPecas,
+  setQtdPecas,
   printers = [],
   selectedPrinterId,
   onCyclePrinter,
@@ -16,8 +18,8 @@ export default function Header({
   needsConfig = false
 }) {
   const currentPrinter = printers.find(p => p.id === selectedPrinterId);
-  const printerName = currentPrinter ? (currentPrinter.name || "Impressora sem nome") : "Selecionar...";
-  const printerPower = currentPrinter ? (Number(currentPrinter.power) || 0) : 0;
+  const printerName = currentPrinter?.name || (printers.length > 0 ? "Impressora sem nome" : "Selecionar...");
+  const printerPower = Number(currentPrinter?.power || currentPrinter?.potencia || 0);
 
   return (
     <header className="h-20 px-8 flex items-center justify-between z-40 relative border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl shrink-0">
@@ -28,14 +30,12 @@ export default function Header({
             value={nomeProjeto}
             onChange={(e) => setNomeProjeto(e.target.value)}
             placeholder="Qual o nome do projeto ou da peça?"
-            className="bg-transparent border-none outline-none text-2xl font-black tracking-tight text-white uppercase tracking-tighter focus:text-sky-400 transition-colors w-full placeholder:text-zinc-800"
+            className="bg-transparent border-none outline-none text-2xl font-black text-white uppercase tracking-tighter focus:text-sky-400 transition-colors w-full placeholder:text-zinc-800"
         />
       </span>
 
-      {/* DIREITA: CONTROLES DA FARM */}
       <div className="flex items-center gap-6">
 
-        {/* Ajustes da Oficina e Histórico */}
         <div className="flex bg-zinc-900/30 border border-zinc-800/60 p-1.5 rounded-2xl backdrop-blur-md">
           <button
             onClick={onOpenSettings}
@@ -53,7 +53,6 @@ export default function Header({
           </button>
         </div>
 
-        {/* Seletor de Impressora */}
         <div
           onClick={onCyclePrinter}
           className="relative group cursor-pointer flex items-center gap-4 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl py-2 pl-4 pr-5 transition-all hover:border-sky-500/30 hover:bg-zinc-900/40 min-w-[280px]"
@@ -78,7 +77,6 @@ export default function Header({
           </div>
         </div>
 
-        {/* Botão Principal */}
         <button
           className="h-11 px-8 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-[10px] font-black uppercase flex items-center gap-3 shadow-[0_0_20px_rgba(14,165,233,0.15)] transition-all active:scale-95"
         >

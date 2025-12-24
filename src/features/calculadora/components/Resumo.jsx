@@ -1,7 +1,6 @@
-// --- FILE: src/features/calculadora/components/Resumo.jsx ---
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { formatCurrency } from "../../../lib/format";
-import { 
+import {
     Save, TrendingUp, AlertTriangle, CheckCircle2,
     Package, Zap, Clock, Truck, Layers, Wrench,
     Landmark, Store, Tag, Printer, Share2,
@@ -10,11 +9,13 @@ import {
 } from "lucide-react";
 
 const SummaryRow = ({ icon: Icon, label, value, total, color = "text-zinc-500", isCompact }) => {
-    // Exibe se o valor for relevante (> 0.01)
-    if (!value || value < 0.01) return null;
+    const numValue = Number(value || 0);
+    const numTotal = Number(total || 0);
 
-    const pct = total > 0 ? Math.round((value / total) * 100) : 0;
-    
+    if (numValue < 0.01) return null;
+
+    const pct = numTotal > 0 ? Math.round((numValue / numTotal) * 100) : 0;
+
     return (
         <div className={`
             flex items-center justify-between px-3 -mx-1 rounded-lg group hover:bg-white/5 transition-all duration-200
@@ -35,7 +36,7 @@ const SummaryRow = ({ icon: Icon, label, value, total, color = "text-zinc-500", 
             </div>
             <div className="text-right shrink-0">
                 <span className={`block font-mono font-bold leading-none ${isCompact ? 'text-[9px]' : 'text-xs'} ${color === "text-zinc-500" ? "text-zinc-200" : color}`}>
-                    {formatCurrency(value)}
+                    {formatCurrency(numValue)}
                 </span>
                 <span className="text-[7px] font-black text-zinc-600 uppercase tracking-tighter">
                     {pct}% DO TOTAL
@@ -48,37 +49,58 @@ const SummaryRow = ({ icon: Icon, label, value, total, color = "text-zinc-500", 
 export default function Summary({ resultados = {}, entradas = {}, salvar = () => { } }) {
     const {
         custoUnitario = 0,
-        precoSugerido = 0, 
-        precoComDesconto = 0, 
-        margemEfetivaPct = 0, 
+        precoSugerido = 0,
+        precoComDesconto = 0,
+        margemEfetivaPct = 0,
         lucroBrutoUnitario = 0,
-        custoMaterial = 0, 
-        custoEnergia = 0, 
+        custoMaterial = 0,
+        custoEnergia = 0,
         custoMaquina = 0,
         custoMaoDeObra = 0,
-        custoEmbalagem = 0, 
-        custoFrete = 0, 
-        custosExtras = 0, 
+        custoEmbalagem = 0,
+        custoFrete = 0,
+        custosExtras = 0,
         custoSetup = 0,
         valorRisco = 0,
-        valorImpostos = 0, 
+        valorImpostos = 0,
         valorMarketplace = 0
     } = resultados;
 
     const [salvo, setSalvo] = useState(false);
 
-    const totalBase = precoComDesconto || precoSugerido || 0;
+    useEffect(() => {
+        setSalvo(false);
+    }, [entradas, resultados]);
+
+    const handleSalvar = () => {
+        salvar(); 
+        setSalvo(true);
+    };
+
+    const totalBase = Number(precoComDesconto || precoSugerido || 0);
     const isNeutral = totalBase <= 0.01;
     const margemNum = Number(margemEfetivaPct || 0);
     const temLucro = margemNum > 0;
-    
-    const custoTotalReal = custoUnitario + valorImpostos + valorMarketplace;
-    const pctCusto = totalBase > 0 ? Math.min(100, Math.round((custoTotalReal / totalBase) * 100)) : 0;
-    const pctLucro = totalBase > 0 ? Math.max(0, 100 - pctCusto) : 0;
+
+    // Detecta se há um desconto ativo para mudar o visual do preço
+    const temDescontoAtivo = !isNeutral && precoComDesconto > 0 && Math.abs(precoSugerido - precoComDesconto) > 0.01;
+
+    const custoTotalReal = Number(custoUnitario || 0) + Number(valorImpostos || 0) + Number(valorMarketplace || 0);
+
+    const pctCusto = useMemo(() => {
+        if (totalBase <= 0) return 0;
+        const calc = (custoTotalReal / totalBase) * 100;
+        return Number.isFinite(calc) ? Math.min(100, Math.round(calc)) : 0;
+    }, [custoTotalReal, totalBase]);
+
+    const pctLucro = useMemo(() => {
+        if (totalBase <= 0) return 0;
+        return Math.max(0, 100 - pctCusto);
+    }, [pctCusto, totalBase]);
 
     const activeRowsCount = useMemo(() => {
         const checkList = [custoMaterial, custoEnergia, custoMaquina, custoSetup, custoMaoDeObra, custoEmbalagem, custoFrete, custosExtras, valorRisco, valorImpostos, valorMarketplace];
-        return checkList.filter(v => v > 0.01).length;
+        return checkList.filter(v => Number(v) > 0.01).length;
     }, [resultados]);
 
     const isCompact = activeRowsCount > 6;
@@ -91,8 +113,8 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
 
     return (
         <div className="h-full flex flex-col gap-3 select-none animate-in fade-in duration-500">
-            
-            {/* 1. GAUGE DE PERFORMANCE (LUCRO REAL) */}
+
+            {/* 1. GAUGE DE PERFORMANCE */}
             <div className={`relative overflow-hidden rounded-2xl border p-5 transition-all duration-500 ${status.bg}`}>
                 <div className="flex justify-between items-center mb-4">
                     <div className="flex items-center gap-2">
@@ -122,23 +144,37 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                     </div>
                     <div className="h-1 w-full bg-zinc-950/80 rounded-full overflow-hidden flex p-[1px] border border-white/5">
                         <div style={{ width: `${pctCusto}%` }} className="bg-zinc-800 h-full transition-all duration-700" />
-                        <div style={{ width: `${pctLucro}%` }} className={`${status.bar} h-full transition-all duration-700`} />
+                        <div style={{ width: `${Math.max(0, pctLucro)}%` }} className={`${status.bar} h-full transition-all duration-700`} />
                     </div>
                 </div>
             </div>
 
-            {/* 2. QUOTE OUTPUT (VALOR FINAL COM DESCONTO) */}
+            {/* 2. SEÇÃO DE PREÇO (COM LÓGICA DE DESCONTO) */}
             <div className="bg-zinc-950/40 border border-white/5 rounded-2xl py-3 px-6 text-center relative overflow-hidden shrink-0">
                 <div className="flex items-center justify-center gap-2 mb-1 opacity-50">
                     <Activity size={10} className="text-zinc-500" />
-                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Preço de venda sugerido</span>
+                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">
+                        {temDescontoAtivo ? "Preço com Desconto Aplicado" : "Preço de venda sugerido"}
+                    </span>
                 </div>
-                <span className={`text-3xl font-black font-mono tracking-tighter ${isNeutral ? 'text-zinc-800' : 'text-white'}`}>
-                    {formatCurrency(precoComDesconto || precoSugerido)}
-                </span>
+
+                {temDescontoAtivo ? (
+                    <div className="flex flex-col items-center justify-center -space-y-1">
+                        <span className="text-[11px] font-mono font-bold text-zinc-600 line-through opacity-80">
+                            {formatCurrency(precoSugerido)}
+                        </span>
+                        <span className="text-3xl font-black font-mono tracking-tighter text-white">
+                            {formatCurrency(precoComDesconto)}
+                        </span>
+                    </div>
+                ) : (
+                    <span className={`text-3xl font-black font-mono tracking-tighter ${isNeutral ? 'text-zinc-800' : 'text-white'}`}>
+                        {formatCurrency(precoSugerido)}
+                    </span>
+                )}
             </div>
 
-            {/* 3. DIAGNÓSTICO COM DENSIDADE DINÂMICA */}
+            {/* 3. DIAGNÓSTICO DETALHADO */}
             <div className="flex-1 bg-zinc-950/20 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-md min-h-0">
                 <div className="px-4 py-2 border-b border-white/5 bg-white/5 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
@@ -151,23 +187,20 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-0.5">
                     {!isNeutral ? (
                         <>
-                            {/* CATEGORIA: PRODUÇÃO BRUTA */}
                             <SummaryRow isCompact={isCompact} icon={Package} label="Filamento usado" value={custoMaterial} total={totalBase} />
                             <SummaryRow isCompact={isCompact} icon={Zap} label="Energia (Luz)" value={custoEnergia} total={totalBase} />
                             <SummaryRow isCompact={isCompact} icon={Clock} label="Desgaste da Impressora" value={custoMaquina} total={totalBase} />
                             <SummaryRow isCompact={isCompact} icon={Share2} label="Setup e Calibração" value={custoSetup} total={totalBase} />
-                            
+
                             <div className="h-px bg-white/5 my-1 mx-2" />
 
-                            {/* CATEGORIA: LOGÍSTICA E OPERAÇÃO */}
                             <SummaryRow isCompact={isCompact} icon={Wrench} label="Sua mão de obra" value={custoMaoDeObra} total={totalBase} />
                             <SummaryRow isCompact={isCompact} icon={Box} label="Caixa e Embalagem" value={custoEmbalagem} total={totalBase} />
                             <SummaryRow isCompact={isCompact} icon={Truck} label="Frete e Envio" value={custoFrete} total={totalBase} />
                             <SummaryRow isCompact={isCompact} icon={CircleDashed} label="Gastos Extras" value={custosExtras} total={totalBase} />
-                            
+
                             <div className="h-px bg-white/5 my-1 mx-2" />
 
-                            {/* CATEGORIA: SEGURANÇA E IMPOSTOS */}
                             <SummaryRow isCompact={isCompact} icon={ShieldAlert} label="Reserva para falhas" value={valorRisco} total={totalBase} color="text-amber-500/80" />
                             <SummaryRow isCompact={isCompact} icon={Landmark} label="Impostos sobre venda" value={valorImpostos} total={totalBase} color="text-rose-400/80" />
                             <SummaryRow isCompact={isCompact} icon={Store} label="Taxas do Marketplace" value={valorMarketplace} total={totalBase} color="text-rose-400/80" />
@@ -180,7 +213,6 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                     )}
                 </div>
 
-                {/* RODAPÉ DO DIAGNÓSTICO (CUSTO TOTAL) */}
                 <div className="p-3 bg-zinc-900/50 border-t border-white/5 flex justify-between items-center shrink-0">
                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Custo total da produção</span>
                     <span className={`text-base font-black font-mono ${isNeutral ? 'text-zinc-800' : 'text-zinc-200'}`}>
@@ -189,13 +221,18 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                 </div>
             </div>
 
-            {/* 4. BOTÕES DE CONTROLE */}
+            {/* 4. BOTÕES DE AÇÃO */}
             <div className="grid grid-cols-2 gap-2 shrink-0 pb-1">
                 <button onClick={() => window.print()} disabled={isNeutral} className="h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95">
                     <Printer size={14} /> Imprimir / PDF
                 </button>
-                <button onClick={salvar} disabled={isNeutral} className={`h-10 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${salvo ? "bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.1)]"}`}>
-                    {salvo ? <CheckCircle2 size={16} /> : <Save size={16} />} {salvo ? "Projeto Salvo" : "Salvar no Histórico"}
+                <button 
+                    onClick={handleSalvar} 
+                    disabled={isNeutral || salvo} 
+                    className={`h-10 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${salvo ? "bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.1)]"}`}
+                >
+                    {salvo ? <CheckCircle2 size={16} /> : <Save size={16} />} 
+                    {salvo ? "Projeto Salvo" : "Salvar no Histórico"}
                 </button>
             </div>
         </div>

@@ -1,85 +1,58 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { Plus, Trash2, Package, DollarSign } from "lucide-react";
+import { Plus, Trash2, Package, DollarSign, Tag, Layers } from "lucide-react";
 import { getFilaments } from "../../../filamentos/logic/filaments";
 import { UnifiedInput } from "../../../../components/formInputs";
 
-/* ---------- CONFIGURAÇÃO DOS INPUTS (DADOS) ---------- */
-const CONFIG = {
-    selecao: { 
-        label: "Filamento", 
-        type: "select", 
-        placeholder: "ESCOLHA O MATERIAL NO ESTOQUE...", 
-        searchable: true 
-    },
-    peso: { 
-        label: "Peso do Modelo", 
-        suffix: "g", 
-        icon: Package, 
-        type: "number", 
-        placeholder: "0" 
-    },
-    preco: { 
-        label: "Preço por kg", 
-        suffix: "R$", 
-        icon: DollarSign, 
-        type: "number", 
-        placeholder: "0.00" 
-    },
-    // Configurações para os campos dentro do Rack de Slots (Multi-cor)
-    slotSelecao: { type: "select", placeholder: "FILAMENTO..." },
-    slotPeso: { suffix: "G", type: "number", placeholder: "0" },
-    slotPreco: { suffix: "R$/KG", type: "number", placeholder: "0.00" }
-};
-
 /* ---------- COMPONENTE: LINHA DE FILAMENTO (RACK) ---------- */
-const FilamentRow = ({ index, slotData, selectOptions, onUpdate, onRemove, canRemove, isOk }) => {
-    return (
-        <div className={`
-            relative grid grid-cols-[48px_1fr_85px_95px_36px] items-stretch
-            bg-zinc-950/50 border rounded-xl group/row transition-all h-12 mb-2
-            ${!isOk ? 'border-rose-500/30 bg-rose-500/5' : 'border-zinc-800/60 hover:border-zinc-700'}
-        `}>
-            {/* 1. SLOT ID */}
-            <div className="flex flex-col items-center justify-center border-r border-zinc-800/60">
-                <span className="text-[7px] font-black opacity-40 uppercase">Slot</span>
-                <span className="text-sm font-mono font-black">{index + 1}</span>
-            </div>
+const FilamentRow = ({ index, total, slotData, selectOptions, onUpdate, onRemove, canRemove }) => {
+    // Lógica para o dropdown não ficar atrás das linhas de baixo
+    const zIndex = total - index;
 
-            {/* 2. SELECT (Sem borda) */}
-            <div className="min-w-0 flex items-center">
+    return (
+        <div
+            style={{ zIndex }}
+            className="flex items-end gap-2 group animate-in slide-in-from-right-2 duration-300 mb-2 relative"
+        >
+            {/* SELEÇÃO DO MATERIAL (Ocupa o máximo de espaço) */}
+            <div className="flex-1 min-w-0">
                 <UnifiedInput
-                    variant="ghost" // <--- REMOVE A BORDA INTERNA
+                    placeholder="MATERIAL..."
                     type="select"
+                    icon={Tag}
                     options={selectOptions}
                     value={slotData.id || "manual"}
                     onChange={(id) => onUpdate(index, { id })}
                 />
             </div>
 
-            {/* 3. MASSA (Sem borda) */}
-            <div className="border-l border-zinc-800/60">
+            {/* PESO (Tamanho equalizado) */}
+            <div className="w-[72px] shrink-0">
                 <UnifiedInput
-                    variant="ghost" // <--- REMOVE A BORDA INTERNA
-                    suffix="G"
+                    placeholder="0"
                     type="number"
-                    value={slotData.weight}
+                    suffix="G"
+                    value={slotData.weight || ""}
                     onChange={(e) => onUpdate(index, { weight: e.target.value })}
                 />
             </div>
 
-            {/* 4. PREÇO (Sem borda) */}
-            <div className="border-l border-zinc-800/60">
+            {/* PREÇO (Tamanho equalizado) */}
+            <div className="w-[72px] shrink-0">
                 <UnifiedInput
-                    variant="ghost" // <--- REMOVE A BORDA INTERNA
-                    suffix="R$/KG"
+                    placeholder="0.00"
                     type="number"
-                    value={slotData.priceKg}
+                    suffix="R$"
+                    value={slotData.priceKg || ""}
                     onChange={(e) => onUpdate(index, { priceKg: e.target.value })}
                 />
             </div>
 
-            {/* 5. BOTÃO REMOVER */}
-            <button className="border-l border-zinc-800/60 ...">
+            {/* BOTÃO REMOVER */}
+            <button
+                type="button"
+                onClick={() => canRemove && onRemove(index)}
+                className="h-11 w-10 shrink-0 flex items-center justify-center rounded-xl border border-zinc-800/60 text-zinc-700 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all"
+            >
                 <Trash2 size={14} />
             </button>
         </div>
@@ -97,9 +70,8 @@ export default function MaterialModule({
     const [mode, setMode] = useState("single");
     const [inventory, setInventory] = useState([]);
 
-    useEffect(() => { setInventory(getFilaments()); }, []);
+    useEffect(() => { setInventory(getFilaments() || []); }, []);
 
-    // Lógica de agrupamento do estoque
     const selectOptions = useMemo(() => {
         const groups = {};
         inventory.forEach((item) => {
@@ -107,9 +79,8 @@ export default function MaterialModule({
             if (!groups[type]) groups[type] = [];
             groups[type].push({ value: item.id, label: item.name });
         });
-
         return [
-            { group: "ENTRADA MANUAL", items: [{ value: "manual", label: "Digitar preço por kg" }] },
+            { group: "ENTRADA MANUAL", items: [{ value: "manual", label: "Preço Manual" }] },
             ...Object.keys(groups).map(type => ({
                 group: `ESTOQUE: ${type.toUpperCase()}`,
                 items: groups[type]
@@ -118,25 +89,29 @@ export default function MaterialModule({
     }, [inventory]);
 
     const handleUpdateSlot = (index, newData) => {
-        const newSlots = [...materialSlots];
+        const safeSlots = Array.isArray(materialSlots) ? materialSlots : [];
+        const newSlots = [...safeSlots];
         const updatedSlot = { ...newSlots[index], ...newData };
+
         if (newData.id && newData.id !== "manual") {
             const item = inventory.find(f => f.id === newData.id);
-            if (item) updatedSlot.priceKg = ((item.price / item.weightTotal) * 1000).toFixed(2);
+            if (item && item.weightTotal > 0) {
+                updatedSlot.priceKg = String(((Number(item.price) / Number(item.weightTotal)) * 1000).toFixed(2));
+            }
         }
         newSlots[index] = updatedSlot;
         setMaterialSlots(newSlots);
     };
 
     const totalWeight = useMemo(() => {
+        const safeSlots = Array.isArray(materialSlots) ? materialSlots : [];
         if (mode === "single") return Number(pesoModelo) || 0;
-        return materialSlots.reduce((acc, s) => acc + (Number(s.weight) || 0), 0);
+        return safeSlots.reduce((acc, s) => acc + (Number(s.weight) || 0), 0);
     }, [materialSlots, pesoModelo, mode]);
 
     return (
         <div className="flex flex-col gap-5 animate-in fade-in duration-500">
-            
-            {/* TOGGLE MODO (UMA COR / VÁRIAS CORES) */}
+
             <div className="flex bg-zinc-900/40 border border-zinc-800/60 p-1 rounded-xl">
                 {["single", "multi"].map(m => (
                     <button
@@ -151,58 +126,82 @@ export default function MaterialModule({
             </div>
 
             {mode === "single" ? (
-                /* MODO UMA COR */
                 <div className="space-y-4 animate-in slide-in-from-left-2">
                     <UnifiedInput
-                        {...CONFIG.selecao}
+                        label="Filamento"
+                        type="select"
+                        icon={Tag}
                         options={selectOptions}
                         value={selectedFilamentId || "manual"}
                         onChange={(id) => {
                             setSelectedFilamentId(id);
                             if (id !== 'manual') {
                                 const item = inventory.find(f => f.id === id);
-                                if (item) setCustoRolo(((item.price / item.weightTotal) * 1000).toFixed(2));
+                                if (item && item.weightTotal > 0) {
+                                    setCustoRolo(String(((Number(item.price) / Number(item.weightTotal)) * 1000).toFixed(2)));
+                                }
                             }
                         }}
                     />
 
                     <div className="grid grid-cols-2 gap-3">
                         <UnifiedInput
-                            {...CONFIG.peso}
-                            value={pesoModelo}
+                            label="Peso do Modelo"
+                            suffix="G"
+                            icon={Package}
+                            type="number"
+                            value={pesoModelo || ""}
                             onChange={(e) => setPesoModelo(e.target.value)}
                         />
                         <UnifiedInput
-                            {...CONFIG.preco}
-                            value={custoRolo}
+                            label="Preço por KG"
+                            suffix="R$"
+                            icon={DollarSign}
+                            type="number"
+                            value={custoRolo || ""}
                             onChange={(e) => setCustoRolo(e.target.value)}
                         />
                     </div>
                 </div>
             ) : (
-                /* MODO VÁRIAS CORES */
-                <div className="space-y-3 animate-in slide-in-from-right-2">
-                    <div className="flex items-center justify-between px-1">
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Rack de Materiais</span>
-                        <div className="flex items-center gap-3">
-                            <span className="text-[9px] font-mono text-sky-500 font-bold opacity-50">{totalWeight}g TOTAL</span>
-                            <button onClick={() => setMaterialSlots([...materialSlots, { id: 'manual', weight: '', priceKg: '' }])} className="text-sky-500 hover:text-sky-400 active:scale-90 transition-transform">
-                                <Plus size={14} strokeWidth={3} />
+                <div className="space-y-3 relative">
+                    {/* Header com Contador de Slots */}
+                    <div className="flex items-center justify-between px-1 border-b border-white/5 pb-2">
+                        <div className="flex items-center gap-2">
+                            <Layers size={12} className="text-zinc-500" />
+                            <span className="text-[9px] font-black tracking-[0.2em] text-zinc-500 uppercase">Rack de Materiais</span>
+                            <span className="text-[7px] bg-zinc-800 text-zinc-400 px-1.5 py-0.5 rounded border border-white/5 font-bold">
+                                {String(materialSlots.length).padStart(2, '0')} SLOTS
+                            </span>
+                        </div>
+
+                        <div className="flex items-center gap-4">
+                            <div className="flex flex-col items-end">
+                                <span className="text-[10px] font-mono font-bold text-sky-400">{totalWeight.toFixed(0)}g</span>
+                                <span className="text-[7px] font-black text-zinc-700 uppercase tracking-tighter">Total</span>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setMaterialSlots([...(Array.isArray(materialSlots) ? materialSlots : []), { id: 'manual', weight: '', priceKg: '' }])}
+                                className="w-7 h-7 flex items-center justify-center rounded-lg bg-sky-500/10 border border-sky-500/20 text-sky-500 hover:bg-sky-500 hover:text-white transition-all active:scale-90"
+                            >
+                                <Plus size={16} strokeWidth={3} />
                             </button>
                         </div>
                     </div>
 
-                    <div className="flex flex-col max-h-[300px] overflow-visible pr-1 custom-scrollbar">
-                        {materialSlots.map((slot, idx) => (
+                    {/* Lista de Slots - Removido overflow-hidden externo para permitir dropdown */}
+                    <div className="flex flex-col min-h-0">
+                        {(Array.isArray(materialSlots) ? materialSlots : []).map((slot, idx) => (
                             <FilamentRow
-                                key={idx}
+                                key={`slot-${idx}`}
                                 index={idx}
+                                total={materialSlots.length}
                                 slotData={slot}
                                 selectOptions={selectOptions}
                                 onUpdate={handleUpdateSlot}
                                 onRemove={(i) => setMaterialSlots(materialSlots.filter((_, x) => x !== i))}
                                 canRemove={materialSlots.length > 1}
-                                isOk={!inventory.find(f => f.id === slot.id) || (inventory.find(f => f.id === slot.id).weightCurrent >= (Number(slot.weight) || 0))}
                             />
                         ))}
                     </div>

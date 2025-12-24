@@ -8,7 +8,7 @@ const CONFIG = {
     label: "Lucro Desejado",
     icon: DollarSign,
     suffix: "%",
-    isLucro: true, // Ativa o tema azul centralizado
+    isLucro: true, // Ativa o tema azul centralizado no componente UnifiedInput
     type: "number",
     step: "0.1",
     placeholder: "0"
@@ -55,7 +55,7 @@ export default function Precificacao({
       {/* Campo de Lucro (Destaque Azul via isLucro) */}
       <UnifiedInput
         {...CONFIG.lucro}
-        value={margemLucro}
+        value={margemLucro || ""}
         onChange={(e) => setMargemLucro(e.target.value)}
         onFocus={(e) => e.target.select()}
       />
@@ -63,21 +63,21 @@ export default function Precificacao({
       {/* Outros campos (Visual Padrão Cinza) */}
       <UnifiedInput
         {...CONFIG.imposto}
-        value={imposto}
+        value={imposto || ""}
         onChange={(e) => setImposto(e.target.value)}
         onFocus={(e) => e.target.select()}
       />
 
       <UnifiedInput
         {...CONFIG.falha}
-        value={taxaFalha}
+        value={taxaFalha || ""}
         onChange={(e) => setTaxaFalha(e.target.value)}
         onFocus={(e) => e.target.select()}
       />
 
       <UnifiedInput
         {...CONFIG.desconto}
-        value={desconto}
+        value={desconto || ""}
         onChange={(e) => setDesconto(e.target.value)}
         onFocus={(e) => e.target.select()}
       />

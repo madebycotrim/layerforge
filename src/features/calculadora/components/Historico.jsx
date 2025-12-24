@@ -1,11 +1,9 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { 
     X, History, Printer, Package, 
-    RotateCcw, Trash2, Search, TrendingUp, 
-    AlertTriangle, Database, Activity 
+    RotateCcw, Trash2, Search, Database 
 } from "lucide-react";
 
-// Importamos as funções que definimos no arquivo de lógica
 import { getHistory, removeHistoryEntry, clearHistory } from "../logic/localHistory";
 import { formatCurrency } from "../../../lib/format";
 
@@ -13,9 +11,11 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
     const [itens, setItens] = useState([]);
     const [busca, setBusca] = useState("");
 
-    // Sincroniza os itens sempre que a gaveta abre
     useEffect(() => {
-        if (open) setItens(getHistory() || []);
+        if (open) {
+            const history = getHistory();
+            setItens(Array.isArray(history) ? history : []);
+        }
     }, [open]);
 
     const itensFiltrados = useMemo(() => {
@@ -25,10 +25,10 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
     }, [itens, busca]);
 
     const handleExcluir = (e, id) => {
-        e.stopPropagation(); // Impede de disparar a restauração ao clicar no lixo
+        e.stopPropagation();
         if (window.confirm("Quer apagar este projeto da sua lista? Essa ação não pode ser desfeita.")) {
             removeHistoryEntry(id);
-            setItens(getHistory());
+            setItens(getHistory() || []);
         }
     };
 
@@ -93,7 +93,6 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                 onClick={() => { onRestore(item); onClose(); }}
                                 className="bg-zinc-900/30 border border-white/5 rounded-2xl p-5 hover:border-sky-500/30 transition-all group cursor-pointer relative overflow-hidden active:scale-[0.98]"
                             >
-                                {/* Efeito de luz ao passar o mouse */}
                                 <div className="absolute -right-10 -top-10 w-24 h-24 bg-sky-500/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity" />
 
                                 <div className="flex justify-between items-start mb-4 relative z-10">
@@ -119,9 +118,8 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                     </div>
                                 </div>
 
-                                {/* Barra de progresso sutil no card */}
                                 <div className="h-[2px] w-full bg-zinc-800 rounded-full overflow-hidden mb-4 opacity-30">
-                                    <div style={{ width: `${Math.min(margem, 100)}%` }} className={`h-full ${temLucro ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                                    <div style={{ width: `${Math.max(0, Math.min(margem, 100))}%` }} className={`h-full ${temLucro ? 'bg-emerald-500' : 'bg-rose-500'}`} />
                                 </div>
 
                                 <div className="flex items-center justify-between relative z-10">
