@@ -1,59 +1,63 @@
 export async function onRequest(context) {
   const { request, env } = context;
-  const db = env.DB; 
+  
+  // 1. Verifica se o Binding existe
+  if (!env.DB) {
+    return new Response(JSON.stringify({ 
+      erro: "BINDING_MISSING", 
+      detalhes: "O objeto env.DB não foi injetado. Verifique o wrangler.json e o comando --d1 DB" 
+    }), { status: 500, headers: { "Content-Type": "application/json" } });
+  }
 
-  if (!db) return new Response(JSON.stringify({ erro: "Binding DB não configurado." }), { status: 500 });
+  const db = env.DB;
 
   try {
+    // GET: LISTAR
     if (request.method === "GET") {
-      const { results } = await db.prepare("SELECT * FROM impressoras ORDER BY criado_em DESC").all();
-      return new Response(JSON.stringify(results || []), { headers: { "Content-Type": "application/json" } });
+      try {
+        const { results } = await db.prepare("SELECT * FROM impressoras").all();
+        return new Response(JSON.stringify(results || []), { 
+          headers: { "Content-Type": "application/json" } 
+        });
+      } catch (sqlError) {
+        // Retorna o erro real do SQLite para nós
+        return new Response(JSON.stringify({ 
+          erro: "SQL_ERROR", 
+          mensagem: sqlError.message,
+          causa: "Provavelmente a tabela não existe no banco de dados local que o Wrangler está lendo agora."
+        }), { status: 500, headers: { "Content-Type": "application/json" } });
+      }
     }
 
+    // POST: SALVAR
     if (request.method === "POST") {
       const d = await request.json();
-      
-      // SQLite exige string para JSON. Garantimos isso aqui.
-      const historicoStr = typeof d.historico === 'string' ? d.historico : JSON.stringify(d.historico || []);
+      const hist = typeof d.historico === 'string' ? d.historico : JSON.stringify(d.historico || []);
 
-      const query = `
-        INSERT INTO impressoras (
-          id, nome, marca, modelo, potencia, preco, rendimento_total, status, horas_totais, ultima_manutencao_hora, historico
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      await db.prepare(`
+        INSERT INTO impressoras (id, nome, marca, modelo, potencia, preco, rendimento_total, status, horas_totais, ultima_manutencao_hora, historico)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
-          nome=excluded.nome, 
-          marca=excluded.marca, 
-          modelo=excluded.modelo, 
-          potencia=excluded.potencia, 
-          preco=excluded.preco, 
-          rendimento_total=excluded.rendimento_total,
-          status=excluded.status, 
-          horas_totais=excluded.horas_totais, 
-          ultima_manutencao_hora=excluded.ultima_manutencao_hora, 
-          historico=excluded.historico,
+          nome=excluded.nome, marca=excluded.marca, modelo=excluded.modelo, 
+          potencia=excluded.potencia, preco=excluded.preco, rendimento_total=excluded.rendimento_total,
+          status=excluded.status, horas_totais=excluded.horas_totais, 
+          ultima_manutencao_hora=excluded.ultima_manutencao_hora, historico=excluded.historico,
           atualizado_em=CURRENT_TIMESTAMP
-      `;
-
-      await db.prepare(query).bind(
-        d.id, d.nome, d.marca, d.modelo, 
-        Number(d.potencia) || 0, 
-        Number(d.preco) || 0, 
-        Number(d.rendimento_total) || 0, 
-        d.status, 
-        Number(d.horas_totais) || 0, 
-        Number(d.ultima_manutencao_hora) || 0, 
-        historicoStr
+      `).bind(
+        d.id, d.nome, d.marca, d.modelo, d.potencia, d.preco, 
+        d.rendimento_total, d.status, d.horas_totais, 
+        d.ultima_manutencao_hora, hist
       ).run();
 
-      return new Response(JSON.stringify({ sucesso: true }), { headers: { "Content-Type": "application/json" } });
-    }
-
-    if (request.method === "DELETE") {
-      const id = new URL(request.url).searchParams.get("id");
-      await db.prepare("DELETE FROM impressoras WHERE id = ?").bind(id).run();
       return new Response(JSON.stringify({ sucesso: true }));
     }
+
+    return new Response("Método não permitido", { status: 405 });
+
   } catch (err) {
-    return new Response(JSON.stringify({ erro: "Conflito SQL: " + err.message }), { status: 500 });
+    return new Response(JSON.stringify({ 
+      erro: "CRITICAL_CRASH", 
+      mensagem: err.message 
+    }), { status: 500, headers: { "Content-Type": "application/json" } });
   }
 }
