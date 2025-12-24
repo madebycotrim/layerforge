@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { 
+import {
     Bot, Copy, Check, ChevronLeft, ChevronRight, ArrowUpRight
 } from "lucide-react";
-import { formatCurrency } from "../../../../lib/format";
+import { formatCurrency } from "../../../../hooks/useFormat";
 import { getFilaments } from "../../../filamentos/logic/filaments";
 
 export default function MakersHubWidget({ resultados = {}, entradas = {}, nomeProjeto }) {
@@ -10,9 +10,9 @@ export default function MakersHubWidget({ resultados = {}, entradas = {}, nomePr
     const [copied, setCopied] = useState(false);
     const [inventory, setInventory] = useState([]);
 
-    useEffect(() => { 
+    useEffect(() => {
         setInventory(getFilaments() || []);
-        setCopied(false); 
+        setCopied(false);
     }, [resultados]);
 
     // --- 1. CÁLCULOS DE TEMPO E PESO ---
@@ -50,8 +50,8 @@ export default function MakersHubWidget({ resultados = {}, entradas = {}, nomePr
 
     // --- 3. TELEMETRIA DE ESTOQUE ---
     const telemetryData = useMemo(() => {
-        const slots = (Array.isArray(entradas.materialSlots) && entradas.materialSlots.length > 0) 
-            ? entradas.materialSlots 
+        const slots = (Array.isArray(entradas.materialSlots) && entradas.materialSlots.length > 0)
+            ? entradas.materialSlots
             : [{ id: entradas.selectedFilamentId || 'manual', weight: entradas.pesoModelo || 0 }];
 
         return slots.map((slot, idx) => {
@@ -80,10 +80,10 @@ export default function MakersHubWidget({ resultados = {}, entradas = {}, nomePr
 
     // --- 5. TEXTO DO WHATSAPP ---
     const quoteText = `*ORÇAMENTO: ${nomeProjeto || "Projeto 3D"}*\n\n` +
-                      `📦 *Peça:* Personalizada em 3D\n` +
-                      `⏱️ *Produção:* ~${Math.floor(tempoTotalHoras)}h ${Math.round((tempoTotalHoras % 1) * 60)}m\n` +
-                      `💰 *Valor:* ${formatCurrency(resultados.precoSugerido || 0)}\n\n` +
-                      `_Podemos iniciar?_ 🚀`;
+        `📦 *Peça:* Personalizada em 3D\n` +
+        `⏱️ *Produção:* ~${Math.floor(tempoTotalHoras)}h ${Math.round((tempoTotalHoras % 1) * 60)}m\n` +
+        `💰 *Valor:* ${formatCurrency(resultados.precoSugerido || 0)}\n\n` +
+        `_Podemos iniciar?_ 🚀`;
 
     const slides = [
         { id: 'quote', title: "Orçamento", color: 'text-emerald-400', badge: 'WHATSAPP' },
@@ -114,11 +114,11 @@ export default function MakersHubWidget({ resultados = {}, entradas = {}, nomePr
                             {quoteText}
                         </div>
                         <div className="flex gap-2">
-                            <button onClick={() => { navigator.clipboard.writeText(quoteText); setCopied(true); setTimeout(() => setCopied(false), 2000); }} 
+                            <button onClick={() => { navigator.clipboard.writeText(quoteText); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
                                 className="flex-1 h-9 bg-zinc-900 border border-zinc-800 rounded-lg text-[9px] font-black text-zinc-300 flex items-center justify-center gap-2">
-                                {copied ? <Check size={14} className="text-emerald-400"/> : <Copy size={14}/>} {copied ? "COPIADO" : "COPIAR"}
+                                {copied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />} {copied ? "COPIADO" : "COPIAR"}
                             </button>
-                            <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(quoteText)}`)} className="w-10 h-9 bg-emerald-600 rounded-lg flex items-center justify-center text-white"><ArrowUpRight size={16}/></button>
+                            <button onClick={() => window.open(`https://wa.me/?text=${encodeURIComponent(quoteText)}`)} className="w-10 h-9 bg-emerald-600 rounded-lg flex items-center justify-center text-white"><ArrowUpRight size={16} /></button>
                         </div>
                     </div>
                 )}
@@ -133,7 +133,7 @@ export default function MakersHubWidget({ resultados = {}, entradas = {}, nomePr
                                     <span className={d.after < 0 ? "text-rose-500" : "text-zinc-500"}>{d.after < 0 ? "FALTA!" : `${Math.round(d.after)}g sobra`}</span>
                                 </div>
                                 <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5">
-                                    <div className={`h-full transition-all duration-1000 ${d.after < 100 ? "bg-rose-500" : "bg-sky-500"}`} style={{ width: `${Math.max(0, Math.min(100, (d.after/1000)*100))}%` }} />
+                                    <div className={`h-full transition-all duration-1000 ${d.after < 100 ? "bg-rose-500" : "bg-sky-500"}`} style={{ width: `${Math.max(0, Math.min(100, (d.after / 1000) * 100))}%` }} />
                                 </div>
                             </div>
                         ))}
@@ -170,11 +170,11 @@ export default function MakersHubWidget({ resultados = {}, entradas = {}, nomePr
             </div>
 
             <div className="h-10 border-t border-white/5 bg-zinc-900/40 flex items-center justify-between px-2 shrink-0">
-                <button onClick={() => setSlide(s => (s-1+5)%5)} className="p-1.5 text-zinc-700 hover:text-white transition-colors"><ChevronLeft size={16}/></button>
+                <button onClick={() => setSlide(s => (s - 1 + 5) % 5)} className="p-1.5 text-zinc-700 hover:text-white transition-colors"><ChevronLeft size={16} /></button>
                 <div className="flex gap-1">
-                    {[0,1,2,3,4].map(i => <div key={i} className={`h-1 rounded-full transition-all duration-500 ${slide === i ? 'w-4 bg-sky-500' : 'w-1 bg-zinc-800'}`} />)}
+                    {[0, 1, 2, 3, 4].map(i => <div key={i} className={`h-1 rounded-full transition-all duration-500 ${slide === i ? 'w-4 bg-sky-500' : 'w-1 bg-zinc-800'}`} />)}
                 </div>
-                <button onClick={() => setSlide(s => (s+1)%5)} className="p-1.5 text-zinc-700 hover:text-white transition-colors"><ChevronRight size={16}/></button>
+                <button onClick={() => setSlide(s => (s + 1) % 5)} className="p-1.5 text-zinc-700 hover:text-white transition-colors"><ChevronRight size={16} /></button>
             </div>
         </div>
     );

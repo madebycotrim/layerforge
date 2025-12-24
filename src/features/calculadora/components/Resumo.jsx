@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect } from "react";
-import { formatCurrency } from "../../../lib/format";
+import { formatCurrency } from "../../../hooks/useFormat";
 import {
     Save, TrendingUp, AlertTriangle, CheckCircle2,
     Package, Zap, Clock, Truck, Layers, Wrench,
@@ -73,7 +73,7 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
     }, [entradas, resultados]);
 
     const handleSalvar = () => {
-        salvar(); 
+        salvar();
         setSalvo(true);
     };
 
@@ -226,12 +226,12 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                 <button onClick={() => window.print()} disabled={isNeutral} className="h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95">
                     <Printer size={14} /> Imprimir / PDF
                 </button>
-                <button 
-                    onClick={handleSalvar} 
-                    disabled={isNeutral || salvo} 
+                <button
+                    onClick={handleSalvar}
+                    disabled={isNeutral || salvo}
                     className={`h-10 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${salvo ? "bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.1)]"}`}
                 >
-                    {salvo ? <CheckCircle2 size={16} /> : <Save size={16} />} 
+                    {salvo ? <CheckCircle2 size={16} /> : <Save size={16} />}
                     {salvo ? "Projeto Salvo" : "Salvar no Histórico"}
                 </button>
             </div>

@@ -1,25 +1,26 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useCallback, useDeferredValue } from "react";
 import {
     Plus, Search, LayoutGrid, List, Layers,
-    BadgeDollarSign, Database, Activity, Box, Scan, Check, AlertTriangle,
-    ArrowUpRight, Droplets, Thermometer
+    BadgeDollarSign, Activity, Box, Scan, AlertTriangle
 } from "lucide-react";
 
 import MainSidebar from "../components/MainSidebar";
-import { getFilaments, saveFilament, deleteFilament } from "../features/filamentos/logic/filaments";
+import { getFilaments, deleteFilament } from "../features/filamentos/logic/filaments";
+import { saveFilament } from "../features/filamentos/logic/filaments";
 import { useLocalWeather } from "../hooks/useLocalWeather";
 import { FilamentCard, FilamentRow } from "../features/filamentos/components/cardFilamento";
 import ModalFilamento from "../features/filamentos/components/modalFilamento.jsx";
 import ModalBaixaRapida from "../features/filamentos/components/darBaixa.jsx";
+import { parseNumber } from "../hooks/useFormat.js";
 
-// --- UTILS ---
+// --- UTILS INTERNOS DE FORMATAÇÃO ---
 const formatBigNumber = (num) => {
-    if (!num || isNaN(num)) return "0";
-    if (num >= 1000) return (num / 1000).toFixed(1) + "k";
-    return Math.floor(num).toString();
+    const val = parseNumber(num);
+    if (val >= 1000) return (val / 1000).toFixed(1) + "k";
+    return Math.floor(val).toString();
 };
 
-// --- COMPONENTE: SAÚDE DO ESTOQUE (STATUS DOS CARRETÉIS) ---
+// --- COMPONENTE: SAÚDE DO ESTOQUE ---
 const StockOverviewCard = ({ totalRolls, totalWeight, lowStockCount }) => {
     const isAlert = lowStockCount > 0;
 
@@ -37,11 +38,11 @@ const StockOverviewCard = ({ totalRolls, totalWeight, lowStockCount }) => {
                         <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.25em]">Organização da Farm</p>
                     </div>
                     <h3 className={`text-2xl font-black font-mono tracking-tighter leading-none ${isAlert ? 'text-rose-500' : 'text-white'}`}>
-                        {isAlert ? `${lowStockCount} ROLOS ACABANDO` : `${totalRolls.toString().padStart(2, '0')} ROLOS NA ESTANTE`}
+                        {isAlert ? `${lowStockCount} ROLOS ACABANDO` : `${String(totalRolls).padStart(2, '0')} ROLOS NA ESTANTE`}
                     </h3>
                     <div className="flex items-center gap-2 mt-2">
                         <span className="text-[11px] text-zinc-400 font-bold uppercase tracking-tight">
-                            {isAlert ? 'Hora de repor o estoque' : `Total: ${totalWeight.toFixed(2)}kg de material`}
+                            {isAlert ? 'Hora de repor o estoque' : `Total: ${parseNumber(totalWeight).toFixed(2)}kg de material`}
                         </span>
                     </div>
                 </div>
@@ -57,7 +58,7 @@ const StockOverviewCard = ({ totalRolls, totalWeight, lowStockCount }) => {
     );
 };
 
-// --- COMPONENTE: TECH STAT CARD (DADOS TÉCNICOS) ---
+// --- COMPONENTE: TECH STAT CARD ---
 const TechStatCard = ({ title, value, icon: Icon, colorClass, secondaryLabel, secondaryValue }) => (
     <div className="h-[135px] p-6 rounded-2xl bg-[#0a0a0b] border border-zinc-900 flex items-center justify-between group transition-all hover:border-zinc-700/50 shadow-[0_8px_30px_rgb(0,0,0,0.12)]">
         <div className="flex items-center gap-6">
@@ -82,9 +83,9 @@ const TechStatCard = ({ title, value, icon: Icon, colorClass, secondaryLabel, se
     </div>
 );
 
-// --- SEÇÃO DE MATERIAL (POR TIPO DE FILAMENTO) ---
+// --- SEÇÃO DE MATERIAL ---
 function MaterialSection({ tipo, items, acoes, viewMode }) {
-    const pesoTotal = items.reduce((acc, item) => acc + (Number(item.weightCurrent) || 0), 0);
+    const pesoTotal = items.reduce((acc, item) => acc + parseNumber(item.weightCurrent), 0);
     const pesoFormatado = (pesoTotal / 1000).toFixed(2);
 
     return (
@@ -127,10 +128,12 @@ function MaterialSection({ tipo, items, acoes, viewMode }) {
     );
 }
 
+// --- PÁGINA PRINCIPAL ---
 export default function FilamentosPage() {
     const [larguraSidebar, setLarguraSidebar] = useState(72);
     const [filamentos, setFilamentos] = useState([]);
     const [busca, setBusca] = useState("");
+    const deferredBusca = useDeferredValue(busca);
     const { temp, humidity, loading } = useLocalWeather();
 
     const [viewMode, setViewMode] = useState(() => localStorage.getItem("printlog_filaments_view") || "grid");
@@ -138,35 +141,53 @@ export default function FilamentosPage() {
     const [itemEdicao, setItemEdicao] = useState(null);
     const [itemConsumo, setItemConsumo] = useState(null);
 
-    const carregarDados = useCallback(() => setFilamentos(getFilaments() || []), []);
-    useEffect(() => { carregarDados(); }, [carregarDados]);
-    useEffect(() => { localStorage.setItem("printlog_filaments_view", viewMode); }, [viewMode]);
+    const carregarDados = useCallback(() => setFilamentos(getFilaments()), []);
+
+    useEffect(() => {
+        carregarDados();
+        window.addEventListener('storage', carregarDados);
+        return () => window.removeEventListener('storage', carregarDados);
+    }, [carregarDados]);
+
+    useEffect(() => {
+        localStorage.setItem("printlog_filaments_view", viewMode);
+    }, [viewMode]);
 
     const { grupos, stats, lowStockCount } = useMemo(() => {
+        const termo = deferredBusca.toLowerCase();
         const filtrados = filamentos.filter(f =>
-            f.name.toLowerCase().includes(busca.toLowerCase()) ||
-            (f.type || f.material || "").toLowerCase().includes(busca.toLowerCase())
+            (f.name || "").toLowerCase().includes(termo) ||
+            (f.type || f.material || "").toLowerCase().includes(termo)
         );
-        const lowStock = filamentos.filter(f => Number(f.weightCurrent) < 150).length;
-        const totalG = filamentos.reduce((acc, curr) => acc + Number(curr.weightCurrent || 0), 0);
-        const valorTotal = filamentos.reduce((acc, curr) => acc + (Number(curr.price || 0) * (curr.weightCurrent / (curr.weightTotal || 1))), 0);
+
+        const totalG = filamentos.reduce((acc, curr) => acc + parseNumber(curr.weightCurrent), 0);
+        const valorTotal = filamentos.reduce((acc, curr) => {
+            const ratio = parseNumber(curr.weightCurrent) / (parseNumber(curr.weightTotal) || 1);
+            return acc + (parseNumber(curr.price) * ratio);
+        }, 0);
+
+        const lowStock = filamentos.filter(f => parseNumber(f.weightCurrent) < 150).length;
 
         const map = {};
-        filtrados.forEach(f => {
+        filtrados.sort((a, b) => (a.name || "").localeCompare(b.name || "")).forEach(f => {
             const m = (f.type || f.material || "OUTROS").toUpperCase();
             if (!map[m]) map[m] = [];
             map[m].push(f);
         });
 
-        return { grupos: map, lowStockCount: lowStock, stats: { valorTotal, pesoKg: totalG / 1000 } };
-    }, [filamentos, busca]);
+        return {
+            grupos: map,
+            lowStockCount: lowStock,
+            stats: { valorTotal, pesoKg: totalG / 1000 }
+        };
+    }, [filamentos, deferredBusca]);
 
     return (
         <div className="flex h-screen w-full bg-[#050505] text-zinc-100 font-sans overflow-hidden">
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 72 : 256)} />
 
             <main className="flex-1 flex flex-col relative transition-all duration-300 ease-in-out" style={{ marginLeft: `${larguraSidebar}px` }}>
-                
+
                 <div className="absolute inset-x-0 top-0 h-[500px] z-0 pointer-events-none opacity-[0.03]"
                     style={{
                         backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
@@ -202,7 +223,7 @@ export default function FilamentosPage() {
                     <div className="max-w-[1650px] mx-auto space-y-16">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                             <StockOverviewCard totalRolls={filamentos.length} totalWeight={stats.pesoKg} lowStockCount={lowStockCount} />
-                            <TechStatCard title="Total Investido" value={`R$ ${formatBigNumber(stats.valorTotal)}`} icon={BadgeDollarSign} colorClass="text-emerald-500" secondaryLabel="Dinheiro em Material" secondaryValue="Valor total dos rolos" />
+                            <TechStatCard title="Total Investido" value={`R$ ${formatBigNumber(stats.valorTotal)}`} icon={BadgeDollarSign} colorClass="text-emerald-500" secondaryLabel="Dinheiro em Material" secondaryValue="Valor proporcional em estoque" />
                             <TechStatCard title="Clima da Oficina" value={loading ? "--" : `${temp}°C`} icon={Activity} colorClass="text-amber-500" secondaryLabel="Temperatura e Ar" secondaryValue={`${humidity}% de Umidade`} />
                         </div>
 
@@ -216,7 +237,7 @@ export default function FilamentosPage() {
                                         viewMode={viewMode}
                                         acoes={{
                                             onEdit: (item) => { setItemEdicao(item); setModalAberto(true); },
-                                            onDelete: (id) => window.confirm("Quer mesmo tirar esse rolo da estante?") && setFilamentos(deleteFilament(id)),
+                                            onDelete: (id) => window.confirm("Quer mesmo tirar esse rolo da estante?") && deleteFilament(id),
                                             onConsume: setItemConsumo
                                         }}
                                     />
@@ -231,12 +252,12 @@ export default function FilamentosPage() {
                     </div>
                 </div>
 
-                <ModalFilamento aberto={modalAberto} aoFechar={() => setModalAberto(false)} aoSalvar={(d) => { saveFilament(d); carregarDados(); }} dadosIniciais={itemEdicao} />
-                <ModalBaixaRapida aberto={!!itemConsumo} aoFechar={() => setItemConsumo(null)} item={itemConsumo} aoSalvar={(d) => { saveFilament(d); carregarDados(); }} />
+                <ModalFilamento aberto={modalAberto} aoFechar={() => setModalAberto(false)} aoSalvar={saveFilament} dadosIniciais={itemEdicao} />
+                <ModalBaixaRapida aberto={!!itemConsumo} aoFechar={() => setItemConsumo(null)} item={itemConsumo} aoSalvar={saveFilament} />
             </main>
 
-            {/* A tag abaixo foi corrigida para o padrão React */}
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 5px; } 
                 .custom-scrollbar::-webkit-scrollbar-track { background: #050505; } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f1f23; border-radius: 20px; border: 1px solid #050505; }

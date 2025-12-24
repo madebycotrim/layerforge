@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
-    X, Save, Palette, Layers,
-    PaintbrushVertical, DollarSign,
-    Box, Activity, Plus, Binary
+    X, Layers, PaintbrushVertical, DollarSign,
+    Box, Activity, Plus
 } from "lucide-react";
 
-import { UnifiedInput } from "../../../components/formInputs"; // Seu componente unificado
+import { UnifiedInput } from "../../../components/formInputs";
 import SpoolSideView from "./roloFilamento";
+import { parseNumber } from "../../../hooks/useFormat";
 
 /* ---------- CONSTANTES E CONFIGURAÇÕES ---------- */
 const INITIAL_FILAMENT_STATE = {
@@ -33,13 +33,6 @@ const CONFIG = {
     peso: { label: "Peso Líquido", icon: Layers, suffix: "GRAMAS", placeholder: "1000", type: "number" }
 };
 
-const parseNumeric = (v) => {
-    if (v === "" || v === undefined) return 0;
-    const cleaned = String(v).replace(',', '.');
-    const parsed = parseFloat(cleaned);
-    return isNaN(parsed) ? 0 : parsed;
-};
-
 export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosIniciais }) {
     const [form, setForm] = useState(INITIAL_FILAMENT_STATE);
 
@@ -52,7 +45,6 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
         }
     }, [aberto, dadosIniciais]);
 
-    /* --- OPÇÕES DOS SELECTS --- */
     const marcasOptions = useMemo(() => [{
         group: "Marcas conhecidas",
         items: ["Voolt3D", "3D Lab", "Cliever", "Printalot", "GTMax3D", "F3D", "Creality", "Bambu Lab", "eSun", "Polymaker", "Sunlu", "Overture", "Outra"].map(m => ({ value: m, label: m })),
@@ -64,20 +56,24 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
     }], []);
 
     const custoG = useMemo(() => {
-        const p = parseNumeric(form.price);
-        const w = parseNumeric(form.weightTotal) || 1;
-        return (p / w).toFixed(4);
+        const p = parseNumber(form.price);
+        const w = parseNumber(form.weightTotal);
+        return w > 0 ? (p / w).toFixed(4) : "0.0000";
     }, [form.price, form.weightTotal]);
 
     const handleSalvar = useCallback(() => {
-        aoSalvar({ ...form, price: parseNumeric(form.price), weightTotal: parseNumeric(form.weightTotal), weightCurrent: dadosIniciais ? parseNumeric(form.weightCurrent) : parseNumeric(form.weightTotal), colorHex: form.color, id: dadosIniciais?.id });
+        aoSalvar({
+            ...form,
+            colorHex: form.color,
+            id: dadosIniciais?.id
+        });
         aoFechar();
     }, [form, dadosIniciais, aoSalvar, aoFechar]);
 
     if (!aberto) return null;
 
     const isPresetColor = CORES_MAIS_VENDIDAS.some(c => c.toLowerCase() === form.color.toLowerCase());
-    const isValid = form.brand && form.type && form.name.trim().length > 0 && parseNumeric(form.price) > 0;
+    const isValid = form.brand && form.type && form.name.trim().length > 0 && parseNumber(form.price) >= 0 && parseNumber(form.weightTotal) > 0;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/90 backdrop-blur-md">
@@ -124,7 +120,6 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
 
                     <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
 
-                        {/* SEÇÃO 01: MARCA E TIPO (SELECTS UNIFICADOS) */}
                         <section className="space-y-4">
                             <div className="flex items-center gap-3"><span className="text-[10px] font-bold text-sky-500 font-mono">[01]</span><h4 className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Origem</h4><div className="h-px bg-zinc-800/50 flex-1" /></div>
                             <div className="grid grid-cols-2 gap-4">
@@ -133,7 +128,6 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
                             </div>
                         </section>
 
-                        {/* SEÇÃO 02: COR E NOME */}
                         <section className="space-y-4">
                             <div className="flex items-center gap-3"><span className="text-[10px] font-bold text-emerald-500 font-mono">[02]</span><h4 className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Visual</h4><div className="h-px bg-zinc-800/50 flex-1" /></div>
                             <div className="p-4 bg-zinc-900/20 border border-zinc-800/60 rounded-xl space-y-5">
@@ -152,16 +146,15 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
                                         <input type="color" value={form.color} onChange={(e) => setForm(prev => ({ ...prev, color: e.target.value }))} className="absolute inset-0 opacity-0 cursor-pointer" />
                                     </div>
                                 </div>
-                                <UnifiedInput {...CONFIG.nome} value={form.name} onChange={(v) => setForm({ ...form, name: v.target.value })} isLucro={!isPresetColor} />
+                                <UnifiedInput {...CONFIG.nome} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} isLucro={!isPresetColor} />
                             </div>
                         </section>
 
-                        {/* SEÇÃO 03: DADOS TÉCNICOS */}
                         <section className="space-y-4">
                             <div className="flex items-center gap-3"><span className="text-[10px] font-bold text-amber-500 font-mono">[03]</span><h4 className="text-[9px] font-bold text-zinc-400 uppercase tracking-widest">Financeiro</h4><div className="h-px bg-zinc-800/50 flex-1" /></div>
                             <div className="grid grid-cols-2 gap-4">
-                                <UnifiedInput {...CONFIG.preco} value={form.price} onChange={(v) => setForm({ ...form, price: v.target.value })} />
-                                <UnifiedInput {...CONFIG.peso} value={form.weightTotal} onChange={(v) => setForm({ ...form, weightTotal: v.target.value })} />
+                                <UnifiedInput {...CONFIG.preco} value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} />
+                                <UnifiedInput {...CONFIG.peso} value={form.weightTotal} onChange={(e) => setForm({ ...form, weightTotal: e.target.value })} />
                             </div>
                         </section>
                     </div>
@@ -169,7 +162,7 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
                     <footer className="p-6 border-t border-white/5 bg-zinc-950/50 flex gap-3">
                         <button onClick={aoFechar} className="flex-1 py-2.5 rounded-lg border border-zinc-800 text-[9px] font-bold uppercase text-zinc-600 hover:text-white transition-all">Cancelar</button>
                         <button disabled={!isValid} onClick={handleSalvar} className={`flex-[2] py-2.5 rounded-lg text-[9px] font-bold uppercase flex items-center justify-center gap-2 transition-all ${isValid ? "bg-sky-600 hover:bg-sky-500 text-white" : "bg-zinc-900 text-zinc-700 cursor-not-allowed border border-zinc-800"}`}>
-                             {dadosIniciais ? "Salvar alterações" : "Confirmar entrada"}
+                            {dadosIniciais ? "Salvar alterações" : "Confirmar entrada"}
                         </button>
                     </footer>
                 </div>

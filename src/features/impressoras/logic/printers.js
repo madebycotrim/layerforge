@@ -1,111 +1,46 @@
-import { parseNumber, generateUUID } from "../../../lib/format";
+import { generateUUID } from "../../../hooks/useFormat";
 
-const KEY = "layerforge_printers_data";
-
-// Helper interno para garantir que o que vai para o LocalStorage é sempre número puro
-const safeNum = (v) => {
-    const n = typeof v === 'string' ? parseFloat(v.replace(',', '.')) : v;
+/**
+ * Converte entradas (string com vírgula, nulos, etc) para Number (float) puro.
+ * Essencial para que os cálculos de ROI e horímetros no banco D1 não quebrem.
+ */
+export const safeNum = (v) => {
+    if (v === null || v === undefined || v === "") return 0;
+    if (typeof v === 'number') return v;
+    // Remove pontos de milhar e troca vírgula por ponto decimal
+    const s = String(v).replace(/\./g, '').replace(',', '.');
+    const n = parseFloat(s);
     return isNaN(n) ? 0 : n;
 };
 
-// --- LEITURA ---
-export const getPrinters = () => {
-    if (typeof window === "undefined") return [];
-    try {
-        const data = localStorage.getItem(KEY);
-        const parsed = data ? JSON.parse(data) : [];
-        // Garantia de que sempre retornaremos um array
-        return Array.isArray(parsed) ? parsed : [];
-    } catch (e) {
-        console.error("Erro ao ler LocalStorage", e);
-        return [];
-    }
-};
+/**
+ * ADAPTER: Traduz o objeto da UI (Inglês) para o esquema do Banco de Dados (Português).
+ * Também garante a tipagem correta de cada campo antes do envio para a Cloudflare.
+ */
+export const prepararDadosParaD1 = (dadosForm) => {
+    if (!dadosForm) return null;
 
-// --- SALVAR (Cria/Edita) ---
-export const savePrinter = (printer) => {
-    const list = getPrinters();
-    
-    // Higienização completa dos dados antes de salvar
-    const safePrinter = {
-        ...printer,
-        name: printer.name?.trim() || "Nova Unidade",
-        brand: printer.brand || "Genérica",
-        model: printer.model || "FDM",
-        power: safeNum(printer.power),
-        price: safeNum(printer.price), // Adicionado tratamento financeiro
-        yieldTotal: safeNum(printer.yieldTotal), // Adicionado tratamento financeiro
-        maintenanceInterval: safeNum(printer.maintenanceInterval) || 300,
-        totalHours: safeNum(printer.totalHours),
-        lastMaintenanceHour: safeNum(printer.lastMaintenanceHour),
-        history: Array.isArray(printer.history) ? printer.history : []
-    };
-
-    if (safePrinter.id) {
-        // ATUALIZAR
-        const index = list.findIndex(p => p.id === safePrinter.id);
-        if (index > -1) {
-            // Merge inteligente: preserva campos que não estão no form (como createdAt)
-            list[index] = { ...list[index], ...safePrinter };
-        }
-    } else {
-        // CRIAR
-        const newPrinter = {
-            ...safePrinter,
-            id: generateUUID(),
-            status: "idle",
-            createdAt: new Date().toISOString(),
-            lastMaintenanceHour: 0 // Nova máquina começa do zero
-        };
-        list.push(newPrinter);
-    }
-
-    localStorage.setItem(KEY, JSON.stringify(list));
-    return list;
-};
-
-// --- DELETAR ---
-export const deletePrinter = (id) => {
-    const list = getPrinters().filter(p => p.id !== id);
-    localStorage.setItem(KEY, JSON.stringify(list));
-    return list;
-};
-
-// --- RESETAR MANUTENÇÃO (Após o DiagnosticsModal) ---
-export const resetMaintenance = (printerId) => {
-    const list = getPrinters();
-    const index = list.findIndex(p => p.id === printerId);
-    
-    if (index > -1) {
-        // Sincroniza a última manutenção com a hora atual do horímetro
-        list[index].lastMaintenanceHour = list[index].totalHours;
+    return {
+        // Identificador Único
+        id: dadosForm.id || generateUUID(),
         
-        // Adiciona uma entrada no histórico para auditoria
-        const entry = {
-            date: new Date().toISOString(),
-            type: "PREVENTIVE",
-            hour: list[index].totalHours
-        };
-        list[index].history = [entry, ...(list[index].history || [])];
-
-        // Libera o status se estava travado
-        if (list[index].status === 'maintenance' || list[index].status === 'error') {
-            list[index].status = 'idle';
-        }
-
-        localStorage.setItem(KEY, JSON.stringify(list));
-    }
-    return list;
-};
-
-// --- ATUALIZAR STATUS ---
-export const updateStatus = (printerId, newStatus) => {
-    const list = getPrinters();
-    const index = list.findIndex(p => p.id === printerId);
-    
-    if (index > -1) {
-        list[index].status = newStatus;
-        localStorage.setItem(KEY, JSON.stringify(list));
-    }
-    return list;
+        // Identificação (Texto)
+        nome: (dadosForm.name || dadosForm.nome || "Nova Unidade").trim(),
+        marca: (dadosForm.brand || dadosForm.marca || "Genérica").trim(),
+        modelo: (dadosForm.model || dadosForm.modelo || "FDM").trim(),
+        
+        // Status do Equipamento
+        status: dadosForm.status || "idle",
+        
+        // Dados Técnicos e Financeiros (Garante que sejam Números)
+        potencia: safeNum(dadosForm.power || dadosForm.potencia),
+        preco: safeNum(dadosForm.price || dadosForm.preco),
+        rendimento_total: safeNum(dadosForm.yieldTotal || dadosForm.rendimento_total),
+        horas_totais: safeNum(dadosForm.totalHours || dadosForm.horas_totais),
+        ultima_manutencao_hora: safeNum(dadosForm.lastMaintenanceHour || dadosForm.ultima_manutencao_hora),
+        
+        // Histórico (Garante que seja um Array limpo)
+        historico: Array.isArray(dadosForm.history) ? dadosForm.history : 
+                   Array.isArray(dadosForm.historico) ? dadosForm.historico : []
+    };
 };

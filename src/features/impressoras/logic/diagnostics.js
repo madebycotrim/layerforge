@@ -1,35 +1,32 @@
-import { Sparkles, Wind, Droplets, Wrench, ThermometerSun, AlertOctagon, Zap } from "lucide-react";
+export const calcularFinanceiroAvancado = (impressora) => {
+    const preco = Number(impressora.preco) || 0;
+    const rendimento = Number(impressora.rendimento_total) || 0;
+    const horas = Number(impressora.horas_totais) || 0;
+    const potenciaKw = (Number(impressora.potencia) || 0) / 1000;
+    
+    const custoEletrico = horas * potenciaKw * 0.85; // Base kWh Brasil
+    const depreciacao = (preco / 5000) * horas; // Vida útil estimada 5k horas
+    const lucroLiquido = rendimento - (custoEletrico + depreciacao);
 
-// --- REGRAS DE MANUTENÇÃO (PT-BR MAKER) ---
-export const MAINTENANCE_RULES = {
-    clean: { id: 'clean', label: 'Limpeza da Mesa e do Bico', interval: 50, icon: Sparkles, severity: 'low', action: "Remover fiapos do bico e limpar mesa com Álcool Isopropílico.", type: "Rotina" },
-    fans: { id: 'fans', label: 'Limpeza dos Coolers', interval: 150, icon: Wind, severity: 'medium', action: "Verificar cooler do hotend. Poeira causa Heat Creep.", type: "Manutenção preventiva" },
-    lubrication: { id: 'lube', label: 'Lubrificação dos Eixos', interval: 200, icon: Droplets, severity: 'medium', action: "Óleo leve nas barras lisas. Graxa branca nos fusos Z.", type: "Manutenção preventiva" },
-    tension: { id: 'tension', label: 'Ajuste das Correias', interval: 200, icon: Wrench, severity: 'medium', action: "Verificar se estão frouxas ou muito apertadas.", type: "Manutenção preventiva" },
-    nozzle: { id: 'nozzle', label: 'Substituição do Bico', interval: 300, icon: ThermometerSun, severity: 'high', action: "Trocar bico de latão. Considere aço se usar abrasivos.", type: "Ocasional" },
-    ptfe: { id: 'ptfe', label: 'Substituição do PTFE', interval: 400, icon: AlertOctagon, severity: 'high', action: "Cortar ponta queimada ou trocar tubo Bowden.", type: "Ocasional" },
-    electric: { id: 'electric', label: 'Revisão Elétrica Geral', interval: 1000, icon: Zap, severity: 'critical', action: "Reapertar bornes da fonte e placa. Risco de fogo!", type: "Segurança elétrica" }
+    return {
+        roiPct: preco > 0 ? Math.max(0, (lucroLiquido / preco) * 100) : 0,
+        pago: lucroLiquido >= preco,
+        custoOperacional: (custoEletrico + depreciacao).toFixed(2)
+    };
 };
 
-export const analyzePrinterHealth = (printer) => {
-    const totalHours = printer.totalHours || 0;
-    const lastMaint = printer.lastMaintenanceHour || 0;
-    const hoursSinceReset = totalHours - lastMaint;
-    let tasks = [];
+export const analisarSaudeImpressora = (impressora) => {
+    if (!impressora) return [];
+    const horasDesdeMaint = (Number(impressora.horas_totais) || 0) - (Number(impressora.ultima_manutencao_hora) || 0);
     
-    Object.values(MAINTENANCE_RULES).forEach(rule => {
-        if (hoursSinceReset >= rule.interval) {
-            tasks.push({ ...rule, overdue: hoursSinceReset - rule.interval });
-        } else if (rule.interval > 250) {
-             const cyclePosition = totalHours % rule.interval;
-             if (cyclePosition > (rule.interval * 0.95)) {
-                 tasks.push({ ...rule, overdue: 0, isWarning: true });
-             }
-        }
-    });
-    
-    return tasks.sort((a, b) => {
-        const priority = { 'critical': 4, 'high': 3, 'medium': 2, 'low': 1 };
-        return priority[b.severity] - priority[a.severity];
-    });
+    const regras = [
+        { id: 1, rotulo: 'Limpeza Mesa/Bico', intervalo: 50, severidade: 'low', acao: "Álcool Isopropílico" },
+        { id: 2, rotulo: 'Lubrificação Eixos', intervalo: 200, severidade: 'medium', acao: "Graxa branca/Óleo leve" },
+        { id: 3, rotulo: 'Revisão Elétrica', intervalo: 1000, severidade: 'critical', acao: "Reaperto de bornes" }
+    ];
+
+    return regras
+        .filter(r => horasDesdeMaint >= r.intervalo * 0.9)
+        .map(r => ({ ...r, atraso: Math.max(0, horasDesdeMaint - r.intervalo) }))
+        .sort((a, b) => a.severidade === 'critical' ? -1 : 1);
 };

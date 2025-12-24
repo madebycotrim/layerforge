@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { 
-    X, History, Printer, Package, 
-    RotateCcw, Trash2, Search, Database 
+import {
+    X, History, Printer, Package,
+    RotateCcw, Trash2, Search, Database
 } from "lucide-react";
 
 import { getHistory, removeHistoryEntry, clearHistory } from "../logic/localHistory";
-import { formatCurrency } from "../../../lib/format";
+import { formatCurrency } from "../../../hooks/useFormat";
 
 export default function GavetaHistorico({ open, onClose, onRestore }) {
     const [itens, setItens] = useState([]);
@@ -19,7 +19,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
     }, [open]);
 
     const itensFiltrados = useMemo(() => {
-        return itens.filter((item) => 
+        return itens.filter((item) =>
             (item.label || "").toLowerCase().includes(busca.toLowerCase())
         );
     }, [itens, busca]);
@@ -42,14 +42,14 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
     return (
         <>
             {/* BACKDROP (Overlay) */}
-            <div 
-                className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity duration-500 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`} 
-                onClick={onClose} 
+            <div
+                className={`fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm transition-opacity duration-500 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+                onClick={onClose}
             />
 
             {/* DRAWER (Painel Lateral) */}
             <aside className={`fixed top-0 right-0 z-[101] h-screen w-[420px] bg-[#050505] border-l border-white/5 shadow-2xl transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] flex flex-col ${open ? "translate-x-0" : "translate-x-full"}`}>
-                
+
                 {/* HEADER */}
                 <div className="h-20 px-6 border-b border-white/5 flex items-center justify-between bg-zinc-900/20 shrink-0">
                     <div className="flex items-center gap-3">
@@ -88,8 +88,8 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                         const temLucro = margem > 0;
 
                         return (
-                            <div 
-                                key={item.id} 
+                            <div
+                                key={item.id}
                                 onClick={() => { onRestore(item); onClose(); }}
                                 className="bg-zinc-900/30 border border-white/5 rounded-2xl p-5 hover:border-sky-500/30 transition-all group cursor-pointer relative overflow-hidden active:scale-[0.98]"
                             >
@@ -107,7 +107,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                             {item.label || "Peça sem nome"}
                                         </h3>
                                     </div>
-                                    
+
                                     <div className="text-right">
                                         <div className={`text-xs font-black font-mono ${temLucro ? 'text-emerald-500' : 'text-rose-500'}`}>
                                             {margem}% de Margem
@@ -133,7 +133,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                     </div>
 
                                     <div className="flex gap-2">
-                                        <button 
+                                        <button
                                             onClick={(e) => handleExcluir(e, item.id)}
                                             title="Apagar"
                                             className="w-8 h-8 flex items-center justify-center rounded-lg bg-zinc-950 border border-zinc-800 text-zinc-600 hover:text-rose-500 hover:border-rose-900 transition-all shadow-inner"
@@ -157,7 +157,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
 
                 {/* FOOTER */}
                 <div className="p-6 border-t border-white/5 bg-zinc-900/10">
-                    <button 
+                    <button
                         onClick={handleLimparTudo}
                         className="w-full py-3.5 rounded-2xl border border-dashed border-zinc-800 text-zinc-600 hover:text-rose-400 hover:border-rose-900/50 hover:bg-rose-500/5 text-[10px] font-black uppercase tracking-[0.3em] transition-all"
                     >

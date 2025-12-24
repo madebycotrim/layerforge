@@ -10,8 +10,8 @@ import {
 const calculateHealth = (printer) => {
     const total = Number(printer.totalHours) || 0;
     const last = Number(printer.lastMaintenanceHour) || 0;
-    const interval = Number(printer.maintenanceInterval) || 300;
-    const used = total - last;
+    const interval = Math.max(1, Number(printer.maintenanceInterval) || 300);
+    const used = Math.max(0, total - last);
     const pct = Math.max(0, Math.min(100, 100 - ((used / interval) * 100)));
     return { remaining: Math.max(0, interval - used), pct };
 };
@@ -20,7 +20,8 @@ const calculateFinance = (printer) => {
     const price = Number(printer.price) || 0;
     const yieldTotal = Number(printer.yieldTotal) || 0;
     if (price <= 0) return { roiPct: 0, isPaid: false };
-    return { roiPct: Math.min(100, (yieldTotal / price) * 100), isPaid: yieldTotal >= price };
+    const roi = (yieldTotal / price) * 100;
+    return { roiPct: Math.min(100, roi), isPaid: yieldTotal >= price };
 };
 
 const getStatusConfig = (status) => {
@@ -49,7 +50,6 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
     return (
         <div className={`group relative flex flex-col bg-[#0a0a0c] border ${isCritical ? 'border-rose-900/40 shadow-[0_0_25px_rgba(244,63,94,0.05)]' : 'border-zinc-800/50'} rounded-xl overflow-hidden transition-all duration-300 hover:border-zinc-600 hover:shadow-2xl`}>
             
-            {/* EFEITO VISUAL DE FUNDO */}
             <div className="absolute inset-0 pointer-events-none opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%)] z-0" />
 
             <div className="flex flex-1 relative z-10">
@@ -74,14 +74,14 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
                     <div className="flex justify-between items-start mb-4">
                         <div className="min-w-0">
                             <h3 className="text-sm font-bold text-zinc-100 uppercase truncate pr-2">
-                                {printer.name}
+                                {printer.name || "Sem Nome"}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">
                                 <span className="text-[9px] font-mono text-zinc-500 uppercase">{printer.model || 'Perfil FDM'}</span>
                                 <div className="h-1 w-1 rounded-full bg-zinc-800" />
                                 <div className="flex items-center gap-1">
                                     <Zap size={8} className="text-amber-500" />
-                                    <span className="text-[9px] font-mono text-zinc-500">Gasto: {printer.power}W</span>
+                                    <span className="text-[9px] font-mono text-zinc-500">Gasto: {Number(printer.power) || 0}W</span>
                                 </div>
                             </div>
                         </div>
@@ -131,7 +131,7 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
                                 <History size={8} /> Produção
                             </span>
                             <span className="text-[10px] font-mono font-bold text-zinc-300">
-                                {printer.history?.length || 0} impressões feitas
+                                {Array.isArray(printer.history) ? printer.history.length : 0} impressões feitas
                             </span>
                         </div>
                         <div className="flex flex-col items-end">
@@ -149,17 +149,17 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
             {/* BARRA DE COMANDO */}
             <div className="grid grid-cols-[1fr_repeat(3,44px)] h-10 border-t border-white/5 bg-zinc-950/80">
                 <button
-                    onClick={() => onResetMaint(printer.id)}
+                    onClick={() => onResetMaint && onResetMaint(printer)}
                     className="flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 transition-all group/btn"
                 >
                     <Target size={12} className="group-hover/btn:scale-110 transition-transform" />
-                    Zerar contador de manutenção
+                    Abrir Diagnóstico de Saúde
                 </button>
 
                 {[
-                    { icon: History, action: () => onViewHistory(printer), color: "hover:text-cyan-400", title: "Ver histórico" },
-                    { icon: Edit2, action: () => onEdit(printer), color: "hover:text-amber-400", title: "Editar máquina" },
-                    { icon: Trash2, action: () => onDelete(printer.id), color: "hover:text-rose-500", title: "Excluir máquina" }
+                    { icon: History, action: () => onViewHistory && onViewHistory(printer), color: "hover:text-cyan-400", title: "Ver histórico" },
+                    { icon: Edit2, action: () => onEdit && onEdit(printer), color: "hover:text-amber-400", title: "Editar máquina" },
+                    { icon: Trash2, action: () => onDelete && onDelete(printer.id), color: "hover:text-rose-500", title: "Excluir máquina" }
                 ].map((btn, i) => (
                     <button
                         key={i}

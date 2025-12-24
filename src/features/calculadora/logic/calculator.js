@@ -1,4 +1,4 @@
-import { parseNumber } from "../../../lib/format";
+import { parseNumber } from "../../../hooks/useFormat";
 
 /**
  * MOTOR DE CÁLCULO - LAYERFORGE
@@ -6,7 +6,7 @@ import { parseNumber } from "../../../lib/format";
  */
 export function calcularTudo(entradas = {}) {
     // --- 1. NORMALIZAÇÃO DE ENTRADAS (Tratamento de Strings e Nulos) ---
-    
+
     // Soma de Custos Adicionais (Extras)
     const totalExtrasSoma = Array.isArray(entradas.custosExtras)
         ? entradas.custosExtras.reduce((acc, item) => acc + parseNumber(item?.valor), 0)
@@ -32,14 +32,14 @@ export function calcularTudo(entradas = {}) {
         desconto: parseNumber(entradas.desconto) / 100,
         falha: parseNumber(entradas.taxaFalha) / 100,
         // Conversão de Watts para kW (Inteligente)
-        consumoW: parseNumber(entradas.consumoImpressoraKw) > 10 
-            ? parseNumber(entradas.consumoImpressoraKw) / 1000 
+        consumoW: parseNumber(entradas.consumoImpressoraKw) > 10
+            ? parseNumber(entradas.consumoImpressoraKw) / 1000
             : parseNumber(entradas.consumoImpressoraKw)
     };
 
     // --- 2. LÓGICA DE MATERIAL (CORREÇÃO DE PRIORIDADE) ---
     let custoMaterialUnit = 0;
-    
+
     // Verifica se há peso real nos slots de material (Modo Várias Cores)
     const slotsValidos = (entradas.materialSlots || []).filter(s => parseNumber(s.weight) > 0);
 
@@ -63,19 +63,19 @@ export function calcularTudo(entradas = {}) {
     const custoMaquinaUnit = (p.tImp * p.horaMaquina) / p.qtd;
     const custoMaoDeObraUnit = (p.tTrab * p.horaHumana) / p.qtd;
     const custoSetupUnit = p.taxaSetup / p.qtd;
-    
+
     // Manutenção preventiva fixa (5% sobre o custo de hora máquina)
     const manutencaoOcultaUnit = custoMaquinaUnit * 0.05;
 
     // Custo Base Direto (Fabricação Pura)
-    const custoProducaoDireto = custoMaterialUnit + custoEnergiaUnit + custoMaquinaUnit + 
-                               custoMaoDeObraUnit + custoSetupUnit + manutencaoOcultaUnit;
+    const custoProducaoDireto = custoMaterialUnit + custoEnergiaUnit + custoMaquinaUnit +
+        custoMaoDeObraUnit + custoSetupUnit + manutencaoOcultaUnit;
 
     // Aplicação da Reserva de Falha (Markup proporcional sobre o custo de produção)
-    const custoProducaoComRisco = p.falha < 1 
-        ? custoProducaoDireto / (1 - p.falha) 
+    const custoProducaoComRisco = p.falha < 1
+        ? custoProducaoDireto / (1 - p.falha)
         : custoProducaoDireto * (1 + p.falha);
-    
+
     const valorRiscoUnit = custoProducaoComRisco - custoProducaoDireto;
 
     // --- 4. CUSTO TOTAL OPERACIONAL (BREAK-EVEN) ---
@@ -102,7 +102,7 @@ export function calcularTudo(entradas = {}) {
 
     // Lucro Líquido Real (O que sobra no bolso após pagar TUDO)
     const lucroLiquidoReal = precoComDesconto - impostoReal - taxaMktReal - custoTotalOperacional;
-    
+
     // Margem Efetiva sobre a venda real
     const margemEfetivaReal = precoComDesconto > 0 ? (lucroLiquidoReal / precoComDesconto) * 100 : 0;
 
@@ -127,7 +127,7 @@ export function calcularTudo(entradas = {}) {
         valorMarketplace: round(taxaMktReal),
 
         // Preços e Lucros
-        custoUnitario: round(custoTotalOperacional), 
+        custoUnitario: round(custoTotalOperacional),
         precoSugerido: round(precoSugerido),
         precoComDesconto: round(precoComDesconto),
         lucroBrutoUnitario: round(lucroLiquidoReal),

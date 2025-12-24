@@ -1,6 +1,6 @@
-import React, { useState, useEffect, memo } from "react";
+import React, { useState, useEffect, memo, useMemo } from "react";
 import { Link, useLocation } from "wouter";
-import { useUser, useClerk } from "@clerk/clerk-react"; // Importes do Clerk
+import { useUser, useClerk } from "@clerk/clerk-react"; 
 import { 
     LayoutGrid, Calculator, Package, History, Settings, 
     Printer, HelpCircle, LogOut, ChevronLeft, ChevronRight 
@@ -8,10 +8,11 @@ import {
 
 import logo from "../assets/logo.png";
 import logoBranca from "../assets/logo-branca.png";
-import { getFilaments } from "../features/filamentos/logic/filaments";
-import { getPrinters } from "../features/impressoras/logic/printers";
 
-// MENU_ITEMS ajustados para linguagem Maker
+// --- LÓGICA ATUALIZADA ---
+import { getFilaments } from "../features/filamentos/logic/filaments";
+import { usePrinterStore } from "../features/impressoras/logic/store";
+
 const MENU_ITEMS = [
     { href: "/dashboard", icon: LayoutGrid, label: "Painel Geral" },
     { href: "/calculadora", icon: Calculator, label: "Calculadora" },
@@ -72,33 +73,46 @@ export default function MainSidebar({ onCollapseChange }) {
     const { user } = useUser(); 
     const { signOut } = useClerk(); 
     
+    // Consumo do Store Global
+    const { printers, fetchPrinters } = usePrinterStore();
+    
     const [collapsed, setCollapsed] = useState(() => {
         const saved = localStorage.getItem("printlog_sidebar_collapsed");
         return saved !== null ? JSON.parse(saved) : false;
     });
 
-    const [alerts, setAlerts] = useState({ lowStock: false, maint: false });
+    // Carregamento inicial das impressoras do D1
+    useEffect(() => {
+        if (printers.length === 0) fetchPrinters();
+    }, [fetchPrinters]);
 
     useEffect(() => {
         localStorage.setItem("printlog_sidebar_collapsed", JSON.stringify(collapsed));
         if (onCollapseChange) onCollapseChange(collapsed);
     }, [collapsed, onCollapseChange]);
 
-    useEffect(() => {
-        const check = () => {
-            try {
-                const f = getFilaments();
-                const p = getPrinters();
-                setAlerts({
-                    lowStock: f.some(x => (x.weightCurrent / x.weightTotal) < 0.2),
-                    maint: p.some(x => (x.totalHours - x.lastMaintenanceHour) / x.maintenanceInterval >= 0.9)
-                });
-            } catch (e) { }
-        };
-        check();
-        const i = setInterval(check, 30000);
-        return () => clearInterval(i);
-    }, []);
+    // Cálculo reativo de alertas (sem necessidade de setInterval para impressoras)
+    const alerts = useMemo(() => {
+        let lowStock = false;
+        let maint = false;
+
+        try {
+            // Lógica de Filamentos (ainda local)
+            const f = getFilaments();
+            lowStock = f.some(x => (Number(x.weightCurrent) / Number(x.weightTotal)) < 0.2);
+            
+            // Lógica de Impressoras (vinda do Store/Cloud)
+            maint = printers.some(x => {
+                const used = Number(x.totalHours) - Number(x.lastMaintenanceHour);
+                const interval = Number(x.maintenanceInterval) || 300;
+                return (used / interval) >= 0.9;
+            });
+        } catch (e) {
+            console.error("Erro ao processar alertas na sidebar", e);
+        }
+
+        return { lowStock, maint };
+    }, [printers]); // Recalcula sempre que a lista de impressoras mudar no Store
 
     const handleLogout = async (e) => {
         if (e) e.stopPropagation();

@@ -1,20 +1,9 @@
-// --- FILE: src/features/filamentos/components/modalBaixaRapida.jsx ---
 import React, { useState, useEffect } from "react";
-import { 
-    X, ArrowRight, AlertTriangle, Scale, History, 
-    Fuel, Activity, Binary, Box, Zap
+import {
+    X, AlertTriangle, Fuel, Activity, History
 } from "lucide-react";
 import SpoolSideView from "./roloFilamento";
-
-const isColorDark = (color) => {
-    if (!color) return false;
-    let hex = color.replace('#', '');
-    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-    const r = parseInt(hex.substr(0, 2), 16);
-    const g = parseInt(hex.substr(2, 4), 16);
-    const b = parseInt(hex.substr(4, 6), 16);
-    return (0.2126 * r + 0.7152 * g + 0.0722 * b) < 140;
-};
+import { parseNumber, isColorDark } from "../../../hooks/useFormat";
 
 export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
     const [consumo, setConsumo] = useState("");
@@ -25,19 +14,18 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
 
     if (!aberto || !item) return null;
 
-    const capacidade = Number(item.weightTotal) || 1000;
-    const pesoAtual = Number(item.weightCurrent) || 0;
-    const qtdConsumo = Number(consumo);
+    const capacidade = Math.max(1, parseNumber(item.weightTotal));
+    const pesoAtual = parseNumber(item.weightCurrent);
+    const qtdConsumo = parseNumber(consumo);
     const pesoFinal = Math.max(0, pesoAtual - qtdConsumo);
-    
-    // Cálculos de porcentagem para a barra
-    const pctAtual = (pesoAtual / capacidade) * 100;
-    const pctFinal = (pesoFinal / capacidade) * 100;
+
+    const pctAtual = Math.min(100, (pesoAtual / capacidade) * 100);
+    const pctFinal = Math.min(100, (pesoFinal / capacidade) * 100);
 
     const erroSaldo = (pesoAtual - qtdConsumo) < 0 && qtdConsumo > 0;
     const inputValido = consumo !== "" && qtdConsumo > 0;
     const corFilamento = item.colorHex || item.color || "#3b82f6";
-    const textoEscuro = isColorDark(corFilamento);
+    const textoEscuro = !isColorDark(corFilamento);
 
     const confirmar = () => {
         if (!inputValido || erroSaldo) return;
@@ -50,7 +38,7 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
             <div className="absolute inset-0 z-0" onClick={aoFechar} />
 
             <div className="relative bg-[#080808] border border-zinc-800 rounded-[2rem] w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[85vh] z-10">
-                
+
                 {/* --- LADO ESQUERDO: PREVIEW --- */}
                 <div className="w-full md:w-[280px] bg-black/40 border-b md:border-b-0 md:border-r border-zinc-800/60 p-6 flex flex-col items-center justify-between shrink-0">
                     <div className="relative z-10 w-full">
@@ -83,7 +71,7 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
                     </header>
 
                     <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-                        
+
                         {/* PASSO 01: PESO */}
                         <section className="space-y-4">
                             <div className="flex items-center gap-3">
@@ -103,7 +91,6 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
                                 <div className="absolute right-6 top-1/2 -translate-y-1/2 text-zinc-700 font-bold text-sm opacity-40 uppercase">gramas</div>
                             </div>
 
-                            {/* Botões de atalho com correção de clique */}
                             <div className="grid grid-cols-5 gap-2 relative z-20">
                                 {[10, 25, 50, 100, 250].map(val => (
                                     <button
@@ -112,7 +99,7 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
                                         onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            setConsumo(prev => (Number(prev) + val).toString());
+                                            setConsumo(prev => (parseNumber(prev) + val).toString());
                                         }}
                                         className="py-2 bg-zinc-900/50 border border-zinc-800 hover:border-sky-500/50 hover:bg-sky-500/10 text-[10px] font-black text-zinc-500 hover:text-sky-400 rounded-lg transition-all cursor-pointer active:scale-95"
                                     >
@@ -141,7 +128,7 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
                                             <span className="text-[9px] font-bold text-zinc-600 uppercase">g</span>
                                         </div>
                                     </div>
-                                    
+
                                     {erroSaldo && (
                                         <div className="flex items-center gap-1.5 text-rose-500 animate-pulse mb-1">
                                             <AlertTriangle size={12} />
@@ -150,17 +137,14 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
                                     )}
                                 </div>
 
-                                {/* Barra de progresso dupla: Consumo x Restante */}
                                 <div className="h-2 w-full bg-zinc-950 rounded-full border border-zinc-800/50 overflow-hidden relative">
-                                    {/* O que tinha antes (Tom escuro) */}
-                                    <div 
+                                    <div
                                         className="absolute h-full transition-all duration-700 opacity-20"
-                                        style={{ width: `${pctAtual}%`, backgroundColor: corFilamento }} 
+                                        style={{ width: `${pctAtual}%`, backgroundColor: corFilamento }}
                                     />
-                                    {/* O que vai sobrar (Cor original) */}
-                                    <div 
+                                    <div
                                         className="absolute h-full transition-all duration-700 shadow-[0_0_10px_rgba(0,0,0,0.5)]"
-                                        style={{ width: `${pctFinal}%`, backgroundColor: corFilamento }} 
+                                        style={{ width: `${pctFinal}%`, backgroundColor: corFilamento }}
                                     />
                                 </div>
                                 <div className="flex justify-between text-[7px] font-black text-zinc-700 uppercase">
@@ -180,7 +164,7 @@ export default function ModalBaixaRapida({ aberto, aoFechar, item, aoSalvar }) {
                                 ${(!inputValido || erroSaldo) ? 'bg-zinc-900 text-zinc-700 cursor-not-allowed border border-zinc-800' : 'hover:brightness-110 active:scale-[0.95]'}`}
                             style={(!inputValido || erroSaldo) ? {} : {
                                 backgroundColor: corFilamento,
-                                color: textoEscuro ? '#ffffff' : '#050505',
+                                color: textoEscuro ? '#050505' : '#ffffff',
                                 boxShadow: `0 8px 20px -6px ${corFilamento}60`
                             }}
                         >

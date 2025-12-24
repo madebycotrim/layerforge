@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-    Plus, Search, CheckCircle2, Timer, Cpu,
-    AlertTriangle, Activity, LayoutGrid, Check, Scan, ChevronRight
+    Plus, Search, CheckCircle2, Timer, 
+    AlertTriangle, Activity, LayoutGrid, Check, Scan
 } from "lucide-react";
 
 // --- COMPONENTES ---
@@ -10,27 +10,21 @@ import PrinterCard from "../features/impressoras/components/printerCard";
 import PrinterModal from "../features/impressoras/components/printerModal";
 import DiagnosticsModal from "../features/impressoras/components/diagnosticsModal";
 
-// --- LÓGICA ---
-import { getPrinters, savePrinter, deletePrinter, resetMaintenance, updateStatus } from "../features/impressoras/logic/printers";
-import { analyzePrinterHealth } from "../features/impressoras/logic/diagnostics";
+// --- LÓGICA (ZUSTAND + CLOUDFLARE D1) ---
+import { usePrinterStore } from "../features/impressoras/logic/store";
+import { analisarSaudeImpressora } from "../features/impressoras/logic/diagnostics";
 
-// --- UTILS ---
 const formatBigNumber = (num) => {
     if (!num || isNaN(num)) return "0";
     if (num >= 1000) return (num / 1000).toFixed(1) + "k";
     return Math.floor(num).toString();
 };
 
-// --- COMPONENTE: SAÚDE DA FROTA (STATUS DA FARM) ---
 const StatusOverviewCard = ({ criticalCount, totalCount }) => {
-    const isHealthy = criticalCount === 0;
-    const accentColor = isHealthy ? 'emerald' : 'rose';
-
+    const isHealthy = criticalCount === 0 || totalCount === 0;
     return (
         <div className={`relative h-[135px] p-6 rounded-2xl bg-[#0a0a0b] border ${isHealthy ? 'border-emerald-500/20 shadow-[0_8px_30px_rgba(16,185,129,0.05)]' : 'border-rose-500/30 shadow-[0_8px_30px_rgba(244,63,94,0.1)]'} overflow-hidden flex items-center justify-between transition-all duration-500 group`}>
-            {/* Efeito de Glow de Fundo */}
             <div className={`absolute -right-6 -top-6 w-32 h-32 blur-[60px] opacity-[0.08] rounded-full transition-colors duration-700 ${isHealthy ? 'bg-emerald-500' : 'bg-rose-500'}`} />
-
             <div className="flex items-center gap-6 relative z-10">
                 <div className={`p-4 rounded-2xl bg-black border ${isHealthy ? 'border-emerald-500/30 text-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.1)]' : 'border-rose-500/40 text-rose-500 shadow-[0_0_15px_rgba(244,63,94,0.1)]'}`}>
                     {isHealthy ? <Check size={26} strokeWidth={3} /> : <AlertTriangle size={26} strokeWidth={3} className="animate-pulse" />}
@@ -44,11 +38,10 @@ const StatusOverviewCard = ({ criticalCount, totalCount }) => {
                         {isHealthy ? 'TUDO EM ORDEM' : 'MÁQUINA EM ALERTA'}
                     </h3>
                     <p className="text-[11px] text-zinc-500 font-bold mt-2 uppercase">
-                        {isHealthy ? 'Todas as impressoras estão operacionais' : `${criticalCount} impressoras precisam de atenção ou reparo`}
+                        {isHealthy ? 'Todas as impressoras estão operacionais' : `${criticalCount} ${criticalCount === 1 ? 'impressora precisa' : 'impressoras precisam'} de atenção`}
                     </p>
                 </div>
             </div>
-
             <div className="flex flex-col items-end relative z-10">
                 <div className="text-[9px] text-zinc-600 font-black uppercase mb-2 tracking-widest tracking-[0.2em]">Uso da Farm</div>
                 <div className="h-1.5 w-20 bg-zinc-900 rounded-full overflow-hidden border border-white/5 p-[1px]">
@@ -62,7 +55,6 @@ const StatusOverviewCard = ({ criticalCount, totalCount }) => {
     );
 };
 
-// --- COMPONENTE: TECH STAT CARD (DADOS DA OFICINA) ---
 const TechStatCard = ({ title, value, icon: Icon, colorClass, secondaryLabel, secondaryValue }) => (
     <div className="h-[135px] p-6 rounded-2xl bg-[#0a0a0b] border border-zinc-900 flex items-center justify-between group transition-all hover:border-zinc-700/50 shadow-[0_8px_30_rgb(0,0,0,0.12)]">
         <div className="flex items-center gap-6">
@@ -87,44 +79,94 @@ const TechStatCard = ({ title, value, icon: Icon, colorClass, secondaryLabel, se
 );
 
 export default function ImpressorasPage() {
+    // Consumo do Store (Padrão Adapter EN-UI)
+    const { 
+        printers, 
+        fetchPrinters, 
+        upsertPrinter, 
+        removePrinter, 
+        updatePrinterStatus 
+    } = usePrinterStore();
+
     const [larguraSidebar, setLarguraSidebar] = useState(72);
-    const [printers, setPrinters] = useState([]);
     const [busca, setBusca] = useState("");
     const [modalAberto, setModalAberto] = useState(false);
     const [itemEdicao, setItemEdicao] = useState(null);
     const [printerEmDiagnostico, setPrinterEmDiagnostico] = useState(null);
     const [checklists, setChecklists] = useState({});
 
-    const carregarDados = useCallback(() => {
-        const rawData = getPrinters() || [];
-        setPrinters(Array.from(new Map(rawData.map(item => [item.id, item])).values()));
-    }, []);
-
-    useEffect(() => { carregarDados(); }, [carregarDados]);
+    useEffect(() => { 
+        fetchPrinters();
+    }, [fetchPrinters]);
 
     const { filteredPrinters, stats, criticalCount } = useMemo(() => {
-        const totalPrints = printers.reduce((acc, curr) => acc + (curr.history?.length || 0), 0);
-        const criticals = printers.filter(p => (analyzePrinterHealth(p) || []).some(i => i.severity === 'critical')).length;
-        const filtered = printers.filter(p => p.name?.toLowerCase().includes(busca.toLowerCase()));
+        let totalPrints = 0;
+        let totalFilamentGrams = 0;
+        let criticals = 0;
+
+        // Garantia de que printers seja um array
+        const lista = Array.isArray(printers) ? printers : [];
+
+        lista.forEach(p => {
+            totalPrints += (p.history?.length || 0);
+            totalFilamentGrams += (p.history || []).reduce((acc, h) => acc + (Number(h.filamentUsed || h.filamento_usado_g) || 0), 0);
+
+            const problemas = analisarSaudeImpressora(p) || [];
+            if (problemas.some(i => i.severidade === 'critical') || p.status === 'error') {
+                criticals++;
+            }
+        });
+
+        const filtradas = lista.filter(p => {
+            const termo = busca.toLowerCase();
+            return (p.name || "").toLowerCase().includes(termo) ||
+                   (p.model || "").toLowerCase().includes(termo);
+        });
+
         return {
-            filteredPrinters: filtered,
+            filteredPrinters: filtradas,
             criticalCount: criticals,
-            stats: { totalPrints, filament: "28.00" }
+            stats: { 
+                totalPrints, 
+                filamento: (totalFilamentGrams / 1000).toFixed(2) 
+            }
         };
     }, [printers, busca]);
 
-    const aoSalvar = (dados) => { savePrinter(dados); carregarDados(); setModalAberto(false); setItemEdicao(null); };
-    const aoDeletar = (id) => { if (window.confirm("Deseja remover esta impressora da farm permanentemente?")) { deletePrinter(id); carregarDados(); } };
-    const alternarStatus = (id, statusAtual) => { updateStatus(id, { 'idle': 'printing', 'printing': 'maintenance', 'maintenance': 'idle' }[statusAtual || 'idle']); carregarDados(); };
-    const finalizarReparo = (id) => { resetMaintenance(id); carregarDados(); setPrinterEmDiagnostico(null); };
+    const aoSalvar = (dados) => {
+        upsertPrinter(dados);
+        setModalAberto(false);
+        setItemEdicao(null);
+    };
+
+    const aoDeletar = (id) => {
+        if (window.confirm("Deseja remover esta impressora da farm permanentemente?")) {
+            removePrinter(id);
+        }
+    };
+
+    const alternarStatus = (id, statusAtual) => {
+        const proximos = { 'idle': 'printing', 'printing': 'maintenance', 'maintenance': 'idle' };
+        updatePrinterStatus(id, proximos[statusAtual] || 'idle');
+    };
+
+    const finalizarReparo = (id) => {
+        const imp = printers.find(p => p.id === id);
+        if (imp) {
+            upsertPrinter({
+                ...imp,
+                lastMaintenanceHour: imp.totalHours,
+                status: 'idle'
+            });
+        }
+        setPrinterEmDiagnostico(null);
+    };
 
     return (
         <div className="flex h-screen w-full bg-[#050505] text-zinc-100 font-sans overflow-hidden">
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 72 : 256)} />
 
             <main className="flex-1 flex flex-col relative transition-all duration-300" style={{ marginLeft: `${larguraSidebar}px` }}>
-
-                {/* GRID DE FUNDO */}
                 <div className="absolute inset-x-0 top-0 h-[500px] z-0 pointer-events-none opacity-[0.03]"
                     style={{
                         backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)',
@@ -141,7 +183,7 @@ export default function ImpressorasPage() {
                     <div className="flex items-center gap-6">
                         <div className="relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" size={14} />
-                            <input className="w-80 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl py-2.5 pl-11 pr-4 text-[11px] text-zinc-400 outline-none font-mono focus:border-emerald-500/30 focus:bg-zinc-900/40 transition-all placeholder:text-zinc-700" placeholder="Procurar impressora na farm..." value={busca} onChange={e => setBusca(e.target.value)} />
+                            <input className="w-80 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl py-2.5 pl-11 pr-4 text-[11px] text-zinc-400 outline-none font-mono focus:border-emerald-500/30 focus:bg-zinc-900/40 transition-all placeholder:text-zinc-700" placeholder="Procurar impressora..." value={busca} onChange={e => setBusca(e.target.value)} />
                         </div>
                         <button onClick={() => { setItemEdicao(null); setModalAberto(true); }} className="h-11 px-8 bg-[#009b74] hover:bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all active:scale-95">
                             <Plus size={18} strokeWidth={3} /> Adicionar Impressora
@@ -151,14 +193,12 @@ export default function ImpressorasPage() {
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-10 pt-2 relative z-10 scroll-smooth">
                     <div className="max-w-[1650px] mx-auto space-y-16">
-
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6">
                             <StatusOverviewCard criticalCount={criticalCount} totalCount={printers.length} />
                             <TechStatCard title="Produção Total" value={formatBigNumber(stats.totalPrints)} icon={CheckCircle2} colorClass="text-emerald-500" secondaryLabel="Peças Impressas" secondaryValue="Trabalho acumulado" />
-                            <TechStatCard title="Uso de Filamento" value={`${stats.filament}kg`} icon={Timer} colorClass="text-amber-500" secondaryLabel="Material usado" secondaryValue="Total de todos os pedidos" />
+                            <TechStatCard title="Uso de Filamento" value={`${stats.filamento}kg`} icon={Timer} colorClass="text-amber-500" secondaryLabel="Material usado" secondaryValue="Total todos pedidos" />
                         </div>
 
-                        {/* SEÇÃO DA FROTA */}
                         <div className="space-y-10 pb-40">
                             <div className="flex items-center gap-6">
                                 <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 shadow-xl flex items-center justify-center">
@@ -168,26 +208,23 @@ export default function ImpressorasPage() {
                                     <h2 className="text-[14px] font-black uppercase tracking-[0.3em] text-white whitespace-nowrap leading-none">Minhas Impressoras</h2>
                                     <span className="text-[8px] text-zinc-600 font-bold mt-1 tracking-[0.2em] uppercase">Status dos equipamentos</span>
                                 </div>
-
                                 <div className="h-[1px] flex-1 bg-gradient-to-r from-zinc-800/80 via-zinc-800/30 to-transparent" />
-
                                 <div className="flex items-center gap-6 px-6 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-800/50 shadow-2xl backdrop-blur-sm">
                                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
-                                        {filteredPrinters.length} {filteredPrinters.length === 1 ? 'Máquina ativa' : 'Máquinas ativas'}
+                                        {filteredPrinters.length} Máquinas
                                     </span>
                                 </div>
                             </div>
 
-                            {/* GRID DE MÁQUINAS */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-3 gap-8">
-                                {filteredPrinters.map((printer) => (
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                {filteredPrinters.map((imp) => (
                                     <PrinterCard
-                                        key={printer.id}
-                                        printer={printer}
+                                        key={imp.id}
+                                        printer={imp}
                                         onEdit={(p) => { setItemEdicao(p); setModalAberto(true); }}
-                                        onDelete={aoDeletar}
-                                        onResetMaint={() => setPrinterEmDiagnostico(printer)}
-                                        onToggleStatus={() => alternarStatus(printer.id, printer.status)}
+                                        onDelete={() => aoDeletar(imp.id)}
+                                        onResetMaint={() => setPrinterEmDiagnostico(imp)}
+                                        onToggleStatus={() => alternarStatus(imp.id, imp.status)}
                                     />
                                 ))}
                             </div>
@@ -203,14 +240,17 @@ export default function ImpressorasPage() {
                 </div>
 
                 <PrinterModal aberto={modalAberto} aoFechar={() => setModalAberto(false)} aoSalvar={aoSalvar} dadosIniciais={itemEdicao} />
+                
                 {printerEmDiagnostico && (
                     <DiagnosticsModal
                         printer={printerEmDiagnostico}
                         completedTasks={new Set(checklists[printerEmDiagnostico.id] || [])}
                         onToggleTask={(label) => {
-                            const currentTasks = checklists[printerEmDiagnostico.id] || [];
-                            const newTasks = currentTasks.includes(label) ? currentTasks.filter(t => t !== label) : [...currentTasks, label];
-                            setChecklists(prev => ({ ...prev, [printerEmDiagnostico.id]: newTasks }));
+                            setChecklists(prev => {
+                                const currentTasks = prev[printerEmDiagnostico.id] || [];
+                                const newTasks = currentTasks.includes(label) ? currentTasks.filter(t => t !== label) : [...currentTasks, label];
+                                return { ...prev, [printerEmDiagnostico.id]: newTasks };
+                            });
                         }}
                         onClose={() => setPrinterEmDiagnostico(null)}
                         onResolve={finalizarReparo}
