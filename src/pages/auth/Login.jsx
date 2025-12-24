@@ -38,7 +38,7 @@ const PrimaryButton = ({ children, onClick, icon: Icon, variant = "sky", classNa
             {isLoading ? (
                 <div className="flex items-center gap-2">
                     <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Entrando...</span>
+                    <span>Entrando na oficina...</span>
                 </div>
             ) : (
                 <>
@@ -50,13 +50,13 @@ const PrimaryButton = ({ children, onClick, icon: Icon, variant = "sky", classNa
     );
 };
 
-// --- WIDGETS DE PREVIEW ---
+// --- WIDGETS DE PREVIEW (Lado direito) ---
 
 const FarmStatusWidget = () => (
     <div className="w-80 bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-2xl">
         <div className="flex justify-between items-start mb-6">
             <div className="space-y-1">
-                <Badge label="Online" color="emerald" icon={Activity} />
+                <Badge label="Em operação" color="emerald" icon={Activity} />
                 <h4 className="text-white font-bold text-lg mt-2">Status da Farm</h4>
             </div>
             <Cpu className="text-zinc-700" size={20} />
@@ -64,14 +64,14 @@ const FarmStatusWidget = () => (
         <div className="space-y-4">
             <div className="p-4 bg-white/5 rounded-2xl border border-white/5 space-y-3">
                 <div className="flex justify-between text-[10px] font-bold uppercase text-zinc-500">
-                    <span>Impressoras Ativas</span>
+                    <span>Impressoras Rodando</span>
                     <span className="text-emerald-400">8 de 8</span>
                 </div>
                 <div className="h-1.5 w-full bg-zinc-900 rounded-full overflow-hidden">
                     <div className="h-full w-[85%] bg-emerald-500" />
                 </div>
                 <div className="flex justify-between items-center pt-1">
-                    <span className="text-[9px] text-zinc-500 font-bold uppercase">Temperatura Média</span>
+                    <span className="text-[9px] text-zinc-500 font-bold uppercase">Temperatura do Bico</span>
                     <span className="text-[10px] text-white">215°C</span>
                 </div>
             </div>
@@ -86,7 +86,7 @@ const ProductionWidget = () => (
                 <Layers size={20} />
             </div>
             <div className="flex flex-col">
-                <span className="text-[9px] font-bold text-sky-500 uppercase">Este mês</span>
+                <span className="text-[9px] font-bold text-sky-500 uppercase">Produção do Mês</span>
                 <span className="text-[11px] font-bold text-white uppercase">Peças Prontas</span>
             </div>
         </div>
@@ -96,11 +96,11 @@ const ProductionWidget = () => (
         </div>
         <div className="mt-4 pt-4 border-t border-white/5 flex justify-between">
             <div className="text-center">
-                <p className="text-[8px] text-zinc-500 font-bold uppercase">Material</p>
+                <p className="text-[8px] text-zinc-500 font-bold uppercase">Filamento</p>
                 <p className="text-xs text-white">42kg</p>
             </div>
             <div className="text-center">
-                <p className="text-[8px] text-zinc-500 font-bold uppercase">Sucesso</p>
+                <p className="text-[8px] text-zinc-500 font-bold uppercase">Taxa de Acerto</p>
                 <p className="text-xs text-emerald-400">99%</p>
             </div>
         </div>
@@ -125,7 +125,7 @@ export default function LoginPage() {
     }, [isLoaded, isSignedIn, setLocation]);
 
     const handleClerkError = (err) => {
-        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Não foi possível entrar agora.";
+        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Houve um problema ao entrar na oficina.";
         setError(msg);
     };
 
@@ -139,8 +139,6 @@ export default function LoginPage() {
             if (result.status === "complete") {
                 await setActive({ session: result.createdSessionId });
                 setLocation("/dashboard");
-            } else {
-                console.log(result);
             }
         } catch (err) { handleClerkError(err); } finally { setIsLoading(false); }
     };
@@ -151,26 +149,19 @@ export default function LoginPage() {
         setIsLoading(true);
         setError("");
         try {
-            // 1. Inicia o processo de login
             const { supportedFirstFactors } = await signIn.create({ identifier: email });
-
-            // 2. Localiza o fator de e-mail específico para obter o emailAddressId
-            const emailCodeFactor = supportedFirstFactors.find(
-                (f) => f.strategy === "email_link"
-            );
+            const emailCodeFactor = supportedFirstFactors.find((f) => f.strategy === "email_link");
 
             if (emailCodeFactor) {
-                // 3. Prepara o fator enviando o ID obrigatório
                 await signIn.prepareFirstFactor({
                     strategy: "email_link",
-                    emailAddressId: emailCodeFactor.emailAddressId, // <--- O QUE ESTAVA FALTANDO
+                    emailAddressId: emailCodeFactor.emailAddressId,
                     redirectUrl: `${window.location.origin}/dashboard`,
                 });
                 setIsSent(true);
             } else {
-                setError("Método de login por link não disponível para esta conta.");
+                setError("O login por link não está disponível para este e-mail.");
             }
-
         } catch (err) {
             handleClerkError(err);
             setIsSent(false);
@@ -202,7 +193,7 @@ export default function LoginPage() {
                 <div className="absolute top-10 left-10">
                     <button onClick={() => setLocation('/')} className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white transition-all">
                         <ArrowLeft size={16} />
-                        Voltar ao início
+                        Voltar ao site
                     </button>
                 </div>
 
@@ -210,15 +201,15 @@ export default function LoginPage() {
                     <div className="space-y-4 text-center sm:text-left">
                         <div className="flex items-center gap-3 justify-center sm:justify-start">
                             <img src={logo} alt="PrintLog" className="w-10 h-10 object-contain" />
-                            <span className="text-xl font-bold text-white">PrintLog <span className="text-sky-500 text-[10px] uppercase ml-1">Maker</span></span>
+                            <span className="text-xl font-bold text-white">PrintLog <span className="text-sky-500 text-[10px] uppercase ml-1">v1.0</span></span>
                         </div>
                         <div className="space-y-2">
                             <h2 className="text-4xl sm:text-5xl font-black tracking-tighter leading-[0.95] text-white uppercase">
-                                CONTROLE SUA FARM. <br />
-                                <span className="text-sky-500 italic">CAMADA POR CAMADA.</span>
+                                BEM-VINDO DE VOLTA <br />
+                                <span className="text-sky-500 italic">MAKER.</span>
                             </h2>
                             <p className="text-zinc-500 text-sm font-medium">
-                                Acesse a plataforma de gestão para especialistas em impressão 3D.
+                                Acesse seu painel para gerenciar custos, materiais e impressoras.
                             </p>
                         </div>
                     </div>
@@ -268,7 +259,7 @@ export default function LoginPage() {
 
                             <div className="space-y-4">
                                 <PrimaryButton type="submit" variant="sky" className="w-full" isLoading={isLoading} icon={loginMode === 'magic' ? Zap : LayoutDashboard}>
-                                    {loginMode === 'magic' ? "Enviar link de acesso" : "Entrar na conta"}
+                                    {loginMode === 'magic' ? "Receber link por e-mail" : "Entrar na Oficina"}
                                 </PrimaryButton>
 
                                 <div className="text-center">
@@ -278,7 +269,7 @@ export default function LoginPage() {
                                         className="flex items-center gap-2 mx-auto text-xs font-bold text-zinc-500 hover:text-white transition-colors"
                                     >
                                         <KeyRound size={14} className="text-sky-500" />
-                                        {loginMode === 'magic' ? "Entrar com e-mail e senha" : "Usar link rápido por e-mail"}
+                                        {loginMode === 'magic' ? "Entrar com e-mail e senha" : "Entrar sem senha (Link Rápido)"}
                                     </button>
                                 </div>
                             </div>
@@ -289,14 +280,14 @@ export default function LoginPage() {
                                 <Send size={30} />
                             </div>
                             <div className="space-y-2">
-                                <h3 className="text-white font-bold text-xl uppercase">Link enviado!</h3>
+                                <h3 className="text-white font-bold text-xl uppercase">E-mail enviado!</h3>
                                 <p className="text-zinc-400 text-sm">
-                                    Enviamos um link de acesso para: <br />
+                                    Dê uma olhada na sua caixa de entrada. Enviamos um link para: <br />
                                     <span className="text-sky-400 font-bold">{email}</span>
                                 </p>
                             </div>
                             <button onClick={() => setIsSent(false)} className="text-zinc-500 text-xs font-bold uppercase hover:text-white transition-colors">
-                                ← Voltar
+                                ← Voltar para o login
                             </button>
                         </div>
                     )}
@@ -304,7 +295,7 @@ export default function LoginPage() {
                     <div className="space-y-6">
                         <div className="relative flex items-center justify-center">
                             <div className="absolute inset-0 border-t border-white/5" />
-                            <span className="relative bg-[#050506] px-4 text-[10px] font-bold uppercase text-zinc-600">Ou use sua conta</span>
+                            <span className="relative bg-[#050506] px-4 text-[10px] font-bold uppercase text-zinc-600">Ou entre com</span>
                         </div>
 
                         <button
@@ -324,12 +315,12 @@ export default function LoginPage() {
 
                         <div className="text-center pt-6">
                             <p className="text-zinc-500 text-sm">
-                                Ainda não tem conta?
+                                Ainda não tem acesso?
                                 <button
                                     onClick={() => setLocation('/register')}
                                     className="text-sky-500 font-bold hover:text-sky-400 ml-2"
                                 >
-                                    Criar agora
+                                    Abrir minha oficina
                                 </button>
                             </p>
                         </div>

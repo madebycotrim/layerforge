@@ -6,63 +6,58 @@ export const TERMS_CONTENT = (
         <section className="space-y-2">
             <h4 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
                 <Database size={14} className="text-sky-500" />
-                1. Escopo do Serviço
+                1. O que é o PrintLog
             </h4>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                O PrintLog é uma plataforma de gestão desenvolvida para makers, estúdios e
-                farms de impressão 3D que desejam organizar custos, processos e histórico
-                de produção. As ferramentas oferecidas têm caráter informativo e
-                analítico, auxiliando na tomada de decisão.
+                O PrintLog é um sistema de gestão feito para makers e donos de 
+                farms de impressão 3D que precisam organizar custos, processos e o histórico
+                de produção. Nossas ferramentas servem para te ajudar a entender seus gastos e 
+                planejar melhor sua rotina de impressão.
             </p>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                Todos os cálculos apresentados são baseados exclusivamente nos dados
-                inseridos pelo usuário, como valores de filamento, energia, tempo de
-                máquina e manutenção. A responsabilidade final sobre preços, margens de
-                lucro, viabilidade comercial e estratégias de venda é sempre do usuário.
+                Todos os cálculos (preço de peça, tempo de máquina, etc.) dependem dos dados
+                que você insere, como valor do filamento, gasto de energia e manutenção. 
+                A decisão final sobre quanto cobrar e como gerenciar seu lucro é sempre sua.
             </p>
         </section>
 
         <section className="space-y-2">
             <h4 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
                 <Cpu size={14} className="text-sky-500" />
-                2. Disponibilidade e Evolução da Plataforma
+                2. Melhorias e Evolução
             </h4>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                O PrintLog está em constante evolução. Funcionalidades podem ser
-                ajustadas, aprimoradas ou descontinuadas com o objetivo de melhorar a
-                experiência e a estabilidade do sistema. Buscamos sempre manter
-                compatibilidade e continuidade, mas não garantimos disponibilidade
-                ininterrupta do serviço.
+                O PrintLog está sempre recebendo atualizações. Podemos ajustar ou criar 
+                novas funções para deixar o sistema mais rápido e útil para a sua produção. 
+                Trabalhamos para manter tudo rodando 24h, mas como qualquer software, o sistema 
+                pode passar por manutenções rápidas.
             </p>
         </section>
 
         <section className="space-y-2">
             <h4 className="text-white font-black text-xs uppercase tracking-widest">
-                3. Propriedade Intelectual
+                3. Nossa Criação
             </h4>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                Toda a identidade visual, layout, fluxos de navegação, textos, algoritmos
-                de cálculo e estrutura do PrintLog são protegidos por direitos autorais.
-                Não é permitido copiar, reproduzir, modificar ou realizar engenharia
-                reversa da plataforma, total ou parcialmente, sem autorização expressa.
+                Todo o visual, a lógica de cálculo e o jeito que o sistema funciona foram 
+                desenvolvidos por nós. Pedimos que não tente copiar, modificar ou revender 
+                partes da plataforma. O PrintLog foi feito com muito esforço para a comunidade maker.
             </p>
         </section>
 
         <section className="space-y-2">
             <h4 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
                 <AlertTriangle size={14} className="text-sky-500" />
-                4. Uso Responsável da Plataforma
+                4. Uso Correto do Sistema
             </h4>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                O usuário compromete-se a utilizar o PrintLog de forma ética e
-                responsável. Não é permitido o uso de bots, scripts automatizados ou
-                qualquer prática que possa comprometer a estabilidade, segurança ou
-                desempenho da plataforma.
+                Ao usar o PrintLog, você concorda em não usar robôs ou scripts que possam 
+                sobrecarregar nossos servidores. O uso deve ser manual e focado na gestão 
+                da sua farm.
             </p>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                Em situações de uso abusivo ou que coloquem o sistema em risco, medidas
-                preventivas poderão ser aplicadas, incluindo a suspensão temporária ou
-                definitiva da conta.
+                Se notarmos um comportamento que coloque o sistema em risco, poderemos 
+                suspender o acesso temporariamente para proteger os dados dos outros usuários.
             </p>
         </section>
     </div>
@@ -74,10 +69,10 @@ export const PRIVACY_CONTENT = (
             <ShieldCheck className="text-emerald-500" size={24} />
             <div>
                 <p className="text-[10px] text-emerald-500 font-black uppercase tracking-widest">
-                    Privacidade é parte do projeto
+                    Segurança levada a sério
                 </p>
                 <p className="text-xs text-zinc-500">
-                    Sua farm, seus dados, seu controle.
+                    Sua farm, seus dados e sua privacidade em primeiro lugar.
                 </p>
             </div>
         </div>
@@ -85,41 +80,39 @@ export const PRIVACY_CONTENT = (
         <section className="space-y-2">
             <h4 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
                 <Lock size={14} className="text-sky-500" />
-                1. Coleta e Proteção de Dados
+                1. O que guardamos e como protegemos
             </h4>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                Coletamos apenas as informações necessárias para o funcionamento do
-                PrintLog, como dados de conta, parâmetros de cálculo e históricos de uso.
-                Não solicitamos informações sensíveis que não tenham relação direta com a
-                operação da plataforma.
+                Guardamos apenas o essencial: seus dados de acesso, as configurações da sua 
+                máquina e seu histórico de peças. Não pedimos informações que não tenham 
+                nada a ver com impressão 3D.
             </p>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                Dados críticos, como custos, margens e informações financeiras, são
-                protegidos por criptografia de nível industrial (AES-256) antes mesmo de
-                serem armazenados.
+                Seus dados financeiros, custos de filamento e margens de lucro são protegidos 
+                com tecnologia de ponta (criptografia AES-256) antes mesmo de entrarem 
+                no nosso banco de dados.
             </p>
         </section>
 
         <section className="space-y-2">
             <h4 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
                 <EyeOff size={14} className="text-sky-500" />
-                2. Compartilhamento de Informações
+                2. Seus dados são só seus
             </h4>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                O PrintLog não vende, não compartilha e não comercializa dados de usuários
-                com terceiros. Suas informações não são repassadas a fornecedores,
-                parceiros comerciais ou anunciantes.
+                O PrintLog não vende e não repassa seus dados para ninguém. Suas informações 
+                de custo, pedidos e clientes não são compartilhadas com fornecedores, 
+                marcas de filamento ou anunciantes.
             </p>
         </section>
 
         <section className="space-y-2">
             <h4 className="text-white font-black text-xs uppercase tracking-widest">
-                3. Comunicação e E-mails
+                3. Conversas e E-mails
             </h4>
             <p className="text-xs text-zinc-500 leading-relaxed">
-                Utilizamos seu e-mail exclusivamente para comunicações essenciais, como
-                alertas do sistema, notificações importantes e recuperação de acesso.
-                Você não receberá spam ou mensagens promocionais indesejadas.
+                Usamos seu e-mail apenas para o básico: alertas de estoque, avisos da farm 
+                ou recuperação de senha. Não enviamos spam ou propagandas indesejadas.
             </p>
         </section>
     </div>

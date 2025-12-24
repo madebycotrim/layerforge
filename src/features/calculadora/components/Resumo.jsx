@@ -38,7 +38,7 @@ const SummaryRow = ({ icon: Icon, label, value, total, color = "text-zinc-500", 
                     {formatCurrency(value)}
                 </span>
                 <span className="text-[7px] font-black text-zinc-600 uppercase tracking-tighter">
-                    {pct}%_PART
+                    {pct}% DO TOTAL
                 </span>
             </div>
         </div>
@@ -46,24 +46,23 @@ const SummaryRow = ({ icon: Icon, label, value, total, color = "text-zinc-500", 
 };
 
 export default function Summary({ resultados = {}, entradas = {}, salvar = () => { } }) {
-    // MAPEAMENTO ATUALIZADO COM O NOVO CALCULATOR.JS
     const {
-        custoUnitario = 0,      // Custo Total de Operação (Saída)
+        custoUnitario = 0,
         precoSugerido = 0, 
         precoComDesconto = 0, 
         margemEfetivaPct = 0, 
-        lucroBrutoUnitario = 0, // Lucro Líquido Real
+        lucroBrutoUnitario = 0,
         custoMaterial = 0, 
         custoEnergia = 0, 
-        custoMaquina = 0,       // Já inclui manutenção oculta no novo motor
+        custoMaquina = 0,
         custoMaoDeObra = 0,
         custoEmbalagem = 0, 
         custoFrete = 0, 
         custosExtras = 0, 
         custoSetup = 0,
-        valorRisco = 0,         // Taxa de Falha calculada
+        valorRisco = 0,
         valorImpostos = 0, 
-        valorMarketplace = 0    // Inclui % + Taxa Fixa
+        valorMarketplace = 0
     } = resultados;
 
     const [salvo, setSalvo] = useState(false);
@@ -73,12 +72,10 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
     const margemNum = Number(margemEfetivaPct || 0);
     const temLucro = margemNum > 0;
     
-    // O custo total para o gráfico considera o que sai do bolso + taxas de venda
     const custoTotalReal = custoUnitario + valorImpostos + valorMarketplace;
     const pctCusto = totalBase > 0 ? Math.min(100, Math.round((custoTotalReal / totalBase) * 100)) : 0;
     const pctLucro = totalBase > 0 ? Math.max(0, 100 - pctCusto) : 0;
 
-    // LÓGICA DE DENSIDADE DINÂMICA
     const activeRowsCount = useMemo(() => {
         const checkList = [custoMaterial, custoEnergia, custoMaquina, custoSetup, custoMaoDeObra, custoEmbalagem, custoFrete, custosExtras, valorRisco, valorImpostos, valorMarketplace];
         return checkList.filter(v => v > 0.01).length;
@@ -87,9 +84,9 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
     const isCompact = activeRowsCount > 6;
 
     const status = useMemo(() => {
-        if (isNeutral) return { label: "IDLE_MODE", color: "text-zinc-700", bg: "bg-zinc-900/20 border-zinc-800/50", icon: CircleDashed, bar: "bg-zinc-800" };
-        if (temLucro) return { label: "SYSTEM_NOMINAL", color: "text-emerald-500", bg: "bg-emerald-500/5 border-emerald-500/20 shadow-[0_0_30px_-10px_rgba(16,185,129,0.1)]", icon: ShieldCheck, bar: "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" };
-        return { label: "MARGIN_CRITICAL", color: "text-rose-500", bg: "bg-rose-500/5 border-rose-500/20 shadow-[0_0_30px_-10px_rgba(244,63,94,0.1)]", icon: AlertTriangle, bar: "bg-rose-500" };
+        if (isNeutral) return { label: "AGUARDANDO DADOS", color: "text-zinc-700", bg: "bg-zinc-900/20 border-zinc-800/50", icon: CircleDashed, bar: "bg-zinc-800" };
+        if (temLucro) return { label: "PROJETO LUCRATIVO", color: "text-emerald-500", bg: "bg-emerald-500/5 border-emerald-500/20 shadow-[0_0_30px_-10px_rgba(16,185,129,0.1)]", icon: ShieldCheck, bar: "bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]" };
+        return { label: "MARGEM NO LIMITE", color: "text-rose-500", bg: "bg-rose-500/5 border-rose-500/20 shadow-[0_0_30px_-10px_rgba(244,63,94,0.1)]", icon: AlertTriangle, bar: "bg-rose-500" };
     }, [isNeutral, temLucro]);
 
     return (
@@ -106,7 +103,7 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                     </div>
                     {!isNeutral && (
                         <span className="px-2 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono font-bold text-zinc-400">
-                            ROI_{margemNum}%
+                            MARGEM {margemNum}%
                         </span>
                     )}
                 </div>
@@ -115,13 +112,13 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                     <h2 className={`text-4xl font-black font-mono tracking-tighter ${isNeutral ? 'text-zinc-800' : 'text-white'}`}>
                         {formatCurrency(lucroBrutoUnitario)}
                     </h2>
-                    <span className="text-[9px] text-zinc-500 uppercase font-black tracking-widest mt-1 block">Net_Profit_Real</span>
+                    <span className="text-[9px] text-zinc-500 uppercase font-black tracking-widest mt-1 block">Lucro limpo por peça</span>
                 </div>
 
                 <div className="space-y-1.5">
                     <div className="flex justify-between text-[7px] font-black text-zinc-600 uppercase tracking-widest">
-                        <span>Opex_Load_{pctCusto}%</span>
-                        <span>Profit_{pctLucro}%</span>
+                        <span>Gastos Totais {pctCusto}%</span>
+                        <span>Lucro Real {pctLucro}%</span>
                     </div>
                     <div className="h-1 w-full bg-zinc-950/80 rounded-full overflow-hidden flex p-[1px] border border-white/5">
                         <div style={{ width: `${pctCusto}%` }} className="bg-zinc-800 h-full transition-all duration-700" />
@@ -134,7 +131,7 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
             <div className="bg-zinc-950/40 border border-white/5 rounded-2xl py-3 px-6 text-center relative overflow-hidden shrink-0">
                 <div className="flex items-center justify-center gap-2 mb-1 opacity-50">
                     <Activity size={10} className="text-zinc-500" />
-                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Final_Sale_Price</span>
+                    <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.3em]">Preço de venda sugerido</span>
                 </div>
                 <span className={`text-3xl font-black font-mono tracking-tighter ${isNeutral ? 'text-zinc-800' : 'text-white'}`}>
                     {formatCurrency(precoComDesconto || precoSugerido)}
@@ -146,7 +143,7 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                 <div className="px-4 py-2 border-b border-white/5 bg-white/5 flex items-center justify-between shrink-0">
                     <div className="flex items-center gap-2">
                         <Layers size={12} className="text-zinc-600" />
-                        <h3 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Diagnostic_Breakdown</h3>
+                        <h3 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Onde seu dinheiro vai</h3>
                     </div>
                     <ChevronDown size={10} className="text-zinc-700" />
                 </div>
@@ -155,37 +152,37 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
                     {!isNeutral ? (
                         <>
                             {/* CATEGORIA: PRODUÇÃO BRUTA */}
-                            <SummaryRow isCompact={isCompact} icon={Package} label="Material_Filamento" value={custoMaterial} total={totalBase} />
-                            <SummaryRow isCompact={isCompact} icon={Zap} label="Energia_Elétrica" value={custoEnergia} total={totalBase} />
-                            <SummaryRow isCompact={isCompact} icon={Clock} label="Depreciação_Hardware" value={custoMaquina} total={totalBase} />
-                            <SummaryRow isCompact={isCompact} icon={Share2} label="Setup_Inicial" value={custoSetup} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={Package} label="Filamento usado" value={custoMaterial} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={Zap} label="Energia (Luz)" value={custoEnergia} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={Clock} label="Desgaste da Impressora" value={custoMaquina} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={Share2} label="Setup e Calibração" value={custoSetup} total={totalBase} />
                             
                             <div className="h-px bg-white/5 my-1 mx-2" />
 
                             {/* CATEGORIA: LOGÍSTICA E OPERAÇÃO */}
-                            <SummaryRow isCompact={isCompact} icon={Wrench} label="Trabalho_Manual" value={custoMaoDeObra} total={totalBase} />
-                            <SummaryRow isCompact={isCompact} icon={Box} label="Embalagem_Un" value={custoEmbalagem} total={totalBase} />
-                            <SummaryRow isCompact={isCompact} icon={Truck} label="Logística_Frete" value={custoFrete} total={totalBase} />
-                            <SummaryRow isCompact={isCompact} icon={CircleDashed} label="Insumos_Extras" value={custosExtras} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={Wrench} label="Sua mão de obra" value={custoMaoDeObra} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={Box} label="Caixa e Embalagem" value={custoEmbalagem} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={Truck} label="Frete e Envio" value={custoFrete} total={totalBase} />
+                            <SummaryRow isCompact={isCompact} icon={CircleDashed} label="Gastos Extras" value={custosExtras} total={totalBase} />
                             
                             <div className="h-px bg-white/5 my-1 mx-2" />
 
                             {/* CATEGORIA: SEGURANÇA E IMPOSTOS */}
-                            <SummaryRow isCompact={isCompact} icon={ShieldAlert} label="Risco_Falha_Est" value={valorRisco} total={totalBase} color="text-amber-500/80" />
-                            <SummaryRow isCompact={isCompact} icon={Landmark} label="Impostos_Venda" value={valorImpostos} total={totalBase} color="text-rose-400/80" />
-                            <SummaryRow isCompact={isCompact} icon={Store} label="Marketplace_Fee" value={valorMarketplace} total={totalBase} color="text-rose-400/80" />
+                            <SummaryRow isCompact={isCompact} icon={ShieldAlert} label="Reserva para falhas" value={valorRisco} total={totalBase} color="text-amber-500/80" />
+                            <SummaryRow isCompact={isCompact} icon={Landmark} label="Impostos sobre venda" value={valorImpostos} total={totalBase} color="text-rose-400/80" />
+                            <SummaryRow isCompact={isCompact} icon={Store} label="Taxas do Marketplace" value={valorMarketplace} total={totalBase} color="text-rose-400/80" />
                         </>
                     ) : (
                         <div className="flex flex-col items-center justify-center h-full text-zinc-800 gap-3 opacity-30">
                             <Calculator size={32} strokeWidth={1} />
-                            <span className="text-[8px] uppercase font-black tracking-[0.4em]">Standby</span>
+                            <span className="text-[8px] uppercase font-black tracking-[0.4em]">Aguardando dados da peça</span>
                         </div>
                     )}
                 </div>
 
                 {/* RODAPÉ DO DIAGNÓSTICO (CUSTO TOTAL) */}
                 <div className="p-3 bg-zinc-900/50 border-t border-white/5 flex justify-between items-center shrink-0">
-                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">OpEx_Total</span>
+                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">Custo total da produção</span>
                     <span className={`text-base font-black font-mono ${isNeutral ? 'text-zinc-800' : 'text-zinc-200'}`}>
                         {formatCurrency(custoTotalReal)}
                     </span>
@@ -195,10 +192,10 @@ export default function Summary({ resultados = {}, entradas = {}, salvar = () =>
             {/* 4. BOTÕES DE CONTROLE */}
             <div className="grid grid-cols-2 gap-2 shrink-0 pb-1">
                 <button onClick={() => window.print()} disabled={isNeutral} className="h-10 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-white transition-all font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 active:scale-95">
-                    <Printer size={14} /> Print
+                    <Printer size={14} /> Imprimir / PDF
                 </button>
                 <button onClick={salvar} disabled={isNeutral} className={`h-10 rounded-xl font-black text-[9px] uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-95 ${salvo ? "bg-emerald-600 text-white shadow-[0_0_15px_rgba(16,185,129,0.3)]" : "bg-sky-600 hover:bg-sky-500 text-white shadow-[0_0_15px_rgba(14,165,233,0.1)]"}`}>
-                    {salvo ? <CheckCircle2 size={16} /> : <Save size={16} />} {salvo ? "Stored" : "Save_Data"}
+                    {salvo ? <CheckCircle2 size={16} /> : <Save size={16} />} {salvo ? "Projeto Salvo" : "Salvar no Histórico"}
                 </button>
             </div>
         </div>

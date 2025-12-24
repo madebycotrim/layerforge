@@ -11,15 +11,15 @@ import logoBranca from "../assets/logo-branca.png";
 import { getFilaments } from "../features/filamentos/logic/filaments";
 import { getPrinters } from "../features/impressoras/logic/printers";
 
-// ... (MENU_ITEMS e SidebarSection permanecem iguais)
+// MENU_ITEMS ajustados para linguagem Maker
 const MENU_ITEMS = [
-    { href: "/dashboard", icon: LayoutGrid, label: "Dashboard" },
+    { href: "/dashboard", icon: LayoutGrid, label: "Painel Geral" },
     { href: "/calculadora", icon: Calculator, label: "Calculadora" },
     { href: "/historico", icon: History, label: "Histórico" },
-    { type: 'section', label: 'Fábrica' },
+    { type: 'section', label: 'Minha Farm' },
     { href: "/filamentos", icon: Package, label: "Filamentos", alertKey: 'lowStock' },
     { href: "/impressoras", icon: Printer, label: "Impressoras", alertKey: 'maint' },
-    { type: 'section', label: 'Sistema' },
+    { type: 'section', label: 'Ajustes' },
     { href: "/configuracoes", icon: Settings, label: "Configurações" },
     { href: "/central-maker", icon: HelpCircle, label: "Central Maker" },
 ];
@@ -69,8 +69,8 @@ const SidebarSection = ({ title, collapsed }) => (
 
 export default function MainSidebar({ onCollapseChange }) {
     const [, setLocation] = useLocation();
-    const { user } = useUser(); // Dados do usuário logado
-    const { signOut } = useClerk(); // Função de deslogar
+    const { user } = useUser(); 
+    const { signOut } = useClerk(); 
     
     const [collapsed, setCollapsed] = useState(() => {
         const saved = localStorage.getItem("printlog_sidebar_collapsed");
@@ -100,7 +100,6 @@ export default function MainSidebar({ onCollapseChange }) {
         return () => clearInterval(i);
     }, []);
 
-    // Função de Logout amigável
     const handleLogout = async (e) => {
         if (e) e.stopPropagation();
         await signOut();
@@ -138,7 +137,6 @@ export default function MainSidebar({ onCollapseChange }) {
                 ))}
             </nav>
 
-            {/* FOOTER ADAPTADO PARA O CLERK */}
             <div className="p-3 mt-auto">
                 <div 
                     onClick={collapsed ? handleLogout : undefined}
@@ -154,7 +152,6 @@ export default function MainSidebar({ onCollapseChange }) {
                             w-9 h-9 rounded-lg overflow-hidden border transition-colors
                             ${collapsed ? "border-zinc-700 group-hover/footer:border-rose-500/50" : "border-zinc-700 group-hover/footer:border-sky-500/50"}
                         `}>
-                            {/* Imagem dinâmica do Clerk */}
                             <img 
                                 src={user?.imageUrl} 
                                 className={`w-full h-full object-cover transition-all duration-500 ${collapsed ? "grayscale group-hover/footer:grayscale-0" : "grayscale hover:grayscale-0"}`} 
@@ -167,15 +164,14 @@ export default function MainSidebar({ onCollapseChange }) {
                     {!collapsed && (
                         <>
                             <div className="flex-1 min-w-0">
-                                {/* Nome dinâmico do Clerk */}
                                 <p className="text-[11px] font-black text-zinc-200 truncate uppercase tracking-wider">
-                                    {user?.fullName || "Comandante"}
+                                    {user?.fullName || "Maker"}
                                 </p>
-                                <p className="text-[9px] font-medium text-zinc-500 uppercase tracking-tight">Administrador</p>
+                                <p className="text-[9px] font-medium text-zinc-500 uppercase tracking-tight">Dono da Farm</p>
                             </div>
                             <button 
                                 onClick={handleLogout} 
-                                title="Sair do sistema" 
+                                title="Sair" 
                                 className="p-2 rounded-lg text-zinc-500 hover:text-rose-400 hover:bg-rose-400/10 transition-all"
                             >
                                 <LogOut size={16} strokeWidth={2.5} />
@@ -185,7 +181,7 @@ export default function MainSidebar({ onCollapseChange }) {
 
                     {collapsed && (
                         <div className="absolute left-full ml-4 px-3 py-2 bg-rose-600 text-white text-[10px] font-bold uppercase rounded opacity-0 pointer-events-none group-hover/footer:opacity-100 group-hover/footer:translate-x-1 transition-all z-[9999] shadow-[10px_0_30px_rgba(225,29,72,0.3)]">
-                            Sair do Sistema
+                            Sair
                         </div>
                     )}
                 </div>

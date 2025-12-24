@@ -24,7 +24,7 @@ import useDebounce from "../hooks/useDebounce";
 import { calcularTudo } from "../features/calculadora/logic/calculator";
 import { getPrinters } from "../features/impressoras/logic/printers";
 
-// --- WRAPPER DE CARDS (Design System Maker) ---
+// --- WRAPPER DE CARDS (Com controle de Stacking Context) ---
 const WrapperCard = ({ children, title, icon: Icon, step, className = "", zIndex = "" }) => (
   <div
     style={{ zIndex: zIndex }}
@@ -47,7 +47,7 @@ const WrapperCard = ({ children, title, icon: Icon, step, className = "", zIndex
         </h3>
       </div>
       <span className="text-[9px] font-mono font-bold text-zinc-600 bg-zinc-950 px-2 py-1 rounded border border-zinc-900">
-        STEP_{step}
+        PASSO_{step}
       </span>
     </div>
     <div className="pt-1 overflow-visible">{children}</div>
@@ -64,17 +64,24 @@ export default function CalculadoraPage() {
   const [printers, setPrinters] = useState([]);
   const [selectedPrinter, setSelectedPrinter] = useState(null);
   const [nomeProjeto, setNomeProjeto] = useState("");
+  const [qtdPecas, setQtdPecas] = useState("1");
+  
+  // Material (Single & Multi)
   const [custoRolo, setCustoRolo] = useState("");
   const [pesoModelo, setPesoModelo] = useState("");
-  const [qtdPecas, setQtdPecas] = useState("");
   const [selectedFilamentId, setSelectedFilamentId] = useState("manual");
+  const [materialSlots, setMaterialSlots] = useState([
+    { id: 'manual', weight: '', priceKg: '' }
+  ]);
+
+  // Outros Inputs
   const [tempoImpressaoHoras, setTempoImpressaoHoras] = useState("");
   const [tempoImpressaoMinutos, setTempoImpressaoMinutos] = useState("");
   const [tempoTrabalhoHoras, setTempoTrabalhoHoras] = useState("");
   const [tempoTrabalhoMinutos, setTempoTrabalhoMinutos] = useState("");
   const [canalVenda, setCanalVenda] = useState("loja");
   const [taxaMarketplace, setTaxaMarketplace] = useState("0");
-  const [custoFixo, setCustoFixo] = useState("");
+  const [taxaMarketplaceFixa, setTaxaMarketplaceFixa] = useState(""); 
   const [custoEmbalagem, setCustoEmbalagem] = useState("");
   const [custoFrete, setCustoFrete] = useState("");
   const [custosExtras, setCustosExtras] = useState("");
@@ -82,30 +89,32 @@ export default function CalculadoraPage() {
   const [imposto, setImposto] = useState("");
   const [desconto, setDesconto] = useState("");
   const [taxaFalha, setTaxaFalha] = useState("");
+
+  // Configurações Globais da Oficina
   const [custoKwh, setCustoKwh] = useState("");
   const [valorHoraHumana, setValorHoraHumana] = useState("");
   const [custoHoraMaquina, setCustoHoraMaquina] = useState("");
   const [taxaSetup, setTaxaSetup] = useState("");
   const [consumoImpressoraKw, setConsumoImpressoraKw] = useState("");
 
-  // --- FUNÇÃO DE RESTAURAÇÃO (Puxa os dados para os inputs) ---
+  // --- FUNÇÃO DE RESTAURAÇÃO ---
   const restaurarDoHistorico = useCallback((registro) => {
     if (!registro?.data?.entradas) return;
     const e = registro.data.entradas;
 
-    // Preenche todos os campos
     setNomeProjeto(registro.label || "");
+    setQtdPecas(e.qtdPecas || "1");
     setCustoRolo(e.custoRolo || "");
     setPesoModelo(e.pesoModelo || "");
-    setQtdPecas(e.qtdPecas || "");
     setSelectedFilamentId(e.selectedFilamentId || "manual");
+    setMaterialSlots(e.materialSlots || [{ id: 'manual', weight: '', priceKg: '' }]);
     setTempoImpressaoHoras(e.tempoImpressaoHoras || "");
     setTempoImpressaoMinutos(e.tempoImpressaoMinutos || "");
     setTempoTrabalhoHoras(e.tempoTrabalhoHoras || "");
     setTempoTrabalhoMinutos(e.tempoTrabalhoMinutos || "");
     setCanalVenda(e.canalVenda || "loja");
     setTaxaMarketplace(e.taxaMarketplace || "0");
-    setCustoFixo(e.custoFixo || "");
+    setTaxaMarketplaceFixa(e.taxaMarketplaceFixa || "");
     setCustoEmbalagem(e.custoEmbalagem || "");
     setCustoFrete(e.custoFrete || "");
     setCustosExtras(e.custosExtras || "");
@@ -114,21 +123,8 @@ export default function CalculadoraPage() {
     setDesconto(e.desconto || "");
     setTaxaFalha(e.taxaFalha || "");
     
-    // Configurações Globais
-    if(e.custoKwh) setCustoKwh(e.custoKwh);
-    if(e.valorHoraHumana) setValorHoraHumana(e.valorHoraHumana);
-    if(e.custoHoraMaquina) setCustoHoraMaquina(e.custoHoraMaquina);
-    if(e.taxaSetup) setTaxaSetup(e.taxaSetup);
-    if(e.consumoImpressoraKw) setConsumoImpressoraKw(e.consumoImpressoraKw);
-
-    // Seleciona a impressora usada originalmente se ela ainda existir na lista
-    if (e.impressoraId) {
-        const match = printers.find(p => p.id === e.impressoraId);
-        if (match) setSelectedPrinter(match);
-    }
-
     setHistoricoAberto(false);
-  }, [printers]);
+  }, []);
 
   // --- INICIALIZAÇÃO ---
   useEffect(() => {
@@ -153,18 +149,23 @@ export default function CalculadoraPage() {
     setSelectedPrinter(printers[nextIdx]);
   }, [printers, selectedPrinter]);
 
+  // --- MOTOR DE CÁLCULO ---
   const entradas = useMemo(() => ({
-    custoRolo, pesoModelo, qtdPecas, custosExtras,
+    custoRolo, pesoModelo, materialSlots, qtdPecas,
     tempoImpressaoHoras, tempoImpressaoMinutos,
     tempoTrabalhoHoras, tempoTrabalhoMinutos,
-    canalVenda, taxaMarketplace, custoFixo,
-    custoEmbalagem, custoFrete,
+    canalVenda, taxaMarketplace, taxaMarketplaceFixa,
+    custoEmbalagem, custoFrete, custosExtras,
     margemLucro, imposto, desconto, taxaFalha,
     custoKwh, valorHoraHumana, custoHoraMaquina, taxaSetup, consumoImpressoraKw,
     impressoraId: selectedPrinter?.id || "custom",
-    impressoraNome: selectedPrinter?.name || "Manual",
     selectedFilamentId
-  }), [custoRolo, pesoModelo, qtdPecas, custosExtras, tempoImpressaoHoras, tempoImpressaoMinutos, tempoTrabalhoHoras, tempoTrabalhoMinutos, canalVenda, taxaMarketplace, custoFixo, custoEmbalagem, custoFrete, margemLucro, imposto, desconto, taxaFalha, custoKwh, valorHoraHumana, custoHoraMaquina, taxaSetup, consumoImpressoraKw, selectedPrinter, selectedFilamentId]);
+  }), [
+    custoRolo, pesoModelo, materialSlots, qtdPecas, tempoImpressaoHoras, tempoImpressaoMinutos,
+    tempoTrabalhoHoras, tempoTrabalhoMinutos, canalVenda, taxaMarketplace, taxaMarketplaceFixa,
+    custoEmbalagem, custoFrete, custosExtras, margemLucro, imposto, desconto, taxaFalha,
+    custoKwh, valorHoraHumana, custoHoraMaquina, taxaSetup, consumoImpressoraKw, selectedPrinter, selectedFilamentId
+  ]);
 
   const entradasDebounced = useDebounce(entradas, 200);
   const [resultados, setResultados] = useState({});
@@ -179,19 +180,20 @@ export default function CalculadoraPage() {
       
       <MainSidebar onCollapseChange={(collapsed) => setSidebarWidth(collapsed ? 72 : 256)} />
 
-      <main 
-        className="flex-1 flex flex-row relative h-full min-w-0 z-10 transition-all duration-300" 
-        style={{ marginLeft: `${sidebarWidth}px` }}
-      >
+      <main className="flex-1 flex flex-row relative h-full min-w-0 z-10 transition-all duration-300" style={{ marginLeft: `${sidebarWidth}px` }}>
+        
+        {/* GRID DE FUNDO */}
         <div className="absolute inset-x-0 top-0 h-[500px] z-0 pointer-events-none opacity-[0.03]"
           style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }}
         />
 
-        {/* COLUNA ESQUERDA: HEADER + INPUTS */}
         <div className="flex-1 flex flex-col h-full min-w-0 relative z-10">
           
           <Header
-            title="Orçamento de Impressão"
+            nomeProjeto={nomeProjeto}
+            setNomeProjeto={setNomeProjeto}
+            qtdPecas={qtdPecas}
+            setQtdPecas={setQtdPecas}
             printers={printers}
             selectedPrinterId={selectedPrinter?.id}
             onCyclePrinter={handleCyclePrinter}
@@ -201,44 +203,62 @@ export default function CalculadoraPage() {
             needsConfig={needsConfig}
           />
 
-          <div className="flex-1 overflow-y-auto custom-scrollbar px-8 pb-10">
+          <div className="flex-1 overflow-y-auto custom-scrollbar px-8 py-8">
             <div className="max-w-7xl mx-auto">
               
-              <div className="relative mb-10 mt-8">
-                <h2 className="text-[10px] font-black text-sky-500/50 uppercase tracking-[0.4em] mb-2 ml-1">Project_Identity</h2>
-                <input
-                  id="nomeProjeto"
-                  value={nomeProjeto}
-                  onChange={(e) => setNomeProjeto(e.target.value)}
-                  placeholder="QUERY_PROJECT_NAME..."
-                  className="w-full bg-transparent py-2 text-4xl font-black text-white placeholder:text-zinc-900 outline-none font-mono tracking-tighter border-b border-zinc-900 focus:border-sky-500/30 transition-all uppercase"
-                />
-              </div>
-
               <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
                 
+                {/* COLUNA 01 - GASTOS DE MATERIAL E TEMPO */}
                 <div className="flex flex-col gap-6 relative z-[30]">
-                  <WrapperCard title="Material & Insumos" icon={Package} step="01" zIndex="50">
-                    <CardMaterial custoRolo={custoRolo} setCustoRolo={setCustoRolo} pesoModelo={pesoModelo} setPesoModelo={setPesoModelo} qtdPecas={qtdPecas} setQtdPecas={setQtdPecas} selectedFilamentId={selectedFilamentId} setSelectedFilamentId={setSelectedFilamentId} />
+                  <WrapperCard title="Quanto vai de Filamento?" icon={Package} step="01" zIndex="50">
+                    <CardMaterial 
+                      custoRolo={custoRolo} setCustoRolo={setCustoRolo}
+                      pesoModelo={pesoModelo} setPesoModelo={setPesoModelo}
+                      selectedFilamentId={selectedFilamentId} setSelectedFilamentId={setSelectedFilamentId}
+                      materialSlots={materialSlots} setMaterialSlots={setMaterialSlots}
+                    />
                   </WrapperCard>
-                  <WrapperCard title="Tempo de Produção" icon={Clock} step="02" zIndex="40">
-                    <CardTempo tempoImpressaoHoras={tempoImpressaoHoras} setTempoImpressaoHoras={setTempoImpressaoHoras} tempoImpressaoMinutos={tempoImpressaoMinutos} setTempoImpressaoMinutos={setTempoImpressaoMinutos} tempoTrabalhoHoras={tempoTrabalhoHoras} setTempoTrabalhoHoras={setTempoTrabalhoHoras} tempoTrabalhoMinutos={tempoTrabalhoMinutos} setTempoTrabalhoMinutos={setTempoTrabalhoMinutos} />
+                  
+                  <WrapperCard title="Tempo de Máquina" icon={Clock} step="02" zIndex="40">
+                    <CardTempo 
+                      tempoImpressaoHoras={tempoImpressaoHoras} setTempoImpressaoHoras={setTempoImpressaoHoras}
+                      tempoImpressaoMinutos={tempoImpressaoMinutos} setTempoImpressaoMinutos={setTempoImpressaoMinutos}
+                      tempoTrabalhoHoras={tempoTrabalhoHoras} setTempoTrabalhoHoras={setTempoTrabalhoHoras}
+                      tempoTrabalhoMinutos={tempoTrabalhoMinutos} setTempoTrabalhoMinutos={setTempoTrabalhoMinutos}
+                    />
                   </WrapperCard>
                 </div>
 
+                {/* COLUNA 02 - TAXAS E ENVIO */}
                 <div className="flex flex-col gap-6 relative z-[20]">
-                  <WrapperCard title="Canais de Venda" icon={ShoppingBag} step="03" zIndex="30">
-                    <CardCanal canalVenda={canalVenda} setCanalVenda={setCanalVenda} taxaMarketplace={taxaMarketplace} setTaxaMarketplace={setTaxaMarketplace} custoFixo={custoFixo} setCustoFixo={setCustoFixo} />
+                  <WrapperCard title="Taxas de Venda" icon={ShoppingBag} step="03" zIndex="30">
+                    <CardCanal 
+                      canalVenda={canalVenda} setCanalVenda={setCanalVenda}
+                      taxaMarketplace={taxaMarketplace} setTaxaMarketplace={setTaxaMarketplace}
+                      taxaMarketplaceFixa={taxaMarketplaceFixa} setTaxaMarketplaceFixa={setTaxaMarketplaceFixa}
+                    />
                   </WrapperCard>
-                  <WrapperCard title="Logística" icon={Truck} step="04" zIndex="20">
-                    <CardEmbalagem custoEmbalagem={custoEmbalagem} setCustoEmbalagem={setCustoEmbalagem} custoFrete={custoFrete} setCustoFrete={setCustoFrete} custosExtras={custosExtras} setCustosExtras={setCustosExtras} />
+                  
+                  <WrapperCard title="Embalagem e Frete" icon={Truck} step="04" zIndex="20">
+                    <CardEmbalagem 
+                      custoEmbalagem={custoEmbalagem} setCustoEmbalagem={setCustoEmbalagem}
+                      custoFrete={custoFrete} setCustoFrete={setCustoFrete}
+                      custosExtras={custosExtras} setCustosExtras={setCustosExtras}
+                    />
                   </WrapperCard>
                 </div>
 
+                {/* COLUNA 03 - LUCRO E RESULTADO */}
                 <div className="flex flex-col gap-6 relative z-[10]">
-                  <WrapperCard title="Financeiro" icon={Tag} step="05" zIndex="10">
-                    <CardPreco margemLucro={margemLucro} setMargemLucro={setMargemLucro} imposto={imposto} setImposto={setImposto} desconto={desconto} setDesconto={setDesconto} taxaFalha={taxaFalha} setTaxaFalha={setTaxaFalha} />
+                  <WrapperCard title="Lucro e Impostos" icon={Tag} step="05" zIndex="10">
+                    <CardPreco 
+                      margemLucro={margemLucro} setMargemLucro={setMargemLucro}
+                      imposto={imposto} setImposto={setImposto}
+                      desconto={desconto} setDesconto={setDesconto}
+                      taxaFalha={taxaFalha} setTaxaFalha={setTaxaFalha}
+                    />
                   </WrapperCard>
+                  
                   <MakersHubWidget resultados={resultados} entradas={entradas} nomeProjeto={nomeProjeto} />
                 </div>
 
@@ -247,24 +267,16 @@ export default function CalculadoraPage() {
           </div>
         </div>
 
-        {/* COLUNA DIREITA (SUMMARY) DE CIMA A BAIXO */}
+        {/* PAINEL LATERAL DE RESULTADOS */}
         <aside className="w-[420px] h-full flex flex-col z-40 shrink-0">
           <div className="flex-1 flex flex-col bg-zinc-950/40 backdrop-blur-3xl border-l border-white/5 shadow-2xl overflow-hidden relative">
-            
             <div className="p-5 pb-2 shrink-0 z-10 mt-2">
               <div className="relative p-1 bg-zinc-900/40 rounded-xl border border-white/5 flex items-center shadow-inner">
-                <div 
-                  className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-zinc-800 rounded-lg border border-white/5 transition-all duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] ${activeTab === 'resumo' ? 'left-1' : 'left-[50%]'}`} 
-                />
-                <button onClick={() => setActiveTab('resumo')} className={`relative flex-1 h-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${activeTab === 'resumo' ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                  <BarChart3 size={14} /> Dashboard
-                </button>
-                <button onClick={() => setActiveTab('config')} className={`relative flex-1 h-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${activeTab === 'config' ? 'text-white' : 'text-zinc-600 hover:text-zinc-400'}`}>
-                  <Settings2 size={14} /> Ajustes
-                </button>
+                <div className={`absolute top-1 bottom-1 w-[calc(50%-4px)] bg-zinc-800 rounded-lg border border-white/5 transition-all duration-500 ease-out ${activeTab === 'resumo' ? 'left-1' : 'left-[50%]'}`} />
+                <button onClick={() => setActiveTab('resumo')} className={`relative flex-1 h-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${activeTab === 'resumo' ? 'text-white' : 'text-zinc-600'}`}><BarChart3 size={14} /> Custo da Peça</button>
+                <button onClick={() => setActiveTab('config')} className={`relative flex-1 h-10 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all z-10 ${activeTab === 'config' ? 'text-white' : 'text-zinc-600'}`}><Settings2 size={14} /> Minha Oficina</button>
               </div>
             </div>
-
             <div className="flex-1 overflow-y-auto custom-scrollbar p-6 pt-2 relative">
               {activeTab === 'resumo' ? (
                 <Summary resultados={resultados} entradas={entradas} salvar={() => setHistoricoAberto(true)} />
@@ -282,15 +294,9 @@ export default function CalculadoraPage() {
             </div>
           </div>
         </aside>
-
       </main>
 
-      <HistoryDrawer 
-        open={historicoAberto} 
-        onClose={() => setHistoricoAberto(false)} 
-        onRestore={restaurarDoHistorico} 
-      />
-
+      <HistoryDrawer open={historicoAberto} onClose={() => setHistoricoAberto(false)} onRestore={restaurarDoHistorico} />
     </div>
   );
 }

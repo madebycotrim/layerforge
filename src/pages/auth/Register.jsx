@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import logo from '../../assets/logo-branca.png';
 
-// --- COMPONENTES DE UI ---
+// --- COMPONENTE: UI ---
 
 const Badge = ({ icon: Icon, label, color = "sky" }) => {
     const variants = {
@@ -40,7 +40,7 @@ const PrimaryButton = ({ children, onClick, icon: Icon, variant = "sky", classNa
             {isLoading ? (
                 <div className="flex items-center gap-2">
                     <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    <span>Processando...</span>
+                    <span>Preparando acesso...</span>
                 </div>
             ) : (
                 <>
@@ -52,21 +52,21 @@ const PrimaryButton = ({ children, onClick, icon: Icon, variant = "sky", classNa
     );
 };
 
-// --- WIDGETS DE PREVIEW (LADO DIREITO) ---
+// --- WIDGETS DE PREVIEW ---
 
 const InventoryWidget = () => (
     <div className="w-80 bg-[#0c0c0e]/80 backdrop-blur-xl border border-white/10 rounded-[2rem] p-6 shadow-2xl">
         <div className="flex justify-between items-start mb-6">
             <div className="space-y-1">
-                <Badge label="Meu Estoque" color="sky" icon={Database} />
-                <h4 className="text-white font-bold text-lg mt-2">Filamentos</h4>
+                <Badge label="Materiais" color="sky" icon={Database} />
+                <h4 className="text-white font-bold text-lg mt-2">Meus Filamentos</h4>
             </div>
             <Package className="text-zinc-700" size={20} />
         </div>
         <div className="space-y-4">
             {[
                 { name: 'PETG Carbono', weight: '820g', color: 'bg-sky-500', percent: 'w-[82%]' },
-                { name: 'PLA Silk Dourado', weight: '150g', color: 'bg-amber-400', percent: 'w-[15%]', alert: true },
+                { name: 'PLA Silk Ouro', weight: '150g', color: 'bg-amber-400', percent: 'w-[15%]', alert: true },
             ].map((item, i) => (
                 <div key={i} className="space-y-2">
                     <div className="flex justify-between items-center text-[11px] font-medium">
@@ -107,7 +107,7 @@ export default function RegisterPage() {
     }, [isLoaded, isSignedIn, setLocation]);
 
     const handleClerkError = (err) => {
-        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Erro ao criar conta.";
+        const msg = err.errors?.[0]?.longMessage || err.errors?.[0]?.message || "Não conseguimos criar seu acesso agora.";
         setError(msg);
     };
 
@@ -158,7 +158,7 @@ export default function RegisterPage() {
                 <div className="absolute top-10 left-10">
                     <button onClick={() => setLocation('/')} className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white transition-all">
                         <ArrowLeft size={16} />
-                        Voltar ao início
+                        Voltar ao site
                     </button>
                 </div>
 
@@ -166,16 +166,15 @@ export default function RegisterPage() {
                     <div className="space-y-4 text-center sm:text-left">
                         <div className="flex items-center gap-3 justify-center sm:justify-start">
                             <img src={logo} alt="PrintLog" className="w-10 h-10 object-contain" />
-                            <span className="text-xl font-bold text-white">PrintLog <span className="text-sky-500 text-[10px] uppercase ml-1">Maker</span></span>
+                            <span className="text-xl font-bold text-white">PrintLog <span className="text-sky-500 text-[10px] uppercase ml-1">v1.0</span></span>
                         </div>
                         <div className="space-y-2">
-                            {/* TEXTO EXATO DA IMAGEM */}
                             <h2 className="text-4xl sm:text-5xl font-black tracking-tighter leading-[0.95] text-white uppercase">
-                                {pendingVerification ? "VERIFIQUE SEU" : "CRIE SUA"} <br />
-                                <span className="text-sky-500 italic">{pendingVerification ? "E-MAIL." : "FARM AGORA."}</span>
+                                {pendingVerification ? "CONFIRME SEU" : "TRANSFORME FILAMENTO EM"} <br />
+                                <span className="text-sky-500 italic">{pendingVerification ? "ACESSO." : "LUCRO REAL."}</span>
                             </h2>
                             <p className="text-zinc-500 text-sm font-medium">
-                                Acesse a plataforma de gestão para especialistas em impressão 3D.
+                                Junte-se a outros makers e organize sua produção 3D.
                             </p>
                         </div>
                     </div>
@@ -190,15 +189,15 @@ export default function RegisterPage() {
                     {!isSent && !pendingVerification ? (
                         <form onSubmit={regMode === 'magic' ? handleMagicLinkSignUp : handlePasswordSignUp} className="space-y-5">
                             <div className="space-y-2 group">
-                                <label className="text-xs font-bold text-zinc-500 ml-1">Seu Nome ou Oficina</label>
+                                <label className="text-xs font-bold text-zinc-500 ml-1">Seu Nome ou Nome da Oficina</label>
                                 <div className="relative">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={18} />
-                                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800" placeholder="Ex: João ou Oficina3D" />
+                                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800" placeholder="Ex: João ou Minha Oficina 3D" />
                                 </div>
                             </div>
 
                             <div className="space-y-2 group">
-                                <label className="text-xs font-bold text-zinc-500 ml-1">E-mail</label>
+                                <label className="text-xs font-bold text-zinc-500 ml-1">Seu melhor e-mail</label>
                                 <div className="relative">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={18} />
                                     <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800" placeholder="seu@email.com" />
@@ -214,7 +213,7 @@ export default function RegisterPage() {
                                             type={showPassword ? "text" : "password"} required value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800"
-                                            placeholder="Mínimo 8 caracteres"
+                                            placeholder="Use pelo menos 8 caracteres"
                                         />
                                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 hover:text-white">
                                             {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
@@ -225,12 +224,12 @@ export default function RegisterPage() {
 
                             <div className="space-y-4 pt-2">
                                 <PrimaryButton type="submit" variant="sky" className="w-full" isLoading={isLoading} icon={Zap}>
-                                    {regMode === 'magic' ? "Enviar link de acesso" : "Criar minha conta"}
+                                    {regMode === 'magic' ? "Receber link por e-mail" : "Abrir minha farm"}
                                 </PrimaryButton>
 
                                 <button type="button" onClick={() => { setRegMode(regMode === 'magic' ? 'password' : 'magic'); setError(""); }} className="flex items-center gap-2 mx-auto text-xs font-bold text-zinc-500 hover:text-white transition-colors">
                                     <KeyRound size={14} className="text-sky-500" />
-                                    {regMode === 'magic' ? "Prefiro usar uma senha" : "Usar link rápido por e-mail"}
+                                    {regMode === 'magic' ? "Prefiro usar e-mail e senha" : "Cadastrar sem senha (Link rápido)"}
                                 </button>
                             </div>
                         </form>
@@ -247,17 +246,17 @@ export default function RegisterPage() {
                             } catch (err) { handleClerkError(err); } finally { setIsLoading(false); }
                         }} className="space-y-6">
                             <div className="space-y-4 text-center bg-sky-500/5 border border-sky-500/20 p-8 rounded-[2rem]">
-                                <label className="text-xs font-bold uppercase text-sky-500 block">Código de Verificação</label>
+                                <label className="text-xs font-bold uppercase text-sky-500 block">Código de Confirmação</label>
                                 <input
                                     type="text" maxLength={6} required value={code}
                                     onChange={(e) => setCode(e.target.value)}
                                     className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 text-center text-3xl font-mono font-bold tracking-[0.4em] text-white outline-none focus:border-sky-500 transition-all"
                                     placeholder="000000"
                                 />
-                                <p className="text-[11px] text-zinc-500 font-medium">Digite o código enviado para o seu e-mail.</p>
+                                <p className="text-[11px] text-zinc-500 font-medium">Confira o código que chegou no seu e-mail.</p>
                             </div>
-                            <PrimaryButton type="submit" variant="sky" className="w-full" isLoading={isLoading} icon={ShieldCheck}>Confirmar Código</PrimaryButton>
-                            <button onClick={() => setPendingVerification(false)} className="block mx-auto text-zinc-500 text-xs font-bold hover:text-white">Voltar e corrigir</button>
+                            <PrimaryButton type="submit" variant="sky" className="w-full" isLoading={isLoading} icon={ShieldCheck}>Validar e entrar</PrimaryButton>
+                            <button onClick={() => setPendingVerification(false)} className="block mx-auto text-zinc-500 text-xs font-bold hover:text-white">Corrigir e-mail</button>
                         </form>
                     ) : (
                         <div className="bg-sky-500/5 border border-sky-500/20 rounded-[2.5rem] p-10 text-center space-y-6">
@@ -266,27 +265,28 @@ export default function RegisterPage() {
                             </div>
                             <div className="space-y-2">
                                 <h3 className="text-white font-bold text-xl uppercase">E-mail enviado!</h3>
-                                <p className="text-zinc-400 text-sm">Verifique sua caixa de entrada em <strong>{email}</strong> para ativar sua farm.</p>
+                                <p className="text-zinc-400 text-sm">Dê uma olhada na sua caixa de entrada em <strong>{email}</strong> para ativar sua oficina.</p>
                             </div>
-                            <button onClick={() => setIsSent(false)} className="text-zinc-500 text-xs font-bold uppercase hover:text-white transition-colors">← Tentar outro método</button>
+                            <button onClick={() => setIsSent(false)} className="text-zinc-500 text-xs font-bold uppercase hover:text-white transition-colors">← Tentar outro e-mail</button>
                         </div>
                     )}
 
                     <div className="space-y-6">
                         <div className="relative flex items-center justify-center">
                             <div className="absolute inset-0 border-t border-white/5" />
-                            <span className="relative bg-[#050506] px-4 text-[10px] font-bold uppercase text-zinc-600">Ou use sua conta</span>
+                            <span className="relative bg-[#050506] px-4 text-[10px] font-bold uppercase text-zinc-600">Ou cadastre-se com</span>
                         </div>
                         <button onClick={signUpWithGoogle} disabled={isGoogleLoading || isLoading} className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all font-bold text-sm text-white disabled:opacity-50">
-                            {isGoogleLoading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Chrome size={20} /> Cadastrar com Google</>}
+                            {isGoogleLoading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Chrome size={20} /> Continuar com Google</>}
                         </button>
                         <p className="text-center text-zinc-500 text-sm">
-                            Já tem uma conta? <button onClick={() => setLocation('/login')} className="text-sky-500 font-bold hover:text-sky-400 ml-2">Fazer Login</button>
+                            Já tem acesso? <button onClick={() => setLocation('/login')} className="text-sky-500 font-bold hover:text-sky-400 ml-2">Entrar agora</button>
                         </p>
                     </div>
                 </div>
             </div>
 
+            {/* LADO DIREITO (PREVIEW) */}
             <div className="hidden lg:flex flex-1 bg-[#09090b] border-l border-white/5 relative items-center justify-center overflow-hidden">
                 <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-sky-500/10 blur-[180px] rounded-full" />
@@ -298,8 +298,8 @@ export default function RegisterPage() {
                         <div className="w-12 h-12 bg-sky-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-sky-500/20 text-sky-500">
                             <Layout size={24} />
                         </div>
-                        <span className="text-sm font-bold text-white block uppercase">Sua Oficina Online</span>
-                        <span className="text-[11px] text-zinc-500 block mt-1">Gerencie tudo em um só lugar</span>
+                        <span className="text-sm font-bold text-white block uppercase">Tudo em uma tela</span>
+                        <span className="text-[11px] text-zinc-500 block mt-1">Tudo o que você precisa em uma única tela</span>
                     </div>
 
                     <div className="absolute -bottom-40 -left-20 opacity-10 font-mono text-[10px] text-sky-500 space-y-1 text-left">

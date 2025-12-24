@@ -1,3 +1,4 @@
+// --- FILE: src/features/filamentos/components/DiagnosticsModal.jsx ---
 import React, { useMemo } from "react";
 import { 
     X, Check, ShieldAlert, Clock, Wrench, 
@@ -11,11 +12,11 @@ const DiagnosticsModal = ({ printer, onClose, onResolve, completedTasks = new Se
     const tasks = useMemo(() => analyzePrinterHealth(printer) || [], [printer]);
     const criticalCount = tasks.filter(t => t.severity === 'critical').length;
     
-    // Telemetria baseada em horas reais
+    // Estimativa de desgaste baseada nas horas de uso
     const telemetry = useMemo(() => [
-        { name: "Extrusora", current: printer.totalHours % 200, max: 200, unit: "h" },
-        { name: "Eixos/Correias", current: printer.totalHours % 800, max: 800, unit: "h" },
-        { name: "Fans/Coolers", current: printer.totalHours % 1500, max: 1500, unit: "h" },
+        { name: "Bico e Hotend", current: printer.totalHours % 200, max: 200, unit: "h" },
+        { name: "Eixos e Correias", current: printer.totalHours % 800, max: 800, unit: "h" },
+        { name: "Coolers e Fans", current: printer.totalHours % 1500, max: 1500, unit: "h" },
     ], [printer.totalHours]);
 
     const theme = criticalCount > 0 ? 'rose' : tasks.length > 0 ? 'amber' : 'emerald';
@@ -35,8 +36,8 @@ const DiagnosticsModal = ({ printer, onClose, onResolve, completedTasks = new Se
                             <Wrench size={18} className="animate-pulse" />
                         </div>
                         <div>
-                            <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Protocolo_Ativo</h2>
-                            <p className="text-[11px] text-zinc-500 mt-0.5 tracking-tighter uppercase">Hardware_UID: <span className="text-zinc-300">{printer.name}</span></p>
+                            <h2 className="text-[10px] font-black text-white uppercase tracking-[0.3em]">Check-up de Manutenção</h2>
+                            <p className="text-[11px] text-zinc-500 mt-0.5 tracking-tighter uppercase">Impressora: <span className="text-zinc-300">{printer.name}</span></p>
                         </div>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-white/5 rounded-full text-zinc-600 hover:text-white transition-all"><X size={20} /></button>
@@ -45,14 +46,14 @@ const DiagnosticsModal = ({ printer, onClose, onResolve, completedTasks = new Se
                 <div className="flex-1 flex overflow-hidden">
                     <aside className="w-64 border-r border-white/5 p-6 space-y-8 bg-zinc-950/30">
                         <div className="space-y-6">
-                            <h3 className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest flex items-center gap-2"><Gauge size={12} /> Wear_Status</h3>
+                            <h3 className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest flex items-center gap-2"><Gauge size={12} /> Saúde das Peças</h3>
                             {telemetry.map((t, i) => {
                                 const percent = (t.current / t.max) * 100;
                                 return (
                                     <div key={i}>
                                         <div className="flex justify-between text-[8px] font-black mb-1.5 uppercase">
                                             <span className="text-zinc-500">{t.name}</span>
-                                            <span className={percent > 85 ? 'text-rose-500' : 'text-emerald-400'}>{(t.max - t.current).toFixed(0)}{t.unit} left</span>
+                                            <span className={percent > 85 ? 'text-rose-500' : 'text-emerald-400'}>{(t.max - t.current).toFixed(0)}{t.unit} para revisão</span>
                                         </div>
                                         <div className="h-1 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5">
                                             <div className={`h-full transition-all duration-1000 ${percent > 85 ? 'bg-rose-500' : 'bg-emerald-500'}`} style={{ width: `${100 - percent}%` }} />
@@ -62,16 +63,16 @@ const DiagnosticsModal = ({ printer, onClose, onResolve, completedTasks = new Se
                             })}
                         </div>
                         <div className="pt-6 border-t border-white/5">
-                            <span className="text-[8px] font-bold text-zinc-600 uppercase block mb-1">Runtime_Total</span>
-                            <span className="text-lg font-bold text-zinc-200">{Math.floor(printer.totalHours)}h</span>
+                            <span className="text-[8px] font-bold text-zinc-600 uppercase block mb-1">Tempo total de uso</span>
+                            <span className="text-lg font-bold text-zinc-200">{Math.floor(printer.totalHours)}h impressas</span>
                         </div>
                     </aside>
 
                     <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                         <div className="space-y-4">
                             <div className="flex items-center justify-between mb-8">
-                                <h3 className="text-[10px] font-black text-white uppercase tracking-widest">Plano de Manutenção</h3>
-                                <span className="text-[14px] font-black text-white">{completedTasks.size} / {tasks.length}</span>
+                                <h3 className="text-[10px] font-black text-white uppercase tracking-widest">O que precisa de atenção</h3>
+                                <span className="text-[14px] font-black text-white">{completedTasks.size} de {tasks.length} concluídos</span>
                             </div>
 
                             {tasks.map((task, idx) => {
@@ -84,9 +85,9 @@ const DiagnosticsModal = ({ printer, onClose, onResolve, completedTasks = new Se
                                         <div className="flex-1">
                                             <div className="flex justify-between items-center mb-1">
                                                 <span className={`text-[12px] font-black uppercase tracking-tight ${isDone ? 'text-emerald-500 line-through' : 'text-zinc-100'}`}>{task.label}</span>
-                                                {task.severity === 'critical' && !isDone && <span className="text-[8px] font-black text-rose-500 uppercase px-2 py-0.5 rounded border border-rose-500/20 animate-pulse">Critical</span>}
+                                                {task.severity === 'critical' && !isDone && <span className="text-[8px] font-black text-rose-500 uppercase px-2 py-0.5 rounded border border-rose-500/20 animate-pulse">Urgente</span>}
                                             </div>
-                                            <p className="text-[10px] text-zinc-500 italic uppercase tracking-tighter">Protocolo: {task.action}</p>
+                                            <p className="text-[10px] text-zinc-400 italic uppercase tracking-tighter">O que fazer: {task.action}</p>
                                         </div>
                                     </div>
                                 );
@@ -102,13 +103,13 @@ const DiagnosticsModal = ({ printer, onClose, onResolve, completedTasks = new Se
                         ))}
                     </div>
                     <div className="flex gap-4">
-                        <button onClick={onClose} className="px-6 py-2.5 text-[10px] font-black uppercase text-zinc-600 hover:text-white transition-all tracking-widest">Abortar</button>
+                        <button onClick={onClose} className="px-6 py-2.5 text-[10px] font-black uppercase text-zinc-600 hover:text-white transition-all tracking-widest">CANCELAR</button>
                         <button 
                             disabled={tasks.length > 0 && completedTasks.size < tasks.length}
                             onClick={() => onResolve(printer.id)} 
                             className={`px-10 py-3 rounded-md text-[10px] font-black uppercase tracking-[0.2em] transition-all ${completedTasks.size === tasks.length ? 'bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.2)]' : 'bg-zinc-800 text-zinc-700 cursor-not-allowed border border-white/5'}`}
                         >
-                            Finalizar e Resetar Ciclos
+                            Finalizar manutenção e zerar horas
                         </button>
                     </div>
                 </footer>

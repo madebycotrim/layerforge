@@ -49,7 +49,7 @@ const HUDToggle = ({ label, sublabel, enabled, onToggle, icon: Icon }) => (
     </div>
 );
 
-// --- SEÇÃO DE CONFIGURAÇÃO (ESTILO INDUSTRIAL) ---
+// --- SEÇÃO DE CONFIGURAÇÃO ---
 const ConfigSection = ({ title, icon: Icon, badge, children }) => (
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
         <div className="flex items-center gap-5">
@@ -91,9 +91,9 @@ export default function ConfigPage() {
         setIsSaving(true);
         try {
             if (activeTab === 'PERFIL') await user.update({ firstName, lastName });
-            alert("Terminal Sincronizado!");
+            alert("Ajustes salvos com sucesso!");
         } catch (err) {
-            alert("Falha na sincronia: " + (err.errors?.[0]?.message || "Erro desconhecido"));
+            alert("Não foi possível salvar os dados: " + (err.errors?.[0]?.message || "Verifique sua conexão."));
         } finally { setIsSaving(false); }
     };
 
@@ -102,7 +102,7 @@ export default function ConfigPage() {
             case 'PERFIL':
                 return (
                     <div className="space-y-12">
-                        {/* CARD DE PERFIL / ID BADGE */}
+                        {/* CARD DE PERFIL */}
                         <div className="relative p-8 rounded-[2rem] bg-[#0a0a0b] border border-[#0091ff]/20 shadow-[0_8px_40px_rgba(0,0,0,0.4)] overflow-hidden group">
                             <div className="absolute -right-10 -top-10 w-40 h-40 blur-[80px] opacity-10 rounded-full bg-[#0091ff] transition-all group-hover:opacity-20" />
 
@@ -110,7 +110,7 @@ export default function ConfigPage() {
                                 <div className="relative">
                                     <div className="w-32 h-32 rounded-3xl bg-black border-2 border-zinc-800 p-1 group/avatar">
                                         <div className="w-full h-full rounded-[1.2rem] overflow-hidden bg-zinc-900 flex items-center justify-center relative">
-                                            {user?.imageUrl ? <img src={user.imageUrl} className="w-full h-full object-cover" alt="Profile" /> : <User size={40} className="text-zinc-700" />}
+                                            {user?.imageUrl ? <img src={user.imageUrl} className="w-full h-full object-cover" alt="Sua Foto" /> : <User size={40} className="text-zinc-700" />}
                                             <button onClick={() => fileInputRef.current.click()} className="absolute inset-0 bg-black/60 opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
                                                 <Camera size={20} className="text-white" />
                                             </button>
@@ -124,31 +124,31 @@ export default function ConfigPage() {
 
                                 <div className="flex-1 space-y-4 text-center md:text-left">
                                     <div className="space-y-1">
-                                        <p className="text-[9px] font-black text-[#0091ff] uppercase tracking-[0.4em] italic">Authorized_Operador</p>
+                                        <p className="text-[9px] font-black text-[#0091ff] uppercase tracking-[0.4em] italic">Dono da Oficina</p>
                                         <h3 className="text-3xl font-black text-white uppercase tracking-tighter italic leading-none">
                                             {firstName} {lastName}
                                         </h3>
                                     </div>
                                     <div className="flex flex-wrap gap-3 justify-center md:justify-start uppercase font-black text-[8px]">
                                         <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 rounded-lg flex items-center gap-1.5">
-                                            <CheckCircle2 size={10} /> Terminal Ativo
+                                            <CheckCircle2 size={10} /> Oficina Ativa
                                         </span>
                                         <span className="px-3 py-1 bg-zinc-900 border border-zinc-800 text-zinc-500 rounded-lg flex items-center gap-1.5">
-                                            <Database size={10} /> Node: {user?.id.slice(-8).toUpperCase()}
+                                            <Database size={10} /> ID_SISTEMA: {user?.id.slice(-8).toUpperCase()}
                                         </span>
                                     </div>
                                 </div>
                             </div>
                         </div>
 
-                        <ConfigSection title="Dados Cadastrais" icon={User} badge="Módulo 01">
+                        <ConfigSection title="Seu Perfil Maker" icon={User} badge="Básico">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#0a0a0b] p-8 rounded-[2rem] border border-zinc-900">
-                                <HUDInput label="NOME_DE_REGISTRO" value={firstName} onChange={setFirstName} />
-                                <HUDInput label="IDENTIFICAÇÃO_S" value={lastName} onChange={setLastName} />
-                                <HUDInput label="EMAIL_PRINCIPAL" value={user?.primaryEmailAddress?.emailAddress || ""} disabled info="Sincronizado" />
+                                <HUDInput label="Seu Primeiro Nome" value={firstName} onChange={setFirstName} />
+                                <HUDInput label="Seu Sobrenome" value={lastName} onChange={setLastName} />
+                                <HUDInput label="E-mail da Conta" value={user?.primaryEmailAddress?.emailAddress || ""} disabled info="Vinculado ao Login" />
                                 <div className="p-4 rounded-xl bg-black border border-zinc-800 flex items-center gap-4">
                                     <Cloud className="text-[#0091ff]" size={18} />
-                                    <p className="text-[9px] font-bold text-zinc-500 uppercase leading-relaxed tracking-wider">Servidores Clerk em modo leitura. Alterações de e-mail requerem validação externa.</p>
+                                    <p className="text-[9px] font-bold text-zinc-500 uppercase leading-relaxed tracking-wider">Seu e-mail é gerenciado pela segurança do sistema. Para mudar, é necessário validação externa.</p>
                                 </div>
                             </div>
                         </ConfigSection>
@@ -158,41 +158,42 @@ export default function ConfigPage() {
             case 'BANCADA':
                 return (
                     <div className="space-y-12">
-                        <ConfigSection title="Parâmetros de Produção" icon={Ruler} badge="Módulo 02">
+                        <ConfigSection title="Ajustes da Farm" icon={Ruler} badge="Produção">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[#0a0a0b] p-8 rounded-[2rem] border border-zinc-900">
-                                <HUDInput label="CUSTO_KWH" value={kwhPrice} onChange={setKwhPrice} type="number" info="BRL/R$" />
-                                <HUDInput label="TAXA_DE_LUCRO" value="25" placeholder="%" info="Margem base" />
+                                <HUDInput label="Preço da Luz (kWh)" value={kwhPrice} onChange={setKwhPrice} type="number" info="Valor na conta de luz" />
+                                <HUDInput label="Lucro Padrão (%)" value="25" placeholder="%" info="Margem desejada" />
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] italic ml-1">Sistema de Medida</label>
+                                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] italic ml-1">Sistema de Medidas</label>
                                     <select className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-[46px] text-[11px] text-zinc-100 outline-none focus:border-[#0091ff]/50 transition-all font-mono uppercase cursor-pointer">
-                                        <option>Métrico (mm/kg)</option>
-                                        <option>Imperial (in/lb)</option>
+                                        <option>Métrico (mm / gramas)</option>
+                                        <option>Imperial (pol / lb)</option>
                                     </select>
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] italic ml-1">Nozzle Default</label>
+                                    <label className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em] italic ml-1">Bico Padrão (Nozzle)</label>
                                     <select className="w-full bg-black border border-zinc-800 rounded-xl px-4 h-[46px] text-[11px] text-zinc-100 outline-none focus:border-[#0091ff]/50 transition-all font-mono uppercase cursor-pointer">
                                         <option>0.4 mm</option>
                                         <option>0.6 mm</option>
                                         <option>0.2 mm</option>
+                                        <option>0.8 mm</option>
                                     </select>
                                 </div>
                             </div>
                         </ConfigSection>
 
-                        <ConfigSection title="Interface e Performance" icon={Activity} badge="Ajustes de UI">
+                        <ConfigSection title="Interface e Sistema" icon={Activity} badge="Experiência">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <HUDToggle label="Modo Render_Turbo" sublabel="Desativa animações pesadas" enabled={performance} onToggle={setPerformance} icon={Zap} />
-                                <HUDToggle label="Audio_Alerts" sublabel="Sons de erro e conclusão" enabled={sounds} onToggle={setSounds} icon={Volume2} />
+                                <HUDToggle label="Modo Leve" sublabel="Desativa efeitos visuais pesados" enabled={performance} onToggle={setPerformance} icon={Zap} />
+                                <HUDToggle label="Sons do Sistema" sublabel="Alertas de conclusão e erros" enabled={sounds} onToggle={setSounds} icon={Volume2} />
                             </div>
                         </ConfigSection>
 
                         <div className="p-8 bg-[#0a0a0b] border border-zinc-900 rounded-[2rem] flex flex-col md:flex-row gap-6">
                             <button className="flex-1 flex items-center justify-center gap-3 p-4 bg-zinc-900 border border-zinc-800 text-[10px] font-black uppercase text-zinc-400 rounded-xl hover:bg-zinc-800 transition-all">
-                                <Database size={16} /> Exportar Backup .JSON
+                                <Database size={16} /> Fazer Backup dos Dados (.json)
                             </button>
                             <button className="flex-1 flex items-center justify-center gap-3 p-4 bg-rose-500/5 border border-rose-500/10 text-[10px] font-black uppercase text-rose-500 rounded-xl hover:bg-rose-500/10 transition-all">
-                                <Trash2 size={16} /> Limpar Cache Operacional
+                                <Trash2 size={16} /> Limpar Histórico de Produção
                             </button>
                         </div>
                     </div>
@@ -201,28 +202,28 @@ export default function ConfigPage() {
             case 'SEGURANÇA':
                 return (
                     <div className="space-y-12">
-                        <ConfigSection title="Segurança do Terminal" icon={Lock} badge="Nível 03">
+                        <ConfigSection title="Segurança de Acesso" icon={Lock} badge="Privacidade">
                             <div className="bg-[#0a0a0b] p-8 rounded-[2rem] border border-zinc-900 space-y-8">
                                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest border-l-2 border-[#0091ff] pl-4 italic leading-relaxed">
-                                    O gerenciamento de senhas e autenticação de dois fatores é processado via Clerk Security Gateway.
+                                    Sua conta é protegida com criptografia de ponta a ponta e autenticação segura pelo sistema Clerk.
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <HUDInput label="ATUALIZAR_CHAVE" type="password" placeholder="SENHA ATUAL" />
-                                    <HUDInput label="NOVA_CHAVE" type="password" placeholder="REPETIR NOVA" />
+                                    <HUDInput label="Senha Atual" type="password" placeholder="********" />
+                                    <HUDInput label="Nova Senha" type="password" placeholder="********" />
                                 </div>
                             </div>
                         </ConfigSection>
 
                         <div className="space-y-4">
-                            <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic ml-2">Sessões em Aberto</h3>
+                            <h3 className="text-[10px] font-black text-zinc-600 uppercase tracking-widest italic ml-2">Acessos Ativos Agora</h3>
                             <div className="p-6 bg-[#0a0a0b] border border-zinc-900 rounded-2xl flex items-center justify-between group">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 bg-black border border-zinc-800 rounded-xl text-[#0091ff]">
                                         <Smartphone size={20} />
                                     </div>
                                     <div className="flex flex-col">
-                                        <span className="text-xs font-black text-white uppercase italic tracking-tight">Chrome em Windows (Atual)</span>
-                                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">IP: 189.122.XX.XX — São Paulo, BR</span>
+                                        <span className="text-xs font-black text-white uppercase italic tracking-tight">Este Computador (Atual)</span>
+                                        <span className="text-[9px] text-zinc-500 font-bold uppercase tracking-widest mt-0.5">IP: 189.122.XX.XX — Localização Aproximada</span>
                                     </div>
                                 </div>
                                 <span className="text-[9px] font-black text-emerald-500 bg-emerald-500/10 px-3 py-1 rounded-full uppercase italic">Seguro</span>
@@ -251,8 +252,8 @@ export default function ConfigPage() {
 
                 <header className="h-20 px-8 flex items-center justify-between z-40 relative border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl">
                     <div className="flex flex-col">
-                        <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-1">CALCULATION_CORE_V2.4</h1>
-                        <h2 className="text-2xl font-black tracking-tighter text-white uppercase">Parâmetros do <span className="text-[#0091ff]">Maker</span></h2>
+                        <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-1">Painel de Controle</h1>
+                        <h2 className="text-2xl font-black tracking-tighter text-white uppercase">Ajustes da <span className="text-[#0091ff]">Oficina</span></h2>
                     </div>
 
                     <button
@@ -261,18 +262,18 @@ export default function ConfigPage() {
                         className="h-11 px-8 bg-[#0091ff] hover:bg-[#007cdb] text-white rounded-2xl text-[10px] font-black uppercase flex items-center gap-3 shadow-[0_0_20px_rgba(0,145,255,0.2)] transition-all active:scale-95 disabled:opacity-50"
                     >
                         {isSaving ? <RefreshCw size={16} className="animate-spin" /> : <Save size={18} strokeWidth={3} />}
-                        {isSaving ? "Sincronizando..." : "Sincronizar Terminal"}
+                        {isSaving ? "Salvando..." : "Salvar Configurações"}
                     </button>
                 </header>
 
                 <div className="flex-1 flex overflow-hidden relative">
                     <aside className="w-80 border-r border-white/5 p-8 bg-[#08080a]/50 relative z-40 flex flex-col justify-between">
                         <div className="space-y-4">
-                            <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.3em] mb-6 px-2 italic border-l-2 border-zinc-900 ml-1">Módulos de Controle</p>
+                            <p className="text-[9px] font-black text-zinc-700 uppercase tracking-[0.3em] mb-6 px-2 italic border-l-2 border-zinc-900 ml-1">Menu de Ajustes</p>
                             {[
-                                { id: 'PERFIL', label: 'Operador', icon: User },
-                                { id: 'SEGURANÇA', label: 'Segurança', icon: Lock },
-                                { id: 'BANCADA', label: 'Bancada', icon: Ruler },
+                                { id: 'PERFIL', label: 'Meu Perfil', icon: User },
+                                { id: 'SEGURANÇA', label: 'Senha e Acesso', icon: Lock },
+                                { id: 'BANCADA', label: 'Bancada e Custos', icon: Ruler },
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
@@ -285,7 +286,7 @@ export default function ConfigPage() {
                         </div>
 
                         <button onClick={() => signOut()} className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest text-rose-600 hover:bg-rose-500/10 transition-all group">
-                            <LogOut size={18} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" /> Logout Terminal
+                            <LogOut size={18} strokeWidth={2.5} className="group-hover:-translate-x-1 transition-transform" /> Sair da Conta
                         </button>
                     </aside>
 
@@ -295,17 +296,17 @@ export default function ConfigPage() {
                 </div>
 
                 <footer className="p-4 px-10 border-t border-white/5 bg-black/40 flex justify-between items-center relative z-40 backdrop-blur-md">
-                    <p className="text-[8px] font-black text-zinc-800 uppercase tracking-[0.8em]">P R I N T L O G &nbsp; T E R M I N A L &nbsp; C O R E</p>
-                    <span className="text-[8px] font-black text-zinc-700 uppercase tracking-widest italic">Build_2026.12.22_STABLE</span>
+                    <p className="text-[8px] font-black text-zinc-800 uppercase tracking-[0.8em]">P R I N T L O G &nbsp; M A K E R &nbsp; C O R E</p>
+                    <span className="text-[8px] font-black text-zinc-700 uppercase tracking-widest italic">Sistema Estável</span>
                 </footer>
             </main>
 
-            <style jsx global>{`
+            <style dangerouslySetInnerHTML={{ __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 5px; } 
                 .custom-scrollbar::-webkit-scrollbar-track { background: #050505; } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f1f23; border-radius: 20px; border: 1px solid #050505; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #27272a; }
-            `}</style>
+            ` }} />
         </div>
     );
 }

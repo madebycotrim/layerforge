@@ -1,7 +1,7 @@
 // src/features/calculadora/components/cards/canalVendas.jsx
 
 import React, { useMemo } from "react";
-import { Percent, DollarSign, Info } from "lucide-react";
+import { Percent, DollarSign, Info, Landmark } from "lucide-react";
 import SearchSelect from "../../../../components/SearchSelect";
 
 /* ---------- LABEL PADRONIZADO ---------- */
@@ -11,24 +11,22 @@ const Label = ({ children }) => (
   </label>
 );
 
-/* ---------- COMPONENTE PRINCIPAL ---------- */
 export default function CanalDeVenda({
   canalVenda,
   setCanalVenda,
   taxaMarketplace,
   setTaxaMarketplace,
-  taxaMarketplaceFixa, // Alterado de custoFixo para bater com o calculator.js
+  taxaMarketplaceFixa,
   setTaxaMarketplaceFixa,
 }) {
   
-  // Presets atualizados com taxas reais de mercado
   const presets = {
-    loja: { label: "Venda Direta / Site Próprio", taxa: 0, fixo: 0 },
+    loja: { label: "Venda Direta (Sem Taxas)", taxa: 0, fixo: 0 },
     shopee_padrao: { label: "Shopee Padrão (14% + R$4)", taxa: 14, fixo: 4 },
     shopee_frete: { label: "Shopee c/ Frete Grátis (20% + R$4)", taxa: 20, fixo: 4 },
     ml_classico: { label: "Mercado Livre Clássico (~13% + R$6)", taxa: 13, fixo: 6 },
     ml_premium: { label: "Mercado Livre Premium (~18% + R$6)", taxa: 18, fixo: 6 },
-    custom: { label: "Personalizado / Outros", taxa: 0, fixo: 0 },
+    custom: { label: "Taxa Manual / Outros", taxa: 0, fixo: 0 },
   };
 
   const options = useMemo(() => [
@@ -66,9 +64,9 @@ export default function CanalDeVenda({
   return (
     <div className="space-y-5 animate-in fade-in duration-500">
       
-      {/* SELETOR DE CANAL (ESTILO BUSCA DATABASE) */}
+      {/* SELETOR DE CANAL */}
       <div>
-        <Label>Marketplace_Node</Label>
+        <Label>Onde você vai vender?</Label>
         <SearchSelect
           value={canalVenda}
           onChange={handleChange}
@@ -78,15 +76,15 @@ export default function CanalDeVenda({
         />
       </div>
 
-      {/* INPUTS DE TAXA */}
       <div className="grid grid-cols-2 gap-4">
         
-        {/* COMISSÃO PERCENTUAL */}
+        {/* COMISSÃO % */}
         <div className="space-y-1.5">
-          <Label>Mkt_Fee (%)</Label>
+          <Label>Comissão do Site</Label>
           <div className="relative group">
             <Percent
               size={12}
+              strokeWidth={2.5}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-sky-500 transition-colors"
             />
             <input
@@ -94,24 +92,18 @@ export default function CanalDeVenda({
               value={taxaMarketplace}
               onChange={(e) => setTaxaMarketplace(e.target.value)}
               placeholder="0"
-              className="
-                no-spinner w-full h-11 rounded-xl pl-10 pr-3
-                bg-zinc-950 border border-zinc-800/60
-                text-zinc-300 text-xs font-mono font-bold
-                outline-none transition-all
-                hover:border-zinc-700
-                focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/10
-              "
+              className="no-spinner w-full h-11 rounded-xl pl-10 pr-3 bg-zinc-950 border border-zinc-800/60 text-zinc-300 text-xs font-mono font-bold outline-none transition-all hover:border-zinc-700 focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/10"
             />
           </div>
         </div>
 
-        {/* TAXA FIXA (O "VILÃO" DAS VENDAS PEQUENAS) */}
+        {/* TAXA FIXA R$ */}
         <div className="space-y-1.5">
-          <Label>Fixed_Fee (R$)</Label>
+          <Label>Taxa Fixa (por venda)</Label>
           <div className="relative group">
-            <DollarSign
+            <Landmark
               size={12}
+              strokeWidth={2.5}
               className="absolute left-3.5 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-sky-500 transition-colors"
             />
             <input
@@ -119,29 +111,22 @@ export default function CanalDeVenda({
               value={taxaMarketplaceFixa}
               onChange={(e) => setTaxaMarketplaceFixa(e.target.value)}
               placeholder="0.00"
-              className="
-                no-spinner w-full h-11 rounded-xl pl-10 pr-3
-                bg-zinc-950 border border-zinc-800/60
-                text-zinc-300 text-xs font-mono font-bold
-                outline-none transition-all
-                hover:border-zinc-700
-                focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/10
-              "
+              className="no-spinner w-full h-11 rounded-xl pl-10 pr-10 bg-zinc-950 border border-zinc-800/60 text-zinc-300 text-xs font-mono font-bold outline-none transition-all hover:border-zinc-700 focus:border-sky-500/40 focus:ring-1 focus:ring-sky-500/10"
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 opacity-20 hover:opacity-100 transition-opacity cursor-help">
-                <Info size={12} className="text-zinc-400" />
-            </div>
+            <span className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[9px] font-black text-zinc-700 uppercase">
+              R$
+            </span>
           </div>
         </div>
 
       </div>
 
-      {/* FEEDBACK SUTIL */}
-      {taxaMarketplaceFixa > 0 && (
-          <div className="px-3 py-2 bg-amber-500/5 border border-amber-500/10 rounded-lg flex items-center gap-2">
-              <div className="w-1 h-1 rounded-full bg-amber-500 animate-pulse" />
+      {/* FEEDBACK DE TAXA ATIVA */}
+      {Number(taxaMarketplaceFixa) > 0 && (
+          <div className="px-3 py-2 bg-amber-500/5 border border-amber-500/10 rounded-lg flex items-center gap-2.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse shadow-[0_0_8px_rgba(245,158,11,0.4)]" />
               <span className="text-[8px] font-black text-amber-500/80 uppercase tracking-widest leading-none">
-                  Atenção: Taxa fixa de {presets[canalVenda]?.fixo || taxaMarketplaceFixa}R$ aplicada por unidade vendida.
+                  Dica: a taxa fixa de R$ {taxaMarketplaceFixa} será descontada do lucro de cada peça vendida.
               </span>
           </div>
       )}

@@ -2,77 +2,91 @@ import React from "react";
 import {
   DollarSign,
   Landmark,
-  AlertTriangle,
-  Tag
+  ShieldAlert,
+  Tag,
+  Info
 } from "lucide-react";
 
-/* ---------- LABEL ---------- */
+/* ---------- LABEL PADRONIZADO ---------- */
 const Label = ({ children }) => (
-  <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest mb-1.5 block truncate ml-1">
+  <label className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em] mb-2 block ml-1">
     {children}
   </label>
 );
 
-/* ---------- INPUT % ---------- */
+/* ---------- PERCENT INPUT INDUSTRIAL ---------- */
 const PercentInput = ({
   label,
   valor,
   aoAlterar,
-  highlight = false,
+  variant = "default", // 'default' | 'primary' | 'warning'
   Icon
-}) => (
-  <div>
-    <Label>{label}</Label>
+}) => {
+  // Configuração de cores baseada na variante
+  const variants = {
+    primary: {
+      border: "border-sky-500/30 focus-within:border-sky-500/50",
+      icon: "text-sky-500",
+      bg: "bg-sky-500/5",
+      glow: "shadow-[0_0_15px_-5px_rgba(14,165,233,0.1)]"
+    },
+    warning: {
+      border: "border-amber-500/20 focus-within:border-amber-500/50",
+      icon: "text-amber-600 group-focus-within:text-amber-500",
+      bg: "bg-amber-500/5",
+      glow: "shadow-[0_0_15px_-5px_rgba(245,158,11,0.1)]"
+    },
+    default: {
+      border: "border-zinc-800/60 focus-within:border-zinc-700",
+      icon: "text-zinc-600 group-focus-within:text-zinc-400",
+      bg: "bg-zinc-950",
+      glow: ""
+    }
+  };
 
-    {/* CONTAINER */}
-    <div
-      className={`
-        relative
-        transition-all
-        focus-within:ring-1 focus-within:ring-sky-500/20
-      `}
-    >
-      {/* ÍCONE (SEM HOVER) */}
-      <span
-        className={`
-          absolute left-3 top-1/2 -translate-y-1/2 transition-colors
-          ${highlight ? "text-sky-400" : "text-zinc-600"}
-          focus-within:text-sky-500
-        `}
-      >
-        <Icon size={14} />
-      </span>
+  const style = variants[variant];
 
-      <input
-        type="number"
-        placeholder="0"
-        value={valor}
-        onChange={(e) => aoAlterar(e.target.value)}
-        className={`
-          no-spinner w-full h-11 rounded-xl pl-10 pr-8
-          border text-sm font-mono font-bold
-          outline-none transition-all placeholder:text-zinc-800
-          ${
-            highlight
-              ? "bg-sky-500/5 border-sky-500/30 text-sky-400 focus:border-sky-400 hover:bg-sky-500/10"
-              : "bg-zinc-950 border-zinc-800 text-zinc-300 focus:border-sky-500 hover:border-zinc-700"
-          }
-        `}
-      />
+  return (
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
 
-      {/* % */}
-      <span
-        className={`
-          absolute right-3 top-1/2 -translate-y-1/2
-          text-[10px] font-bold
-          ${highlight ? "text-sky-500" : "text-zinc-600"}
-        `}
-      >
-        %
-      </span>
+      <div className={`
+        group relative rounded-xl border transition-all duration-300
+        ${style.border} ${style.bg} ${style.glow}
+      `}>
+        {/* ÍCONE COM STROKE PESADO */}
+        <span className={`
+          absolute left-3.5 top-1/2 -translate-y-1/2 transition-colors duration-300
+          ${style.icon}
+        `}>
+          <Icon size={14} strokeWidth={2.5} />
+        </span>
+
+        <input
+          type="number"
+          placeholder="0"
+          value={valor}
+          onChange={(e) => aoAlterar(e.target.value)}
+          className="
+            no-spinner w-full h-11 pl-10 pr-8
+            bg-transparent
+            text-zinc-200 text-xs font-mono font-bold
+            outline-none transition-all placeholder:text-zinc-800
+          "
+        />
+
+        {/* SUFIXO % */}
+        <span className={`
+          absolute right-3.5 top-1/2 -translate-y-1/2
+          text-[10px] font-black uppercase tracking-tighter
+          ${variant === 'default' ? 'text-zinc-700' : 'text-zinc-500'}
+        `}>
+          %
+        </span>
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 /* ---------- COMPONENTE PRINCIPAL ---------- */
 export default function Precificacao({
@@ -86,31 +100,33 @@ export default function Precificacao({
   setDesconto
 }) {
   return (
-    <div className="grid grid-cols-2 gap-4">
+    <div className="grid grid-cols-2 gap-4 animate-in fade-in duration-500">
+      
       <PercentInput
-        label="Margem de Lucro"
+        label="Lucro Desejado"
         valor={margemLucro}
         aoAlterar={setMargemLucro}
-        highlight
+        variant="primary"
         Icon={DollarSign}
       />
 
       <PercentInput
-        label="Imposto (DAS)"
+        label="Impostos"
         valor={imposto}
         aoAlterar={setImposto}
         Icon={Landmark}
       />
 
       <PercentInput
-        label="Risco / Falha"
+        label="Reserva para Falhas"
         valor={taxaFalha}
         aoAlterar={setTaxaFalha}
-        Icon={AlertTriangle}
+        variant="warning"
+        Icon={ShieldAlert}
       />
 
       <PercentInput
-        label="Desc. Máximo"
+        label="Margem de Desconto"
         valor={desconto}
         aoAlterar={setDesconto}
         Icon={Tag}

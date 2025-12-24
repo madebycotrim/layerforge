@@ -21,7 +21,7 @@ const formatBigNumber = (num) => {
     return Math.floor(num).toString();
 };
 
-// --- COMPONENTE: SAÚDE DA FROTA (ESTILO PREMIUM) ---
+// --- COMPONENTE: SAÚDE DA FROTA (STATUS DA FARM) ---
 const StatusOverviewCard = ({ criticalCount, totalCount }) => {
     const isHealthy = criticalCount === 0;
     const accentColor = isHealthy ? 'emerald' : 'rose';
@@ -38,19 +38,19 @@ const StatusOverviewCard = ({ criticalCount, totalCount }) => {
                 <div>
                     <div className="flex items-center gap-2 mb-1">
                         <span className={`w-1.5 h-1.5 rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-rose-500 animate-ping'}`} />
-                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.25em]">Fleet_Protocol</p>
+                        <p className="text-[10px] text-zinc-500 font-black uppercase tracking-[0.25em]">Saúde da Farm</p>
                     </div>
                     <h3 className={`text-2xl font-black font-mono tracking-tighter leading-none ${isHealthy ? 'text-white' : 'text-rose-500'}`}>
-                        {isHealthy ? 'SYSTEM_NOMINAL' : 'FLEET_ALERT'}
+                        {isHealthy ? 'TUDO EM ORDEM' : 'MÁQUINA EM ALERTA'}
                     </h3>
                     <p className="text-[11px] text-zinc-500 font-bold mt-2 uppercase">
-                        {isHealthy ? 'Integridade total detectada' : `${criticalCount} UNIDADES EM MANUTENÇÃO`}
+                        {isHealthy ? 'Todas as impressoras estão operacionais' : `${criticalCount} impressoras precisam de atenção ou reparo`}
                     </p>
                 </div>
             </div>
 
             <div className="flex flex-col items-end relative z-10">
-                <div className="text-[9px] text-zinc-600 font-black uppercase mb-2 tracking-widest tracking-[0.2em]">Efficiency</div>
+                <div className="text-[9px] text-zinc-600 font-black uppercase mb-2 tracking-widest tracking-[0.2em]">Uso da Farm</div>
                 <div className="h-1.5 w-20 bg-zinc-900 rounded-full overflow-hidden border border-white/5 p-[1px]">
                     <div
                         className={`h-full rounded-full transition-all duration-1000 ${isHealthy ? 'bg-emerald-500' : 'bg-rose-500'}`}
@@ -62,9 +62,9 @@ const StatusOverviewCard = ({ criticalCount, totalCount }) => {
     );
 };
 
-// --- COMPONENTE: TECH STAT CARD (ESTILO PREMIUM) ---
+// --- COMPONENTE: TECH STAT CARD (DADOS DA OFICINA) ---
 const TechStatCard = ({ title, value, icon: Icon, colorClass, secondaryLabel, secondaryValue }) => (
-    <div className="h-[135px] p-6 rounded-2xl bg-[#0a0a0b] border border-zinc-900 flex items-center justify-between group transition-all hover:border-zinc-700/50 shadow-[0_8px_30px_rgba(0,0,0,0.12)]">
+    <div className="h-[135px] p-6 rounded-2xl bg-[#0a0a0b] border border-zinc-900 flex items-center justify-between group transition-all hover:border-zinc-700/50 shadow-[0_8px_30_rgb(0,0,0,0.12)]">
         <div className="flex items-center gap-6">
             <div className={`p-4 rounded-2xl bg-black border border-zinc-800 ${colorClass} shadow-inner group-hover:scale-105 transition-transform duration-500`}>
                 <Icon size={26} strokeWidth={2} />
@@ -114,7 +114,7 @@ export default function ImpressorasPage() {
     }, [printers, busca]);
 
     const aoSalvar = (dados) => { savePrinter(dados); carregarDados(); setModalAberto(false); setItemEdicao(null); };
-    const aoDeletar = (id) => { if (window.confirm("Remover Node permanentemente?")) { deletePrinter(id); carregarDados(); } };
+    const aoDeletar = (id) => { if (window.confirm("Deseja remover esta impressora da farm permanentemente?")) { deletePrinter(id); carregarDados(); } };
     const alternarStatus = (id, statusAtual) => { updateStatus(id, { 'idle': 'printing', 'printing': 'maintenance', 'maintenance': 'idle' }[statusAtual || 'idle']); carregarDados(); };
     const finalizarReparo = (id) => { resetMaintenance(id); carregarDados(); setPrinterEmDiagnostico(null); };
 
@@ -135,16 +135,16 @@ export default function ImpressorasPage() {
 
                 <header className="h-20 px-8 flex items-center justify-between z-40 relative border-b border-white/5 bg-[#050505]/80 backdrop-blur-xl">
                     <div>
-                        <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-1">Fleet_Core_v2.4</h1>
-                        <span className="text-2xl font-black tracking-tight text-white uppercase tracking-tighter">Oficina de Impressão</span>
+                        <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600 mb-1">Controle de Impressão</h1>
+                        <span className="text-2xl font-black tracking-tight text-white uppercase tracking-tighter">Gerenciamento de Impressoras</span>
                     </div>
                     <div className="flex items-center gap-6">
                         <div className="relative group">
                             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-emerald-500 transition-colors" size={14} />
-                            <input className="w-80 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl py-2.5 pl-11 pr-4 text-[11px] text-zinc-400 outline-none font-mono focus:border-emerald-500/30 focus:bg-zinc-900/40 transition-all placeholder:text-zinc-700" placeholder="QUERY_FLEET_DATABASE..." value={busca} onChange={e => setBusca(e.target.value)} />
+                            <input className="w-80 bg-zinc-900/20 border border-zinc-800/50 rounded-2xl py-2.5 pl-11 pr-4 text-[11px] text-zinc-400 outline-none font-mono focus:border-emerald-500/30 focus:bg-zinc-900/40 transition-all placeholder:text-zinc-700" placeholder="Procurar impressora na farm..." value={busca} onChange={e => setBusca(e.target.value)} />
                         </div>
                         <button onClick={() => { setItemEdicao(null); setModalAberto(true); }} className="h-11 px-8 bg-[#009b74] hover:bg-emerald-500 text-white rounded-2xl text-[10px] font-black uppercase flex items-center gap-3 shadow-[0_0_20px_rgba(16,185,129,0.15)] transition-all active:scale-95">
-                            <Plus size={18} strokeWidth={3} /> Adicionar Máquina
+                            <Plus size={18} strokeWidth={3} /> Adicionar Impressora
                         </button>
                     </div>
                 </header>
@@ -154,30 +154,27 @@ export default function ImpressorasPage() {
 
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6">
                             <StatusOverviewCard criticalCount={criticalCount} totalCount={printers.length} />
-                            <TechStatCard title="Total Production" value={formatBigNumber(stats.totalPrints)} icon={CheckCircle2} colorClass="text-emerald-500" secondaryLabel="Produção Geral" secondaryValue="Nodes Ativos" />
-                            <TechStatCard title="Filament Usage" value={`${stats.filament}kg`} icon={Timer} colorClass="text-amber-500" secondaryLabel="Massa Estimada" secondaryValue="Consumo Total" />
+                            <TechStatCard title="Produção Total" value={formatBigNumber(stats.totalPrints)} icon={CheckCircle2} colorClass="text-emerald-500" secondaryLabel="Peças Impressas" secondaryValue="Trabalho acumulado" />
+                            <TechStatCard title="Uso de Filamento" value={`${stats.filament}kg`} icon={Timer} colorClass="text-amber-500" secondaryLabel="Material usado" secondaryValue="Total de todos os pedidos" />
                         </div>
 
-                        {/* SEÇÃO NODES (ESTILO FILAMENTOS) */}
+                        {/* SEÇÃO DA FROTA */}
                         <div className="space-y-10 pb-40">
                             <div className="flex items-center gap-6">
                                 <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 shadow-xl flex items-center justify-center">
                                     <LayoutGrid size={20} strokeWidth={2.5} />
                                 </div>
                                 <div className="flex flex-col">
-                                    <h2 className="text-[14px] font-black uppercase tracking-[0.3em] text-white whitespace-nowrap leading-none">Nodes Conectados</h2>
-                                    <span className="text-[8px] text-zinc-600 font-bold mt-1 tracking-[0.2em] uppercase">Hardware_Array_Scan_v2</span>
+                                    <h2 className="text-[14px] font-black uppercase tracking-[0.3em] text-white whitespace-nowrap leading-none">Minhas Impressoras</h2>
+                                    <span className="text-[8px] text-zinc-600 font-bold mt-1 tracking-[0.2em] uppercase">Status dos equipamentos</span>
                                 </div>
 
                                 <div className="h-[1px] flex-1 bg-gradient-to-r from-zinc-800/80 via-zinc-800/30 to-transparent" />
 
                                 <div className="flex items-center gap-6 px-6 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-800/50 shadow-2xl backdrop-blur-sm">
-                                    <div className="flex flex-col items-center">
-                                        <span className="text-[8px] font-black text-zinc-600 uppercase mb-0.5 tracking-widest">Capacidade</span>
-                                        <span className="text-[12px] font-mono font-bold text-emerald-500 leading-none">{filteredPrinters.length.toString().padStart(2, '0')}</span>
-                                    </div>
-                                    <div className="w-[1px] h-6 bg-zinc-800" />
-                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">{filteredPrinters.length} Unidades</span>
+                                    <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
+                                        {filteredPrinters.length} {filteredPrinters.length === 1 ? 'Máquina ativa' : 'Máquinas ativas'}
+                                    </span>
                                 </div>
                             </div>
 
@@ -198,7 +195,7 @@ export default function ImpressorasPage() {
                             {filteredPrinters.length === 0 && (
                                 <div className="py-40 flex flex-col items-center justify-center border border-dashed border-zinc-900 rounded-[3rem] bg-zinc-950/40 backdrop-blur-sm">
                                     <Scan size={50} className="text-zinc-800 mb-6 animate-pulse" />
-                                    <p className="text-zinc-600 text-[12px] font-black uppercase tracking-[0.4em]">Zero_Nodes_Found</p>
+                                    <p className="text-zinc-600 text-[12px] font-black uppercase tracking-[0.4em]">Nenhuma impressora encontrada</p>
                                 </div>
                             )}
                         </div>
@@ -220,12 +217,12 @@ export default function ImpressorasPage() {
                     />
                 )}
             </main>
-            <style jsx global>{`
+            <style dangerouslySetInnerHTML={{ __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 5px; } 
                 .custom-scrollbar::-webkit-scrollbar-track { background: #050505; } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f1f23; border-radius: 20px; border: 1px solid #050505; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #27272a; }
-            `}</style>
+            ` }} />
         </div>
     );
 }

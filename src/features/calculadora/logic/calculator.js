@@ -2,11 +2,9 @@
 import { parseNumber } from "../../../lib/format";
 
 export function calcularTudo(entradas = {}) {
-    // --- 1. NORMALIZAÇÃO DE ENTRADAS ---
+    // --- 1. NORMALIZAÇÃO E TRATAMENTO DE ENTRADAS ---
     const p = {
-        pesoPeca: parseNumber(entradas.pesoModelo),
         qtd: Math.max(1, parseNumber(entradas.qtdPecas)),
-        custoRolo: parseNumber(entradas.custoRolo),
         custoKwh: parseNumber(entradas.custoKwh),
         horaHumana: parseNumber(entradas.valorHoraHumana),
         horaMaquina: parseNumber(entradas.custoHoraMaquina),
@@ -21,7 +19,7 @@ export function calcularTudo(entradas = {}) {
         margem: parseNumber(entradas.margemLucro) / 100,
         imposto: parseNumber(entradas.imposto) / 100,
         taxaMkt: parseNumber(entradas.taxaMarketplace) / 100,
-        taxaMktFixa: parseNumber(entradas.taxaMarketplaceFixa || 0), // Adicionado taxa fixa (Ex: R$ 6,00 ML)
+        taxaMktFixa: parseNumber(entradas.taxaMarketplaceFixa || 0),
         desconto: parseNumber(entradas.desconto) / 100,
         falha: parseNumber(entradas.taxaFalha) / 100,
         consumoW: parseNumber(entradas.consumoImpressoraKw) > 10 
@@ -29,77 +27,86 @@ export function calcularTudo(entradas = {}) {
             : parseNumber(entradas.consumoImpressoraKw) || 0.15
     };
 
-    // --- 2. CUSTOS DE PRODUÇÃO (SEM ARREDONDAR) ---
-    const custoMaterialUnit = (p.custoRolo / 1000) * p.pesoPeca;
+    // --- 2. CÁLCULO DE MATERIAL (SUPORTE A MULTICOLOR/AMS) ---
+    let custoMaterialUnit = 0;
+    
+    // Se houver slots (Multicolor), soma todos. Se não, usa os campos simples.
+    if (entradas.materialSlots && entradas.materialSlots.length > 0) {
+        custoMaterialUnit = entradas.materialSlots.reduce((acc, slot) => {
+            const peso = parseNumber(slot.weight);
+            const precoKg = parseNumber(slot.priceKg);
+            return acc + ((precoKg / 1000) * peso);
+        }, 0);
+    } else {
+        custoMaterialUnit = (parseNumber(entradas.custoRolo) / 1000) * parseNumber(entradas.pesoModelo);
+    }
+
+    // --- 3. CUSTOS DE PRODUÇÃO (ONDE O RISCO SE APLICA) ---
     const custoEnergiaUnit = (p.tImp * p.consumoW * p.custoKwh) / p.qtd;
     const custoMaquinaUnit = (p.tImp * p.horaMaquina) / p.qtd;
     const custoMaoDeObraUnit = (p.tTrab * p.horaHumana) / p.qtd;
     const custoSetupUnit = p.taxaSetup / p.qtd;
     
-    // Custos Ocultos (Bico, Teflon, Energia de Aquecimento - aprox 5% do custo maq)
-    const custoManutencaoOculta = custoMaquinaUnit * 0.05;
+    // Manutenção oculta (5% sobre o custo de máquina para bicos, correias, etc)
+    const manutencaoOcultaUnit = custoMaquinaUnit * 0.05;
 
-    // Soma Base (O que sai do seu bolso para fabricar)
+    // Custo de fabricação puro
     const custoProducaoDireto = custoMaterialUnit + custoEnergiaUnit + custoMaquinaUnit + 
-                               custoMaoDeObraUnit + custoSetupUnit + custoManutencaoOculta;
+                               custoMaoDeObraUnit + custoSetupUnit + manutencaoOcultaUnit;
 
-    // Custo Total de Operação (Incluindo falhas estimadas e logística/extras)
-    // Aplicamos a falha sobre o custo de produção
-    const custoComRisco = custoProducaoDireto / (1 - p.falha);
-    const custoTotalOperacional = custoComRisco + p.embalagem + p.frete + p.extras;
+    // Aplicação do Risco/Falha APENAS na produção
+    const custoProducaoComRisco = p.falha < 1 ? custoProducaoDireto / (1 - p.falha) : custoProducaoDireto * 2;
+    const valorRiscoUnit = custoProducaoComRisco - custoProducaoDireto;
 
-    // --- 3. PRECIFICAÇÃO (ESTILO MARGEM DE CONTRIBUIÇÃO) ---
-    // markup fixo sobre o custo + divisor de taxas variáveis
+    // --- 4. CUSTO TOTAL DE OPERAÇÃO (BREAK-EVEN) ---
+    // Adicionamos logística e extras DEPOIS do risco de falha
+    const custoTotalOperacional = custoProducaoComRisco + p.embalagem + p.frete + p.extras;
+
+    // --- 5. PRECIFICAÇÃO (CONTRIBUIÇÃO MARGINAL) ---
     const divisor = 1 - p.imposto - p.taxaMkt;
     
     let precoSugerido = 0;
     if (divisor > 0.1) {
-        // Preço = (Custo Operacional * (1 + Margem Desejada) + Taxa Fixa Mkt) / Divisor
+        // Fórmula: (Custos que não dependem do preço * (1 + Margem) + Taxa Fixa) / Divisor de Taxas %
         precoSugerido = (custoTotalOperacional * (1 + p.margem) + p.taxaMktFixa) / divisor;
     } else {
-        precoSugerido = custoTotalOperacional * 3; // Fallback para taxas absurdas
+        precoSugerido = custoTotalOperacional * 3; 
     }
 
-    const precoComDesconto = precoSugerido * (1 - p.desconto);
+    const precoFinalVenda = precoSugerido * (1 - p.desconto);
 
-    // --- 4. CÁLCULO DE IMPOSTOS REAIS (Sobre o valor que será vendido) ---
-    const valorImpostoReal = precoComDesconto * p.imposto;
-    const valorMktReal = (precoComDesconto * p.taxaMkt) + p.taxaMktFixa;
-    const valorRiscoReal = custoComRisco - custoProducaoDireto;
+    // --- 6. INDICADORES FINANCEIROS REAIS (Baseados no valor de venda real) ---
+    const valorImpostoReal = precoFinalVenda * p.imposto;
+    const valorMktReal = (precoFinalVenda * p.taxaMkt) + p.taxaMktFixa;
 
-    // Lucro Líquido Real (O que sobra no bolso após desconto, impostos e custos)
-    const lucroLiquidoReal = precoComDesconto - valorImpostoReal - valorMktReal - custoTotalOperacional;
-    const margemEfetivaReal = precoComDesconto > 0 ? (lucroLiquidoReal / precoComDesconto) * 100 : 0;
+    // Lucro Líquido Real: O que sobra depois de pagar TUDO
+    const lucroLiquidoReal = precoFinalVenda - valorImpostoReal - valorMktReal - custoTotalOperacional;
+    const margemEfetivaReal = precoFinalVenda > 0 ? (lucroLiquidoReal / precoFinalVenda) * 100 : 0;
 
-    // --- 5. RETORNO (SÓ ARREDONDA AQUI) ---
+    // --- 7. RETORNO ---
     const round = (n) => Math.round((n + Number.EPSILON) * 100) / 100;
 
     return {
-        // Custos Individuais
         custoMaterial: round(custoMaterialUnit),
         custoEnergia: round(custoEnergiaUnit),
-        custoMaquina: round(custoMaquinaUnit + custoManutencaoOculta),
+        custoMaquina: round(custoMaquinaUnit + manutencaoOcultaUnit),
         custoMaoDeObra: round(custoMaoDeObraUnit),
         custoSetup: round(custoSetupUnit),
         custoEmbalagem: round(p.embalagem),
         custoFrete: round(p.frete),
         custosExtras: round(p.extras),
         
-        // Indicadores Financeiros
-        valorRisco: round(valorRiscoReal),
+        valorRisco: round(valorRiscoUnit),
         valorImpostos: round(valorImpostoReal),
         valorMarketplace: round(valorMktReal),
 
-        // Totais Finais
-        custoUnitario: round(custoTotalOperacional), // Custo real de saída
+        custoUnitario: round(custoTotalOperacional), 
         precoSugerido: round(precoSugerido),
-        precoComDesconto: round(precoComDesconto),
+        precoComDesconto: round(precoFinalVenda),
         lucroBrutoUnitario: round(lucroLiquidoReal),
         margemEfetivaPct: round(margemEfetivaReal),
 
-        // Metadados
         tempoTotalHoras: round(p.tImp),
-        consumoTotalKwh: round(p.tImp * p.consumoW),
         quantidade: p.qtd
     };
 }
