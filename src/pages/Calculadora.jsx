@@ -22,7 +22,7 @@ import MakersHubWidget from "../features/calculadora/components/cards/makerHub.j
 // --- LÓGICA E HOOKS ---
 import useDebounce from "../hooks/useDebounce";
 import { calcularTudo } from "../features/calculadora/logic/calculator";
-import { getPrinters } from "../features/impressoras/logic/printers";
+import { usePrinterStore } from "../features/impressoras/logic/store"; // <-- CORRIGIDO: Usando o Store
 import { addHistoryEntry } from "../features/calculadora/logic/localHistory";
 
 const WrapperCard = ({ children, title, icon: Icon, step, className = "", zIndex = "" }) => (
@@ -60,8 +60,10 @@ export default function CalculadoraPage() {
   const [historicoAberto, setHistoricoAberto] = useState(false);
   const [needsConfig, setNeedsConfig] = useState(false);
 
-  // --- 1. ESTADOS DOS INPUTS ---
-  const [printers, setPrinters] = useState([]);
+  // --- 1. ESTADO GLOBAL DAS IMPRESSORAS (D1 + ZUSTAND) ---
+  const { printers, fetchPrinters } = usePrinterStore();
+
+  // --- 2. ESTADOS DOS INPUTS ---
   const [selectedPrinter, setSelectedPrinter] = useState(null);
   const [nomeProjeto, setNomeProjeto] = useState("");
   const [qtdPecas, setQtdPecas] = useState("1");
@@ -89,7 +91,7 @@ export default function CalculadoraPage() {
   const [taxaSetup, setTaxaSetup] = useState("");
   const [consumoImpressoraKw, setConsumoImpressoraKw] = useState("");
 
-  // --- 2. OBJETO DE ENTRADAS (Memoizado antes das funções de ação) ---
+  // --- 3. OBJETO DE ENTRADAS ---
   const entradas = useMemo(() => ({
     custoRolo, pesoModelo, materialSlots, qtdPecas,
     tempoImpressaoHoras, tempoImpressaoMinutos,
@@ -119,7 +121,7 @@ export default function CalculadoraPage() {
     }
   }, [entradasDebounced]);
 
-  // --- 3. FUNÇÕES DE AÇÃO ---
+  // --- 4. FUNÇÕES DE AÇÃO ---
   const handleSalvarNoHistorico = useCallback(() => {
     if (!nomeProjeto.trim()) {
       alert("Por favor, insira um nome para o projeto.");
@@ -162,7 +164,6 @@ export default function CalculadoraPage() {
     setMaterialSlots(Array.isArray(e.materialSlots) ? e.materialSlots : [{ id: 'manual', weight: '', priceKg: '' }]);
     setCustosExtras(Array.isArray(e.custosExtras) ? e.custosExtras : [{ nome: "", valor: "" }]);
 
-    // Busca o objeto da impressora no estoque para manter a sincronia
     if (e.impressoraId && printers.length > 0) {
       const printerObj = printers.find(p => p.id === e.impressoraId);
       if (printerObj) setSelectedPrinter(printerObj);
@@ -171,13 +172,10 @@ export default function CalculadoraPage() {
     setHistoricoAberto(false);
   }, [printers]);
 
+  // CARREGAMENTO INICIAL
   useEffect(() => {
-    // 1. Carrega Impressoras
-    const list = getPrinters();
-    setPrinters(list);
-    if (list.length > 0) setSelectedPrinter(list[0]);
+    fetchPrinters(); // Busca do D1 via Store
 
-    // 2. CARREGA OS PADRÕES DA OFICINA (O que estava faltando!)
     const savedDefaults = localStorage.getItem("layerforge_defaults");
     if (savedDefaults) {
       const d = JSON.parse(savedDefaults);
@@ -190,11 +188,18 @@ export default function CalculadoraPage() {
     } else {
       setNeedsConfig(true);
     }
-  }, []);
+  }, [fetchPrinters]);
+
+  // Seleciona a primeira impressora automaticamente após o fetch
+  useEffect(() => {
+    if (printers.length > 0 && !selectedPrinter) {
+      setSelectedPrinter(printers[0]);
+    }
+  }, [printers, selectedPrinter]);
 
   useEffect(() => {
     if (selectedPrinter) {
-      const powerWatts = Number(selectedPrinter.power || selectedPrinter.potencia || 0);
+      const powerWatts = Number(selectedPrinter.power || 0);
       setConsumoImpressoraKw(powerWatts > 0 ? String(powerWatts / 1000) : "0");
     }
   }, [selectedPrinter]);
@@ -258,7 +263,7 @@ export default function CalculadoraPage() {
                       custoFrete={custoFrete}
                       setCustoFrete={setCustoFrete}
                       custosExtras={custosExtras}
-                      setCustosExtras={setCustosExtras} // <-- Verifique se esta prop está aqui
+                      setCustosExtras={setCustosExtras}
                     />
                   </WrapperCard>
                 </div>

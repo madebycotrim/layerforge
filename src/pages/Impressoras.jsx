@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import {
-    Plus, Search, CheckCircle2, Timer, 
-    AlertTriangle, Activity, LayoutGrid, Check, Scan
+    Plus, Search, CheckCircle2, Timer,
+    AlertTriangle, Activity, LayoutGrid, Check, Scan, X
 } from "lucide-react";
 
 // --- COMPONENTES ---
@@ -18,6 +18,34 @@ const formatBigNumber = (num) => {
     if (!num || isNaN(num)) return "0";
     if (num >= 1000) return (num / 1000).toFixed(1) + "k";
     return Math.floor(num).toString();
+};
+
+// --- COMPONENTE: NOTIFICAÇÃO (TOAST) ---
+const Toast = ({ message, type, onClose }) => {
+    useEffect(() => {
+        const timer = setTimeout(onClose, 4000);
+        return () => clearTimeout(timer);
+    }, [onClose]);
+
+    const isSuccess = type === 'success';
+
+    return (
+        <div className={`fixed top-6 right-6 z-[200] flex items-center gap-4 p-4 rounded-2xl border backdrop-blur-xl shadow-2xl animate-in slide-in-from-right duration-500 ${isSuccess ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-rose-500/10 border-rose-500/20'
+            }`}>
+            <div className={`p-2 rounded-xl ${isSuccess ? 'bg-emerald-500/20 text-emerald-500' : 'bg-rose-500/20 text-rose-500'}`}>
+                {isSuccess ? <Check size={18} strokeWidth={3} /> : <AlertTriangle size={18} strokeWidth={3} />}
+            </div>
+            <div className="flex flex-col">
+                <span className={`text-[10px] font-black uppercase tracking-widest ${isSuccess ? 'text-emerald-500' : 'text-rose-500'}`}>
+                    {isSuccess ? 'CONFIRMADO' : 'ALERTA'}
+                </span>
+                <p className="text-[11px] font-bold text-zinc-300 pr-8">{message}</p>
+            </div>
+            <button onClick={onClose} className="absolute top-2 right-2 text-zinc-600 hover:text-white transition-colors">
+                <X size={14} />
+            </button>
+        </div>
+    );
 };
 
 const StatusOverviewCard = ({ criticalCount, totalCount }) => {
@@ -79,13 +107,12 @@ const TechStatCard = ({ title, value, icon: Icon, colorClass, secondaryLabel, se
 );
 
 export default function ImpressorasPage() {
-    // Consumo do Store (Padrão Adapter EN-UI)
-    const { 
-        printers, 
-        fetchPrinters, 
-        upsertPrinter, 
-        removePrinter, 
-        updatePrinterStatus 
+    const {
+        printers,
+        fetchPrinters,
+        upsertPrinter,
+        removePrinter,
+        updatePrinterStatus
     } = usePrinterStore();
 
     const [larguraSidebar, setLarguraSidebar] = useState(72);
@@ -94,8 +121,13 @@ export default function ImpressorasPage() {
     const [itemEdicao, setItemEdicao] = useState(null);
     const [printerEmDiagnostico, setPrinterEmDiagnostico] = useState(null);
     const [checklists, setChecklists] = useState({});
+    const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
-    useEffect(() => { 
+    const showToast = useCallback((message, type = 'success') => {
+        setToast({ visible: true, message, type });
+    }, []);
+
+    useEffect(() => {
         fetchPrinters();
     }, [fetchPrinters]);
 
@@ -104,12 +136,12 @@ export default function ImpressorasPage() {
         let totalFilamentGrams = 0;
         let criticals = 0;
 
-        // Garantia de que printers seja um array
         const lista = Array.isArray(printers) ? printers : [];
 
         lista.forEach(p => {
-            totalPrints += (p.history?.length || 0);
-            totalFilamentGrams += (p.history || []).reduce((acc, h) => acc + (Number(h.filamentUsed || h.filamento_usado_g) || 0), 0);
+            const hist = p.history || p.historico || [];
+            totalPrints += hist.length;
+            totalFilamentGrams += hist.reduce((acc, h) => acc + (Number(h.filamentUsed || h.filamento_usado_g) || 0), 0);
 
             const problemas = analisarSaudeImpressora(p) || [];
             if (problemas.some(i => i.severidade === 'critical') || p.status === 'error') {
@@ -118,46 +150,68 @@ export default function ImpressorasPage() {
         });
 
         const filtradas = lista.filter(p => {
+            const nome = (p.name || p.nome || "").toLowerCase();
+            const modelo = (p.model || p.modelo || "").toLowerCase();
             const termo = busca.toLowerCase();
-            return (p.name || "").toLowerCase().includes(termo) ||
-                   (p.model || "").toLowerCase().includes(termo);
+            return nome.includes(termo) || modelo.includes(termo);
         });
 
         return {
             filteredPrinters: filtradas,
             criticalCount: criticals,
-            stats: { 
-                totalPrints, 
-                filamento: (totalFilamentGrams / 1000).toFixed(2) 
+            stats: {
+                totalPrints,
+                filamento: (totalFilamentGrams / 1000).toFixed(2)
             }
         };
     }, [printers, busca]);
 
-    const aoSalvar = (dados) => {
-        upsertPrinter(dados);
-        setModalAberto(false);
-        setItemEdicao(null);
-    };
-
-    const aoDeletar = (id) => {
-        if (window.confirm("Deseja remover esta impressora da farm permanentemente?")) {
-            removePrinter(id);
+    const aoSalvar = async (dados) => {
+        try {
+            await upsertPrinter(dados);
+            setModalAberto(false);
+            setItemEdicao(null);
+            showToast("Sincronizado com sucesso.");
+        } catch (e) {
+            // Agora o Toast mostra a mensagem REAL do banco de dados
+            showToast(e.message, "error");
         }
     };
 
-    const alternarStatus = (id, statusAtual) => {
-        const proximos = { 'idle': 'printing', 'printing': 'maintenance', 'maintenance': 'idle' };
-        updatePrinterStatus(id, proximos[statusAtual] || 'idle');
+    const aoDeletar = async (id) => {
+        if (window.confirm("Remover esta impressora permanentemente?")) {
+            try {
+                await removePrinter(id);
+                showToast("Impressora removida da farm.");
+            } catch (e) {
+                showToast("Erro ao excluir registro.", "error");
+            }
+        }
     };
 
-    const finalizarReparo = (id) => {
+    const alternarStatus = async (id, statusAtual) => {
+        const proximos = { 'idle': 'printing', 'printing': 'maintenance', 'maintenance': 'idle' };
+        try {
+            await updatePrinterStatus(id, proximos[statusAtual] || 'idle');
+            showToast("Status atualizado.");
+        } catch (e) {
+            showToast("Erro na atualização.", "error");
+        }
+    };
+
+    const finalizarReparo = async (id) => {
         const imp = printers.find(p => p.id === id);
         if (imp) {
-            upsertPrinter({
-                ...imp,
-                lastMaintenanceHour: imp.totalHours,
-                status: 'idle'
-            });
+            try {
+                await upsertPrinter({
+                    ...imp,
+                    lastMaintenanceHour: imp.totalHours || imp.horas_totais,
+                    status: 'idle'
+                });
+                showToast(`Check-up da ${imp.name || imp.nome} concluído.`);
+            } catch (e) {
+                showToast("Erro ao resetar horímetro.", "error");
+            }
         }
         setPrinterEmDiagnostico(null);
     };
@@ -165,6 +219,14 @@ export default function ImpressorasPage() {
     return (
         <div className="flex h-screen w-full bg-[#050505] text-zinc-100 font-sans overflow-hidden">
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 72 : 256)} />
+
+            {toast.visible && (
+                <Toast
+                    message={toast.message}
+                    type={toast.type}
+                    onClose={() => setToast(prev => ({ ...prev, visible: false }))}
+                />
+            )}
 
             <main className="flex-1 flex flex-col relative transition-all duration-300" style={{ marginLeft: `${larguraSidebar}px` }}>
                 <div className="absolute inset-x-0 top-0 h-[500px] z-0 pointer-events-none opacity-[0.03]"
@@ -194,7 +256,7 @@ export default function ImpressorasPage() {
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-10 pt-2 relative z-10 scroll-smooth">
                     <div className="max-w-[1650px] mx-auto space-y-16">
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 pt-6">
-                            <StatusOverviewCard criticalCount={criticalCount} totalCount={printers.length} />
+                            <StatusOverviewCard criticalCount={criticalCount} totalCount={filteredPrinters.length} />
                             <TechStatCard title="Produção Total" value={formatBigNumber(stats.totalPrints)} icon={CheckCircle2} colorClass="text-emerald-500" secondaryLabel="Peças Impressas" secondaryValue="Trabalho acumulado" />
                             <TechStatCard title="Uso de Filamento" value={`${stats.filamento}kg`} icon={Timer} colorClass="text-amber-500" secondaryLabel="Material usado" secondaryValue="Total todos pedidos" />
                         </div>
@@ -204,12 +266,12 @@ export default function ImpressorasPage() {
                                 <div className="p-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-400 shadow-xl flex items-center justify-center">
                                     <LayoutGrid size={20} strokeWidth={2.5} />
                                 </div>
-                                <div className="flex flex-col">
-                                    <h2 className="text-[14px] font-black uppercase tracking-[0.3em] text-white whitespace-nowrap leading-none">Minhas Impressoras</h2>
+                                <div className="flex flex-col text-white">
+                                    <h2 className="text-[14px] font-black uppercase tracking-[0.3em] whitespace-nowrap leading-none">Minhas Impressoras</h2>
                                     <span className="text-[8px] text-zinc-600 font-bold mt-1 tracking-[0.2em] uppercase">Status dos equipamentos</span>
                                 </div>
                                 <div className="h-[1px] flex-1 bg-gradient-to-r from-zinc-800/80 via-zinc-800/30 to-transparent" />
-                                <div className="flex items-center gap-6 px-6 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-800/50 shadow-2xl backdrop-blur-sm">
+                                <div className="px-6 py-2.5 rounded-2xl bg-zinc-950 border border-zinc-800/50">
                                     <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest">
                                         {filteredPrinters.length} Máquinas
                                     </span>
@@ -240,7 +302,7 @@ export default function ImpressorasPage() {
                 </div>
 
                 <PrinterModal aberto={modalAberto} aoFechar={() => setModalAberto(false)} aoSalvar={aoSalvar} dadosIniciais={itemEdicao} />
-                
+
                 {printerEmDiagnostico && (
                     <DiagnosticsModal
                         printer={printerEmDiagnostico}
@@ -257,11 +319,18 @@ export default function ImpressorasPage() {
                     />
                 )}
             </main>
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 .custom-scrollbar::-webkit-scrollbar { width: 5px; } 
                 .custom-scrollbar::-webkit-scrollbar-track { background: #050505; } 
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: #1f1f23; border-radius: 20px; border: 1px solid #050505; }
                 .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #27272a; }
+                
+                @keyframes slide-in-right {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+                .animate-in { animation: slide-in-right 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
             ` }} />
         </div>
     );

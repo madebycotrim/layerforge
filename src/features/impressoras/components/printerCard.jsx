@@ -6,21 +6,26 @@ import {
     Target, Cpu, Activity
 } from "lucide-react";
 
-/* ---------- CÁLCULOS ---------- */
+/* ---------- CÁLCULOS RESILIENTES (PT/EN) ---------- */
 const calculateHealth = (printer) => {
-    const total = Number(printer.totalHours) || 0;
-    const last = Number(printer.lastMaintenanceHour) || 0;
-    const interval = Math.max(1, Number(printer.maintenanceInterval) || 300);
+    // Tenta pegar em PT ou EN
+    const total = Number(printer.horas_totais || printer.totalHours) || 0;
+    const last = Number(printer.ultima_manutencao_hora || printer.lastMaintenanceHour) || 0;
+    const interval = Math.max(1, Number(printer.intervalo_manutencao || printer.maintenanceInterval) || 300);
+    
     const used = Math.max(0, total - last);
     const pct = Math.max(0, Math.min(100, 100 - ((used / interval) * 100)));
+    
     return { remaining: Math.max(0, interval - used), pct };
 };
 
 const calculateFinance = (printer) => {
-    const price = Number(printer.price) || 0;
-    const yieldTotal = Number(printer.yieldTotal) || 0;
+    const price = Number(printer.preco || printer.price) || 0;
+    const yieldTotal = Number(printer.rendimento_total || printer.yieldTotal) || 0;
+    
     if (price <= 0) return { roiPct: 0, isPaid: false };
     const roi = (yieldTotal / price) * 100;
+    
     return { roiPct: Math.min(100, roi), isPaid: yieldTotal >= price };
 };
 
@@ -47,6 +52,13 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
 
     const isCritical = pct < 20 || printer.status === 'error' || printer.status === 'maintenance';
 
+    // Fallbacks para exibição de texto
+    const printerName = printer.nome || printer.name || "Sem Nome";
+    const printerModel = printer.modelo || printer.model || "Perfil FDM";
+    const printerBrand = printer.marca || printer.brand || "Personalizada";
+    const printerPower = Number(printer.potencia || printer.power) || 0;
+    const printerHistory = Array.isArray(printer.historico || printer.history) ? (printer.historico || printer.history) : [];
+
     return (
         <div className={`group relative flex flex-col bg-[#0a0a0c] border ${isCritical ? 'border-rose-900/40 shadow-[0_0_25px_rgba(244,63,94,0.05)]' : 'border-zinc-800/50'} rounded-xl overflow-hidden transition-all duration-300 hover:border-zinc-600 hover:shadow-2xl`}>
             
@@ -65,7 +77,7 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
                     </div>
 
                     <div className="mt-auto rotate-180 flex items-center" style={{ writingMode: 'vertical-rl' }}>
-                        <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">{printer.brand || 'Personalizada'}</span>
+                        <span className="text-[8px] font-bold text-zinc-700 uppercase tracking-widest">{printerBrand}</span>
                     </div>
                 </div>
 
@@ -74,20 +86,20 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
                     <div className="flex justify-between items-start mb-4">
                         <div className="min-w-0">
                             <h3 className="text-sm font-bold text-zinc-100 uppercase truncate pr-2">
-                                {printer.name || "Sem Nome"}
+                                {printerName}
                             </h3>
                             <div className="flex items-center gap-2 mt-1">
-                                <span className="text-[9px] font-mono text-zinc-500 uppercase">{printer.model || 'Perfil FDM'}</span>
+                                <span className="text-[9px] font-mono text-zinc-500 uppercase">{printerModel}</span>
                                 <div className="h-1 w-1 rounded-full bg-zinc-800" />
                                 <div className="flex items-center gap-1">
                                     <Zap size={8} className="text-amber-500" />
-                                    <span className="text-[9px] font-mono text-zinc-500">Gasto: {Number(printer.power) || 0}W</span>
+                                    <span className="text-[9px] font-mono text-zinc-500">Gasto: {printerPower}W</span>
                                 </div>
                             </div>
                         </div>
 
                         <button 
-                            onClick={() => onToggleStatus && onToggleStatus(printer)}
+                            onClick={() => onToggleStatus && onToggleStatus(printer.id, printer.status)}
                             className={`px-2 py-1 rounded border text-[9px] font-bold uppercase transition-all hover:scale-105 ${statusConfig.bg} ${statusConfig.border} ${statusConfig.color}`}
                         >
                             {statusConfig.label}
@@ -113,7 +125,6 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
                             </div>
                         </div>
 
-                        {/* INDICADOR DE DESGASTE */}
                         <div className="h-2 w-full bg-zinc-900 rounded-sm flex gap-0.5 p-0.5 overflow-hidden border border-white/5">
                             {Array.from({ length: 20 }).map((_, i) => (
                                 <div 
@@ -131,29 +142,28 @@ export default function PrinterCard({ printer, onEdit, onDelete, onResetMaint, o
                                 <History size={8} /> Produção
                             </span>
                             <span className="text-[10px] font-mono font-bold text-zinc-300">
-                                {Array.isArray(printer.history) ? printer.history.length : 0} impressões feitas
+                                {printerHistory.length} impressões feitas
                             </span>
                         </div>
                         <div className="flex flex-col items-end">
                             <span className="text-[8px] font-bold text-zinc-600 uppercase mb-1 flex items-center gap-1">
-                                <TrendingUp size={8} className={isPaid ? "text-emerald-500" : ""} /> Retorno do Investimento
+                                <TrendingUp size={8} className={isPaid ? "text-emerald-500" : ""} /> ROI Real
                             </span>
                             <span className={`text-[10px] font-mono font-bold ${isPaid ? 'text-emerald-400' : 'text-zinc-400'}`}>
-                                {Math.round(roiPct)}% {isPaid ? '✓ Se pagou' : ''}
+                                {Math.round(roiPct)}% {isPaid ? '✓ Paga' : ''}
                             </span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            {/* BARRA DE COMANDO */}
             <div className="grid grid-cols-[1fr_repeat(3,44px)] h-10 border-t border-white/5 bg-zinc-950/80">
                 <button
-                    onClick={() => onResetMaint && onResetMaint(printer)}
+                    onClick={() => onResetMaint && onResetMaint(printer.id)}
                     className="flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest text-zinc-500 hover:text-white hover:bg-white/5 transition-all group/btn"
                 >
                     <Target size={12} className="group-hover/btn:scale-110 transition-transform" />
-                    Abrir Diagnóstico de Saúde
+                    Manutenção Preventiva
                 </button>
 
                 {[

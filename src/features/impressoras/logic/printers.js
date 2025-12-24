@@ -1,46 +1,25 @@
 import { generateUUID } from "../../../hooks/useFormat";
 
-/**
- * Converte entradas (string com vírgula, nulos, etc) para Number (float) puro.
- * Essencial para que os cálculos de ROI e horímetros no banco D1 não quebrem.
- */
-export const safeNum = (v) => {
+const safeNum = (v) => {
     if (v === null || v === undefined || v === "") return 0;
     if (typeof v === 'number') return v;
-    // Remove pontos de milhar e troca vírgula por ponto decimal
     const s = String(v).replace(/\./g, '').replace(',', '.');
     const n = parseFloat(s);
     return isNaN(n) ? 0 : n;
 };
 
-/**
- * ADAPTER: Traduz o objeto da UI (Inglês) para o esquema do Banco de Dados (Português).
- * Também garante a tipagem correta de cada campo antes do envio para a Cloudflare.
- */
-export const prepararDadosParaD1 = (dadosForm) => {
-    if (!dadosForm) return null;
-
+export const prepararDadosParaD1 = (d) => {
     return {
-        // Identificador Único
-        id: dadosForm.id || generateUUID(),
-        
-        // Identificação (Texto)
-        nome: (dadosForm.name || dadosForm.nome || "Nova Unidade").trim(),
-        marca: (dadosForm.brand || dadosForm.marca || "Genérica").trim(),
-        modelo: (dadosForm.model || dadosForm.modelo || "FDM").trim(),
-        
-        // Status do Equipamento
-        status: dadosForm.status || "idle",
-        
-        // Dados Técnicos e Financeiros (Garante que sejam Números)
-        potencia: safeNum(dadosForm.power || dadosForm.potencia),
-        preco: safeNum(dadosForm.price || dadosForm.preco),
-        rendimento_total: safeNum(dadosForm.yieldTotal || dadosForm.rendimento_total),
-        horas_totais: safeNum(dadosForm.totalHours || dadosForm.horas_totais),
-        ultima_manutencao_hora: safeNum(dadosForm.lastMaintenanceHour || dadosForm.ultima_manutencao_hora),
-        
-        // Histórico (Garante que seja um Array limpo)
-        historico: Array.isArray(dadosForm.history) ? dadosForm.history : 
-                   Array.isArray(dadosForm.historico) ? dadosForm.historico : []
+        id: d.id || generateUUID(),
+        nome: (d.nome || d.name || "Nova Unidade").trim(),
+        marca: (d.marca || d.brand || "Genérica").trim(),
+        modelo: (d.modelo || d.model || "FDM").trim(),
+        status: d.status || "idle",
+        potencia: safeNum(d.potencia || d.power),
+        preco: safeNum(d.preco || d.price),
+        rendimento_total: safeNum(d.rendimento_total || d.yieldTotal),
+        horas_totais: safeNum(d.horas_totais || d.totalHours),
+        ultima_manutencao_hora: safeNum(d.ultima_manutencao_hora || d.lastMaintenanceHour),
+        historico: Array.isArray(d.historico) ? d.historico : (Array.isArray(d.history) ? d.history : [])
     };
 };

@@ -1,88 +1,75 @@
 import { create } from 'zustand';
 import { prepararDadosParaD1 } from './printers';
 
-/**
- * STORE CENTRAL - ADAPTADO PARA CLOUDFLARE D1 (PT-BR)
- * Este store atua como uma ponte (Adapter) entre o Banco SQL em Português
- * e o Layout/Componentes que utilizam propriedades em Inglês.
- */
 export const usePrinterStore = create((set, get) => ({
-    printers: [], // Mantido como 'printers' para não quebrar o layout da ImpressorasPage
+    printers: [],
     carregando: false,
     erro: null,
 
-    // BUSCAR: Traduz PT-DB para EN-UI
     fetchPrinters: async () => {
         set({ carregando: true, erro: null });
         try {
             const res = await fetch('/api/impressoras');
-            if (!res.ok) throw new Error("Erro na comunicação com o Cloudflare D1");
-            
-            const dadosDoBanco = await res.json();
-            
-            // Mapeamento: Banco (PT-BR) -> Frontend (EN)
-            const adaptadoParaFrontend = dadosDoBanco.map(imp => ({
+
+            // Se a Cloudflare devolver o index.html por erro de rota, 
+            // o Content-Type não será application/json.
+            const contentType = res.headers.get("content-type");
+            if (!contentType || !contentType.includes("application/json")) {
+                throw new Error("A API não foi encontrada (Rota 404). Verifique se a pasta /functions está na raiz do projeto.");
+            }
+
+            if (!res.ok) throw new Error("Erro na resposta do servidor");
+
+            const rawData = await res.json();
+
+            const adaptadas = (rawData || []).map(imp => ({
                 id: imp.id,
                 name: imp.nome,
                 brand: imp.marca,
                 model: imp.modelo,
-                status: imp.status,
+                status: imp.status || 'idle',
                 power: Number(imp.potencia) || 0,
                 price: Number(imp.preco) || 0,
                 yieldTotal: Number(imp.rendimento_total) || 0,
                 totalHours: Number(imp.horas_totais) || 0,
                 lastMaintenanceHour: Number(imp.ultima_manutencao_hora) || 0,
-                history: typeof imp.historico === 'string' ? JSON.parse(imp.historico) : (imp.historico || []),
-                createdAt: imp.criado_em,
-                updatedAt: imp.atualizado_em
+                history: typeof imp.historico === 'string' ? JSON.parse(imp.historico) : (imp.historico || [])
             }));
 
-            set({ printers: adaptadoParaFrontend, carregando: false });
+            set({ printers: adaptadas, carregando: false, erro: null });
         } catch (err) {
-            set({ erro: err.message, carregando: false });
+            console.error("Erro no Store:", err.message);
+            set({ printers: [], carregando: false, erro: err.message });
         }
     },
 
-    // SALVAR: Traduz EN-UI para PT-DB (via prepararDadosParaD1)
-    upsertPrinter: async (dadosDoModal) => {
+    upsertPrinter: async (dados) => {
         set({ carregando: true });
         try {
-            // A função prepararDadosParaD1 (do arquivo printers.js) 
-            // já faz a higienização e converte para PT-BR
-            const payloadPTBR = prepararDadosParaD1(dadosDoModal);
-
+            const payload = prepararDadosParaD1(dados);
             const res = await fetch('/api/impressoras', {
                 method: 'POST',
-                body: JSON.stringify(payloadPTBR),
-                headers: { 'Content-Type': 'application/json' }
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
             });
 
-            if (!res.ok) throw new Error("Falha ao persistir dados no D1");
-            
-            await get().fetchPrinters();
+            if (!res.ok) throw new Error("Falha ao gravar no D1");
+            await get().fetchPrinters(); // Recarrega a lista na hora
         } catch (err) {
-            set({ erro: err.message, carregando: false });
+            set({ carregando: false, erro: err.message });
+            throw err;
         }
     },
 
-    // REMOVER
     removePrinter: async (id) => {
         try {
             const res = await fetch(`/api/impressoras?id=${id}`, { method: 'DELETE' });
-            if (!res.ok) throw new Error("Falha ao excluir registro");
-            
-            await get().fetchPrinters();
-        } catch (err) {
-            set({ erro: err.message });
-        }
+            if (res.ok) await get().fetchPrinters();
+        } catch (err) { console.error(err); }
     },
 
-    // ATUALIZAR STATUS
-    updatePrinterStatus: async (id, novoStatus) => {
-        const printer = get().printers.find(p => p.id === id);
-        if (printer) {
-            // Reutiliza a lógica de salvamento que já trata a tradução
-            await get().upsertPrinter({ ...printer, status: novoStatus });
-        }
+    updatePrinterStatus: async (id, status) => {
+        const p = get().printers.find(x => x.id === id);
+        if (p) await get().upsertPrinter({ ...p, status });
     }
 }));
