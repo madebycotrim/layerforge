@@ -8,27 +8,40 @@ export async function onRequest(context) {
     const method = request.method;
     const url = new URL(request.url);
 
+    // Headers para evitar erros de CORS com Axios
+    const corsHeaders = {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, DELETE, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type, Authorization",
+    };
+
+    if (method === "OPTIONS") {
+        return new Response(null, { headers: corsHeaders });
+    }
+
     try {
-        // 1. VALIDAÇÃO DE AMBIENTE
+        // 1. VALIDAÇÃO DE AMBIENTE (Apenas via env da Cloudflare)
         if (!env.CLERK_SECRET_KEY || !env.CLERK_PUBLISHABLE_KEY) {
-            return Response.json({ error: "Configuração de API Clerk incompleta" }, { status: 500 });
+            return Response.json({ error: "Chaves do Clerk não configuradas no painel da Cloudflare" }, { status: 500, headers: corsHeaders });
         }
 
         const clerk = createClerkClient({
-            secretKey: env.CLERK_SECRET_KEY || import.meta.env.VITE_CLERK_SECRET_KEY || import.meta.env.CLERK_SECRET_KEY,
-            publishableKey: env.CLERK_PUBLISHABLE_KEY || import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
+            secretKey: env.CLERK_SECRET_KEY,
+            publishableKey: env.CLERK_PUBLISHABLE_KEY
         });
 
         // 2. AUTENTICAÇÃO
         const authRequest = await clerk.authenticateRequest(request);
         if (!authRequest.isSignedIn) {
-            return Response.json({ error: "Não autorizado" }, { status: 401 });
+            return Response.json({ error: "Não autorizado" }, { status: 401, headers: corsHeaders });
         }
 
         const userId = authRequest.toAuth().userId;
-        const db = env.DB; 
+        const db = env.DB; // <-- Certifique-se que o nome no painel é DB em maiúsculo
 
-        if (!db) return Response.json({ error: "D1 não conectado" }, { status: 500 });
+        if (!db) {
+            return Response.json({ error: "Banco de dados D1 (DB) não conectado" }, { status: 500, headers: corsHeaders });
+        }
 
         // 3. AUTO-MIGRAÇÃO (Garante estrutura atualizada)
         await db.batch([
@@ -70,7 +83,7 @@ export async function onRequest(context) {
         if (entity === 'filaments' || entity === 'filamentos') {
             if (method === 'GET') {
                 const { results } = await db.prepare("SELECT * FROM filaments WHERE user_id = ? ORDER BY created_at DESC").bind(userId).all();
-                return Response.json(results || []);
+                return Response.json(results || [], { headers: corsHeaders });
             }
             if (method === 'POST') {
                 const f = await request.json();
@@ -84,12 +97,12 @@ export async function onRequest(context) {
                         nome=excluded.nome, marca=excluded.marca, material=excluded.material, cor_hex=excluded.cor_hex,
                         peso_total=excluded.peso_total, peso_atual=excluded.peso_atual, preco=excluded.preco, favorito=excluded.favorito
                 `).bind(id, userId, f.nome, f.marca, f.material, f.cor_hex, pesoTotal, pesoAtual, Number(f.preco), f.data_abertura, f.favorito ? 1 : 0).run();
-                return Response.json({ id, ...f });
+                return Response.json({ id, ...f }, { headers: corsHeaders });
             }
             if (method === 'DELETE') {
                 const id = url.searchParams.get('id');
                 await db.prepare("DELETE FROM filaments WHERE id = ? AND user_id = ?").bind(id, userId).run();
-                return new Response(null, { status: 204 });
+                return new Response(null, { status: 204, headers: corsHeaders });
             }
         }
 
@@ -97,7 +110,7 @@ export async function onRequest(context) {
         if (entity === 'printers' || entity === 'impressoras') {
             if (method === 'GET') {
                 const { results } = await db.prepare("SELECT * FROM printers WHERE user_id = ?").bind(userId).all();
-                return Response.json(results || []);
+                return Response.json(results || [], { headers: corsHeaders });
             }
             if (method === 'POST') {
                 const p = await request.json();
@@ -108,7 +121,7 @@ export async function onRequest(context) {
                     ON CONFLICT(id) DO UPDATE SET
                         nome=excluded.nome, status=excluded.status, potencia=excluded.potencia, horas_totais=excluded.horas_totais
                 `).bind(id, userId, p.nome, p.marca, p.modelo, p.status || 'idle', Number(p.potencia), Number(p.preco), Number(p.horas_totais || 0)).run();
-                return Response.json({ id, ...p });
+                return Response.json({ id, ...p }, { headers: corsHeaders });
             }
         }
 
@@ -116,7 +129,7 @@ export async function onRequest(context) {
         if (entity === 'settings') {
             if (method === 'GET') {
                 const data = await db.prepare("SELECT * FROM calculator_settings WHERE user_id = ?").bind(userId).first();
-                return Response.json(data || {});
+                return Response.json(data || {}, { headers: corsHeaders });
             }
             if (method === 'POST') {
                 const s = await request.json();
@@ -128,11 +141,11 @@ export async function onRequest(context) {
                         taxa_setup=excluded.taxa_setup, consumo_impressora_kw=excluded.consumo_impressora_kw, margem_lucro=excluded.margem_lucro,
                         imposto=excluded.imposto, taxa_falha=excluded.taxa_falha, desconto=excluded.desconto
                 `).bind(userId, s.custo_kwh, s.valor_hora_humana, s.custo_hora_maquina, s.taxa_setup, s.consumo_impressora_kw, s.margem_lucro, s.imposto, s.taxa_falha, s.desconto).run();
-                return Response.json({ success: true });
+                return Response.json({ success: true }, { headers: corsHeaders });
             }
         }
 
-        // --- PROJETOS (Rascunhos e Updates de Status) ---
+        // --- PROJETOS ---
         if (entity === 'projects') {
             if (method === 'GET') {
                 const { results } = await db.prepare("SELECT * FROM projects WHERE user_id = ? ORDER BY data_criacao DESC").bind(userId).all();
@@ -141,14 +154,13 @@ export async function onRequest(context) {
                     label: r.nome,
                     data: JSON.parse(r.payload),
                     timestamp: new Date(r.data_criacao).toLocaleString('pt-BR')
-                })));
+                })), { headers: corsHeaders });
             }
             if (method === 'POST') {
                 const p = await request.json();
                 const id = p.id || crypto.randomUUID();
                 const dataStr = new Date().toISOString();
                 
-                // Suporte para Update de Status e Dados (ON CONFLICT)
                 await db.prepare(`
                     INSERT INTO projects (id, user_id, nome, payload, data_criacao) 
                     VALUES (?, ?, ?, ?, ?)
@@ -157,57 +169,40 @@ export async function onRequest(context) {
                         payload=excluded.payload
                 `).bind(id, userId, p.label, JSON.stringify(p.data), dataStr).run();
 
-                return Response.json({ id, label: p.label, timestamp: new Date(dataStr).toLocaleString('pt-BR'), data: p.data });
+                return Response.json({ id, label: p.label, timestamp: new Date(dataStr).toLocaleString('pt-BR'), data: p.data }, { headers: corsHeaders });
             }
             if (method === 'DELETE') {
                 const id = url.searchParams.get('id');
                 if (id) await db.prepare("DELETE FROM projects WHERE id = ? AND user_id = ?").bind(id, userId).run();
                 else await db.prepare("DELETE FROM projects WHERE user_id = ?").bind(userId).run();
-                return new Response(null, { status: 204 });
+                return new Response(null, { status: 204, headers: corsHeaders });
             }
         }
 
-        // --- 🚀 ROTA DE APROVAÇÃO (A Mágica do Batch) ---
+        // --- APROVAÇÃO ---
         if (entity === 'approve-budget' && method === 'POST') {
             const { projectId, printerId, filaments, totalTime } = await request.json();
 
             const batchOperations = [
-                // 1. Atualiza o status do projeto para aprovado dentro do JSON
-                db.prepare(`
-                    UPDATE projects 
-                    SET payload = json_set(payload, '$.status', 'aprovado') 
-                    WHERE id = ? AND user_id = ?
-                `).bind(projectId, userId),
-                
-                // 2. Adiciona as horas na impressora
-                db.prepare(`
-                    UPDATE printers 
-                    SET horas_totais = horas_totais + ? 
-                    WHERE id = ? AND user_id = ?
-                `).bind(Number(totalTime), printerId, userId)
+                db.prepare(`UPDATE projects SET payload = json_set(payload, '$.status', 'aprovado') WHERE id = ? AND user_id = ?`).bind(projectId, userId),
+                db.prepare(`UPDATE printers SET horas_totais = horas_totais + ? WHERE id = ? AND user_id = ?`).bind(Number(totalTime), printerId, userId)
             ];
 
-            // 3. Desconta cada filamento do estoque (Multi-cor ou Único)
             filaments.forEach(f => {
                 if (f.id && f.id !== 'manual') {
                     batchOperations.push(
-                        db.prepare(`
-                            UPDATE filaments 
-                            SET peso_atual = peso_atual - ? 
-                            WHERE id = ? AND user_id = ?
-                        `).bind(Number(f.peso), f.id, userId)
+                        db.prepare(`UPDATE filaments SET peso_atual = peso_atual - ? WHERE id = ? AND user_id = ?`).bind(Number(f.peso), f.id, userId)
                     );
                 }
             });
 
             await db.batch(batchOperations);
-            return Response.json({ success: true, message: "Orçamento aprovado e estoque atualizado!" });
+            return Response.json({ success: true }, { headers: corsHeaders });
         }
 
-        return Response.json({ error: "Rota não encontrada" }, { status: 404 });
+        return Response.json({ error: "Rota não encontrada" }, { status: 404, headers: corsHeaders });
 
     } catch (err) {
-        console.error("Worker Error:", err);
-        return Response.json({ error: "Erro interno", details: err.message }, { status: 500 });
+        return Response.json({ error: "Erro interno", details: err.message }, { status: 500, headers: corsHeaders });
     }
 }
