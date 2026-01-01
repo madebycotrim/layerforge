@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import logo from '../assets/logo-branca.png';
 
-import CookieConsent from '../components/CookieConsent';
+import CookieConsent from '../components/cookieConsent';
 
 // --- COMPONENTE: BADGES TÉCNICAS ---
 
