@@ -15,7 +15,7 @@ export async function onRequest(context) {
         }
 
         const clerk = createClerkClient({
-            secretKey: env.CLERK_SECRET_KEY,
+            secretKey: env.CLERK_SECRET_KEY || import.meta.env.VITE_CLERK_SECRET_KEY || import.meta.env.CLERK_SECRET_KEY,
             publishableKey: env.CLERK_PUBLISHABLE_KEY || import.meta.env.VITE_CLERK_PUBLISHABLE_KEY
         });
 
