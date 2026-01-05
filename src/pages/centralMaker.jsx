@@ -424,53 +424,37 @@ export default function WikiPage() {
                     }}
                 />
 
-                <header className="h-20 px-10 flex items-center justify-between z-40 relative border-b border-white/5 bg-zinc-950/50 backdrop-blur-xl overflow-hidden">
+                <header className="h-20 px-10 flex items-center justify-between z-40 relative border-b border-white/5 bg-zinc-950/50 backdrop-blur-xl">
 
-                    {/* 1. ASSINATURA VISUAL: LINHA DE GRADIENTE TÉCNICO (TOP) */}
+                    {/* 1. ASSINATURA VISUAL (LINHA SUPERIOR) */}
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-cyan-700 via-sky-500 to-indigo-400 opacity-60" />
 
-                    {/* TÍTULO E IDENTIFICAÇÃO DO MÓDULO */}
-                    <div className="flex flex-col relative">
+                    {/* TÍTULO ESTILO FILAMENTO */}
+                    <div className="flex flex-col relative select-none">
                         <div className="flex items-center gap-2 mb-0.5">
-                            <div className="w-1.5 h-1.5 rounded-full bg-sky-500 animate-pulse shadow-[0_0_8px_#0ea5e9]" />
                             <h1 className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500">
-                                Knowledge_Database // Protocols
+                                IDEIAS, DICAS E SOLUÇÕES
                             </h1>
                         </div>
-                        <span className="text-xl font-black uppercase tracking-tighter text-white italic">
-                            Wiki // <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">Maker</span>
+                        <span className="text-xl font-black uppercase tracking-tighter text-white">
+                            Central <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">Maker</span>
                         </span>
                     </div>
 
-                    {/* BUSCA DE PROTOCOLO ESTILO TERMINAL */}
+                    {/* BUSCA (OPCIONAL - MANTIVE O ESTILO TÉCNICO) */}
                     <div className="relative group">
                         <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${busca ? 'text-sky-400' : 'text-zinc-600'}`}>
                             <Search size={14} strokeWidth={3} />
                         </div>
-
                         <input
-                            className="
-                w-80 bg-zinc-900/40 border border-white/5 rounded-xl py-2.5 pl-11 pr-10 
-                text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest
-                focus:border-sky-500/30 focus:bg-zinc-900/80 focus:ring-4 focus:ring-sky-500/5
-                placeholder:text-zinc-700 placeholder:text-[9px]
-            "
-                            placeholder="BUSCAR PROTOCOLO TÉCNICO..."
+                            className="w-80 bg-zinc-900/40 border border-white/5 rounded-xl py-2.5 pl-11 pr-10 text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest focus:border-sky-500/30 focus:bg-zinc-900/80 focus:ring-4 focus:ring-sky-500/5 placeholder:text-zinc-700 placeholder:text-[9px]"
+                            placeholder="BUSCAR COMANDO..."
                             value={busca}
                             onChange={e => setBusca(e.target.value)}
                         />
-
-                        {busca && (
-                            <button
-                                onClick={() => setBusca("")}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-rose-500 transition-colors"
-                            >
-                                <X size={14} />
-                            </button>
-                        )}
                     </div>
 
-                    {/* REFLEXO DE LUZ DECORATIVO NO FUNDO */}
+                    {/* EFEITO DE LUZ NO FUNDO */}
                     <div className="absolute -bottom-10 right-20 w-40 h-20 bg-sky-500/5 blur-[50px] pointer-events-none" />
                 </header>
 
