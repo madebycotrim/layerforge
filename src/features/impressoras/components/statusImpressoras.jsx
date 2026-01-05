@@ -2,7 +2,7 @@ import React, { useMemo } from "react";
 import { Check, AlertTriangle, Activity, CheckCircle2, Timer } from "lucide-react";
 
 /**
- * Utilitário para formatação de números de forma compacta (ex: 1.2k)
+ * Utilitário para formatar números de um jeito simples (ex: 1.2k)
  */
 const formatarNumero = (valor) => {
   const numero = Number(valor);
@@ -16,7 +16,7 @@ const formatarNumero = (valor) => {
 };
 
 /**
- * Componente de Card Estatístico Genérico
+ * Componente de Card de Estatística
  */
 const StatCard = ({ title, value, icon: Icon, colorClass, label, description }) => (
   <div className="h-[130px] p-6 rounded-2xl bg-zinc-900/40 border border-zinc-800/50 backdrop-blur-sm flex items-center justify-between group transition-all duration-300 hover:border-zinc-700/50 hover:bg-zinc-900/60 shadow-sm">
@@ -51,17 +51,17 @@ const StatCard = ({ title, value, icon: Icon, colorClass, label, description }) 
 );
 
 /**
- * Componente de Status de Saúde da Farm
+ * Componente de Saúde das Máquinas
  */
 const FarmHealthCard = ({ criticalCount, totalCount }) => {
   // Conversão segura para número
   const numCriticos = Math.max(0, Number(criticalCount) || 0);
   const numTotal = Math.max(0, Number(totalCount) || 0);
 
-  // A farm é considerada saudável apenas se não houver máquinas em estado crítico
+  // As máquinas são consideradas saudáveis apenas se não houver nenhuma parada ou com erro
   const ehSaudavel = numCriticos === 0;
   
-  // Cálculo da porcentagem de saúde (evita divisão por zero)
+  // Cálculo da porcentagem de saúde
   const porcentagemSaude = numTotal > 0 
     ? Math.max(0, Math.min(100, ((numTotal - numCriticos) / numTotal) * 100)) 
     : 100;
@@ -88,7 +88,7 @@ const FarmHealthCard = ({ criticalCount, totalCount }) => {
 
   return (
     <div className={`relative h-[130px] p-6 rounded-2xl overflow-hidden flex items-center justify-between transition-all duration-500 group border ${estilosStatus.container}`}>
-      {/* Background Glow dinâmico */}
+      {/* Brilho de fundo dinâmico */}
       <div className={`absolute -right-4 -top-4 w-24 h-24 blur-[60px] transition-all duration-700 ${estilosStatus.glow}`} />
       
       <div className="flex items-center gap-5 relative z-10">
@@ -104,14 +104,14 @@ const FarmHealthCard = ({ criticalCount, totalCount }) => {
           <div className="flex items-center gap-2 mb-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${estilosStatus.indicator}`} />
             <p className={`text-[10px] font-bold uppercase tracking-[0.15em] ${ehSaudavel ? 'text-zinc-500' : 'text-rose-500'}`}>
-              STATUS DO PARQUE
+              STATUS DAS MÁQUINAS
             </p>
           </div>
           <h3 className={`text-xl font-bold tracking-tight leading-none transition-colors uppercase ${estilosStatus.title}`}>
-            {ehSaudavel ? 'Operação Normal' : 'Atenção Crítica'}
+            {ehSaudavel ? 'Operação Normal' : 'Atenção Necessária'}
           </h3>
           <p className={`text-[11px] font-medium mt-1.5 uppercase tracking-wide ${estilosStatus.subtitle}`}>
-            {ehSaudavel ? 'Hardware em conformidade' : `${numCriticos} ${numCriticos === 1 ? 'impressora parada' : 'unidades paradas'}`}
+            {ehSaudavel ? 'Tudo funcionando certinho' : `${numCriticos} ${numCriticos === 1 ? 'impressora parada' : 'impressoras paradas'}`}
           </p>
         </div>
       </div>
@@ -130,7 +130,7 @@ const FarmHealthCard = ({ criticalCount, totalCount }) => {
 };
 
 export default function StatusDashboard({ criticalCount = 0, totalCount = 0, stats = {} }) {
-  // Processamento seguro das estatísticas para evitar NaN na renderização
+  // Processamento das estatísticas
   const estatisticasFormatadas = useMemo(() => {
     const totalPecas = stats?.totalPrints || 0;
     const totalFilamento = Number(stats?.filamento || 0);
@@ -154,16 +154,16 @@ export default function StatusDashboard({ criticalCount = 0, totalCount = 0, sta
         icon={CheckCircle2} 
         colorClass="text-emerald-500" 
         label="Peças Finalizadas" 
-        description="Histórico total da farm" 
+        description="Histórico geral das máquinas" 
       />
       
       <StatCard 
-        title="Massa Utilizada" 
+        title="Material Usado" 
         value={estatisticasFormatadas.massaFilamento} 
         icon={Timer} 
         colorClass="text-amber-500/90" 
         label="Total de Filamento" 
-        description="Consumo acumulado" 
+        description="Consumo total acumulado" 
       />
     </div>
   );

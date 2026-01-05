@@ -1,20 +1,24 @@
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from "react";
-import { Scan } from "lucide-react";
+import { Scan, AlertTriangle } from "lucide-react";
 // LAYOUT E COMPONENTES GLOBAIS
 import MainSidebar from "../layouts/mainSidebar";
 import Toast from "../components/Toast";
 // LÓGICA E STORE (Zustand)
 import { useFilamentStore } from "../features/filamentos/logic/filaments.js";
 import { useLocalWeather } from "../hooks/useLocalWeather";
-// COMPONENTES DA FEATURE (FILAMENTOS)
+// COMPONENTES DA FUNCIONALIDADE (FILAMENTOS)
 import StatusFilamentos from "../features/filamentos/components/statusFilamentos";
 import FilamentHeader from "../features/filamentos/components/header";
 import SessaoFilamentos from "../features/filamentos/components/sessaoFilamentos";
 import ModalFilamento from "../features/filamentos/components/modalFilamento.jsx";
 import ModalBaixaRapida from "../features/filamentos/components/modalBaixaEstoque.jsx";
 
+// Constantes para evitar textos soltos no código
+const VIEW_MODE_KEY = "printlog_filaments_view";
+const DEFAULT_VIEW_MODE = "grid";
+
 export default function FilamentosPage() {
-  // 1. Estados de UI e Sidebar
+  // 1. Estados da Interface e Barra Lateral
   const [larguraSidebar, setLarguraSidebar] = useState(68);
   const [busca, setBusca] = useState("");
   const deferredBusca = useDeferredValue(busca);
@@ -23,100 +27,124 @@ export default function FilamentosPage() {
   const { temp, humidity, loading: weatherLoading } = useLocalWeather();
   const { filaments, fetchFilaments, saveFilament, deleteFilament, loading } = useFilamentStore();
 
-  // Estados de Controle de View e Modais
-  const [viewMode, setViewMode] = useState(() => localStorage.getItem("printlog_filaments_view") || "grid");
+  // Estados de Controle de Visualização e Modais
+  const [viewMode, setViewMode] = useState(() => localStorage.getItem(VIEW_MODE_KEY) || DEFAULT_VIEW_MODE);
   const [modalAberto, setModalAberto] = useState(false);
   const [itemEdicao, setItemEdicao] = useState(null);
   const [itemConsumo, setItemConsumo] = useState(null);
 
-  // Sistema de Notificação (Toast)
+  // Sistema de Notificações (Toast)
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
+
   const showToast = useCallback((message, type = 'success') => {
     setToast({ visible: true, message, type });
   }, []);
 
-  // Carregamento Inicial (Garante que os dados venham do banco ao montar a página)
+  // Carregamento Inicial dos Dados
   useEffect(() => {
-    fetchFilaments();
-  }, [fetchFilaments]);
+    let isMounted = true;
+    const loadData = async () => {
+      try {
+        await fetchFilaments();
+      } catch (error) {
+        if (isMounted) showToast("Ops! Tivemos um problema ao carregar os filamentos. Dá uma olhadinha na sua conexão.", "error");
+      }
+    };
+    loadData();
+    return () => { isMounted = false; };
+  }, [fetchFilaments, showToast]);
 
-  // Persistência do modo de visualização
+  // Salva a preferência do modo de visualização
   useEffect(() => {
-    localStorage.setItem("printlog_filaments_view", viewMode);
+    localStorage.setItem(VIEW_MODE_KEY, viewMode);
   }, [viewMode]);
 
-  // 2. INTELIGÊNCIA DE DADOS (Cálculos de Negócio)
+  // 2. PROCESSAMENTO DE DADOS (Memoized)
   const { grupos, stats, lowStockCount } = useMemo(() => {
     const termo = deferredBusca.toLowerCase().trim();
-
-    // Lista segura para evitar erros caso filaments esteja indefinido
     const listaOriginal = Array.isArray(filaments) ? filaments : [];
 
-    // Filtra por Nome, Material ou Marca
-    const filtrados = listaOriginal.filter(f =>
-      (f.nome || "").toLowerCase().includes(termo) ||
-      (f.material || "").toLowerCase().includes(termo) ||
-      (f.marca || "").toLowerCase().includes(termo)
-    );
+    // Busca por Nome, Material ou Marca de um jeito seguro
+    const filtrados = listaOriginal.filter(f => {
+      const nome = (f.nome || "").toLowerCase();
+      const material = (f.material || "").toLowerCase();
+      const marca = (f.marca || "").toLowerCase();
+      return nome.includes(termo) || material.includes(termo) || marca.includes(termo);
+    });
 
-    // Soma de massa total disponível em gramas
-    const totalG = listaOriginal.reduce((acc, curr) => acc + (Number(curr.peso_atual) || 0), 0);
+    let totalG = 0;
+    let valorTotalAcumulado = 0;
+    let lowStock = 0;
 
-    // Cálculo do valor financeiro imobilizado (Custo por grama * gramas restantes)
-    const valorTotal = listaOriginal.reduce((acc, curr) => {
-      const atual = Number(curr.peso_atual) || 0;
-      const total = Math.max(1, Number(curr.peso_total) || 1000);
-      const preco = Number(curr.preco) || 0;
-      const custoPorGrama = preco / total;
-      return acc + (custoPorGrama * atual);
-    }, 0);
-
-    // Contagem de itens com estoque crítico (<= 20% OU < 150g)
-    const lowStock = listaOriginal.filter(f => {
+    listaOriginal.forEach(f => {
       const atual = Number(f.peso_atual) || 0;
       const total = Math.max(1, Number(f.peso_total) || 1000);
-      const pct = (atual / total) * 100;
-      return pct <= 20 || atual < 150;
-    }).length;
+      const preco = Number(f.preco) || 0;
 
-    // Agrupamento por Material (PLA, ABS, PETG...)
-    const map = {};
-    filtrados
-      .sort((a, b) => (a.nome || "").localeCompare(b.nome || ""))
-      .forEach(f => {
-        const materialKey = (f.material || "OUTROS").toUpperCase().trim();
-        if (!map[materialKey]) map[materialKey] = [];
-        map[materialKey].push(f);
-      });
+      // Estatísticas Gerais
+      totalG += atual;
+      valorTotalAcumulado += (preco / total) * atual;
+
+      // Alerta de Estoque Baixo (<= 20% OU menos de 150g)
+      if ((atual / total) <= 0.2 || atual < 150) {
+        lowStock++;
+      }
+    });
+
+    // Organizando por tipo de Material
+    const map = filtrados.reduce((acc, f) => {
+      const materialKey = (f.material || "OUTROS").toUpperCase().trim();
+      if (!acc[materialKey]) acc[materialKey] = [];
+      acc[materialKey].push(f);
+      return acc;
+    }, {});
+
+    // Colocando em ordem alfabética dentro dos grupos
+    Object.keys(map).forEach(key => {
+      map[key].sort((a, b) => (a.nome || "").localeCompare(b.nome || ""));
+    });
 
     return {
       grupos: map,
       lowStockCount: lowStock,
-      stats: { valorTotal, pesoKg: totalG / 1000 }
+      stats: { valorTotal: valorTotalAcumulado, pesoKg: totalG / 1000 }
     };
   }, [filaments, deferredBusca]);
 
-  // 3. AÇÕES DE PERSISTÊNCIA
+  // 3. AÇÕES DE SALVAMENTO (Handlers)
+
+  const fecharModais = useCallback(() => {
+    setModalAberto(false);
+    setItemEdicao(null);
+    setItemConsumo(null);
+  }, []);
+
   const aoSalvarFilamento = async (dados) => {
     try {
+      const isEdicao = !!(dados.id || itemEdicao?.id);
       await saveFilament(dados);
-      setModalAberto(false);
-      setItemEdicao(null);
-      setItemConsumo(null); // Fecha modal de baixa se estiver salvando por lá
-      showToast(dados.id ? "Material atualizado com sucesso!" : "Novo material adicionado!");
+      fecharModais();
+      showToast(isEdicao ? "Alterações salvas com sucesso!" : "Novo material adicionado ao seu estoque!");
     } catch (e) {
-      showToast("Não foi possível salvar os dados no servidor.", "error");
+      showToast(e.message || "Tivemos um problema ao falar com o servidor. Tenta de novo?", "error");
     }
   };
 
   const aoDeletarFilamento = async (id) => {
     if (!id) return;
-    if (window.confirm("Deseja remover este filamento permanentemente do seu estoque?")) {
+
+    // Confirmação para evitar exclusão acidental
+    const materialParaDeletar = filaments.find(f => f.id === id);
+    const confirmacao = window.confirm(
+      `Tem certeza que quer excluir o filamento "${materialParaDeletar?.nome || 'esse material'}"?\nEssa ação não pode ser desfeita.`
+    );
+
+    if (confirmacao) {
       try {
         await deleteFilament(id);
         showToast("Material removido com sucesso.");
       } catch (e) {
-        showToast("Erro ao tentar excluir o material.", "error");
+        showToast("Não conseguimos excluir o material agora. Tenta mais tarde?", "error");
       }
     }
   };
@@ -133,8 +161,11 @@ export default function FilamentosPage() {
         />
       )}
 
-      <main className="flex-1 flex flex-col relative transition-all duration-300 ease-in-out" style={{ marginLeft: `${larguraSidebar}px` }}>
-        {/* BACKGROUND DECORATIVO */}
+      <main
+        className="flex-1 flex flex-col relative transition-all duration-300 ease-in-out"
+        style={{ marginLeft: `${larguraSidebar}px` }}
+      >
+        {/* FUNDO DECORATIVO */}
         <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
           <div className="absolute inset-0 opacity-[0.1]" style={{
             backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
@@ -157,7 +188,7 @@ export default function FilamentosPage() {
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8 xl:p-12 relative z-10 scroll-smooth">
           <div className="max-w-[1600px] mx-auto space-y-16">
 
-            {/* Dash de Métricas */}
+            {/* Painel de Métricas */}
             <div className="animate-in fade-in slide-in-from-top-4 duration-700">
               <StatusFilamentos
                 totalWeight={stats.pesoKg}
@@ -167,7 +198,7 @@ export default function FilamentosPage() {
               />
             </div>
 
-            {/* Listagem Agrupada por Material */}
+            {/* Lista Organizada por Material */}
             {Object.entries(grupos).length > 0 ? (
               <div className="space-y-24 pb-40 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                 {Object.entries(grupos).map(([tipo, items]) => (
@@ -194,10 +225,10 @@ export default function FilamentosPage() {
                   </div>
                   <div className="text-center">
                     <h3 className="text-zinc-300 text-xs font-bold uppercase tracking-[0.2em]">
-                      Nenhum material encontrado
+                      {busca ? "Nenhum resultado encontrado" : "Seu estoque está vazio"}
                     </h3>
                     <p className="text-zinc-600 text-[10px] uppercase mt-2 tracking-widest">
-                      {busca ? "Tente ajustar os termos da sua pesquisa" : "Cadastre seu primeiro filamento no botão superior"}
+                      {busca ? "Tenta mudar o termo da sua pesquisa" : "Comece adicionando materiais ao seu inventário"}
                     </p>
                   </div>
                 </div>
@@ -206,17 +237,17 @@ export default function FilamentosPage() {
           </div>
         </div>
 
-        {/* MODAIS - Lógica Centralizada */}
+        {/* JANELAS (MODAIS) */}
         <ModalFilamento
           aberto={modalAberto}
-          aoFechar={() => { setModalAberto(false); setItemEdicao(null); }}
+          aoFechar={fecharModais}
           aoSalvar={aoSalvarFilamento}
           dadosIniciais={itemEdicao}
         />
 
         <ModalBaixaRapida
           aberto={!!itemConsumo}
-          aoFechar={() => setItemConsumo(null)}
+          aoFechar={fecharModais}
           item={itemConsumo}
           aoSalvar={aoSalvarFilamento}
         />

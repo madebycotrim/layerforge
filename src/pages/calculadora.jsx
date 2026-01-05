@@ -1,9 +1,5 @@
-// src/pages/calculadora.jsx
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import {
-    Package, Clock, ShoppingBag, Truck, Tag, Settings2,
-    BarChart3, HelpCircle, ChevronRight
-} from "lucide-react";
+import { Settings2, BarChart3, HelpCircle, ChevronRight } from "lucide-react";
 
 // Layout e Componentes
 import MainSidebar from "../layouts/mainSidebar.jsx";
@@ -12,15 +8,14 @@ import Summary from "../features/calculadora/components/resumo.jsx";
 import HistoryDrawer from "../features/calculadora/components/historico.jsx";
 import PainelConfiguracoesCalculo from "../features/calculadora/components/configCalculo.jsx";
 
-// Cards de Input
+// Cards de Entrada
 import CardMaterial from "../features/calculadora/components/cards/materiaPrima.jsx";
 import CardTempo from "../features/calculadora/components/cards/tempo.jsx";
 import CardCanal from "../features/calculadora/components/cards/taxasVenda.jsx";
 import CardEmbalagem from "../features/calculadora/components/cards/custos.jsx";
 import CardPreco from "../features/calculadora/components/cards/lucroDescontos.jsx";
-import MakersHubWidget from "../features/calculadora/components/cards/makerHub.jsx";
 
-// Lógica e Stores
+// Lógica e Armazenamento
 import { formatCurrency } from "../utils/numbers";
 import useDebounce from "../hooks/useDebounce";
 import { calcularTudo, useSettingsStore } from "../features/calculadora/logic/calculator";
@@ -30,15 +25,15 @@ import { useProjectsStore } from "../features/orcamentos/logic/projects.js";
 const CONFIG_SIDEBAR = { COLAPSADO: 68, EXPANDIDO: 256 };
 
 /**
- * WRAPPER CARD: Mantém a estrutura visual e gerencia dicas de preenchimento.
+ * WRAPPER CARD: Mantém a estrutura visual e gerencia as dicas de preenchimento.
  */
 const WrapperCard = React.memo(({ children, title, step, className = "", zPriority = "z-10" }) => {
     const textosAjuda = {
-        "01": "Defina o custo do seu filamento e o peso da peça (g) indicado no fatiador.",
-        "02": "O tempo de impressão impacta energia e depreciação. O manual impacta seu pró-labore.",
-        "03": "Taxas de venda reduzem seu lucro bruto. Verifique o impacto real aqui.",
-        "04": "Lixas, tintas, parafusos e caixas devem ser somados para evitar prejuízo.",
-        "05": "A margem de lucro é calculada sobre o preço final (Método do Divisor)."
+        "01": "Defina o preço do seu filamento e o peso da peça (em gramas) que aparece no seu fatiador.",
+        "02": "O tempo de impressão afeta o custo de energia e o desgaste da máquina. O tempo manual é o seu trabalho direto.",
+        "03": "As taxas de venda diminuem o seu lucro bruto. Veja aqui como elas afetam o preço final.",
+        "04": "Lixas, tintas, parafusos e embalagens devem ser somados para você não sair no prejuízo.",
+        "05": "A margem de lucro desejada é calculada sobre o preço final de venda (Método do Divisor)."
     };
 
     return (
@@ -85,7 +80,7 @@ export default function CalculadoraPage() {
     const { settings: configuracoesGerais, fetchSettings: buscarConfiguracoes } = useSettingsStore();
     const { fetchHistory: buscarHistorico, addHistoryEntry: salvarNoBanco } = useProjectsStore();
 
-    // ESTADO CENTRALIZADO DO FORMULÁRIO (Single Source of Truth)
+    // ESTADO CENTRALIZADO DO FORMULÁRIO (Fonte única de verdade)
     const [dadosFormulario, setDadosFormulario] = useState({
         nomeProjeto: "",
         qtdPecas: "1",
@@ -108,7 +103,7 @@ export default function CalculadoraPage() {
             lista: []
         },
         config: {
-            margemLucro: "20", imposto: "0", taxaFalha: "5",
+            margemLucro: "", imposto: "", taxaFalha: "",
             custoKwh: "", valorHoraHumana: "",
             custoHoraMaquina: "", taxaSetup: "", consumoKw: ""
         }
@@ -117,10 +112,10 @@ export default function CalculadoraPage() {
     const [hardwareSelecionado, setHardwareSelecionado] = useState(null);
     const [resultados, setResultados] = useState({});
 
-    // Função genérica de atualização de campos para evitar prop-drilling complexo
+    // Função genérica de atualização de campos para evitar repetição de código
     const atualizarCampo = useCallback((categoria, campo, valor) => {
         setDadosFormulario(prev => {
-            if (!campo) return { ...prev, [categoria]: valor };
+            if (campo === null) return { ...prev, [categoria]: valor };
             return {
                 ...prev,
                 [categoria]: { ...prev[categoria], [campo]: valor }
@@ -141,9 +136,9 @@ export default function CalculadoraPage() {
         inicializar();
     }, [buscarImpressoras, buscarHistorico, buscarConfiguracoes]);
 
-    // 2. SINCRONIZAÇÃO DA OFICINA (Configurações Globais)
+    // 2. SINCRONIZAÇÃO DA OFICINA (Configurações Gerais)
     useEffect(() => {
-        if (configuracoesGerais) {
+        if (configuracoesGerais && (configuracoesGerais.custoKwh || configuracoesGerais.valorHoraHumana)) {
             setDadosFormulario(prev => ({
                 ...prev,
                 config: {
@@ -193,7 +188,7 @@ export default function CalculadoraPage() {
         }
     }, [impressoras, hardwareSelecionado, atualizarCampo]);
 
-    // 4. PROCESSAMENTO DO CÁLCULO (Debounced para performance)
+    // 4. PROCESSAMENTO DO CÁLCULO (Com atraso para melhor performance)
     const entradasParaCalculo = useDebounce(dadosFormulario, 250);
     useEffect(() => {
         try {
@@ -207,7 +202,7 @@ export default function CalculadoraPage() {
 
     // 5. PERSISTÊNCIA NO HISTÓRICO (D1 Cloud)
     const lidarSalvarNoHistorico = useCallback(async () => {
-        if (!dadosFormulario.nomeProjeto.trim()) return alert("Por favor, insira um nome para o projeto.");
+        if (!dadosFormulario.nomeProjeto.trim()) return alert("Por favor, dê um nome para o seu projeto antes de salvar.");
 
         const resposta = await salvarNoBanco({
             id: idProjetoAtual,
@@ -218,7 +213,7 @@ export default function CalculadoraPage() {
 
         if (resposta) {
             setIdProjetoAtual(resposta.id);
-            alert("Orçamento salvo com sucesso!");
+            alert("Prontinho! Orçamento salvo com sucesso.");
         }
     }, [dadosFormulario, resultados, hardwareSelecionado, salvarNoBanco, idProjetoAtual]);
 
@@ -247,13 +242,13 @@ export default function CalculadoraPage() {
     const ehNeutro = !resultados.precoSugerido || resultados.precoSugerido <= 0;
     const corSaude = resultados.margemEfetivaPct <= 0 ? 'text-rose-500' : resultados.margemEfetivaPct < 15 ? 'text-amber-500' : 'text-emerald-500';
 
-    // HUD Flutuante no Header
+    // HUD Flutuante no Cabeçalho
     const elementoHud = useMemo(() => {
         if (abaAtiva === 'resumo' || ehNeutro) return null;
         return (
             <div className="hidden lg:flex items-center gap-6 px-5 h-11 bg-zinc-900/50 border border-white/5 rounded-full animate-in fade-in zoom-in-95 duration-500">
                 <div className="flex flex-col items-center">
-                    <span className="text-[6px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Preço Alvo</span>
+                    <span className="text-[6px] font-black text-zinc-500 uppercase tracking-widest leading-none mb-1">Preço Sugerido</span>
                     <span className="text-[12px] font-mono font-bold text-white leading-none">{formatCurrency(resultados.precoComDesconto)}</span>
                 </div>
                 <div className="w-px h-5 bg-white/10" />
@@ -275,7 +270,7 @@ export default function CalculadoraPage() {
 
             <main className="flex-1 flex flex-row relative h-full overflow-hidden transition-all duration-300" style={{ marginLeft: `${larguraSidebar}px` }}>
 
-                {/* Grid de Background Decorativo */}
+                {/* Grade de Fundo Decorativa */}
                 <div className="absolute inset-x-0 top-0 h-[500px] z-0 opacity-[0.05] pointer-events-none"
                     style={{ backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
@@ -297,7 +292,7 @@ export default function CalculadoraPage() {
 
                             {/* COLUNA 1: MATERIAIS E TEMPO */}
                             <div className="flex flex-col gap-4 relative z-30">
-                                <WrapperCard title="Materia-Prima" step="01" zPriority="z-20">
+                                <WrapperCard title="Matéria-Prima" step="01" zPriority="z-20">
                                     <CardMaterial
                                         custoRolo={dadosFormulario.material.custoRolo}
                                         setCustoRolo={(v) => atualizarCampo('material', 'custoRolo', v)}
@@ -309,7 +304,7 @@ export default function CalculadoraPage() {
                                         setMaterialSlots={(v) => atualizarCampo('material', 'slots', v)}
                                     />
                                 </WrapperCard>
-                                <WrapperCard title="Tempo de Operação" step="02" zPriority="z-10">
+                                <WrapperCard title="Tempo de Produção" step="02" zPriority="z-10">
                                     <CardTempo
                                         tempoImpressaoHoras={dadosFormulario.tempo.impressaoHoras}
                                         setTempoImpressaoHoras={(v) => atualizarCampo('tempo', 'impressaoHoras', v)}
@@ -335,7 +330,7 @@ export default function CalculadoraPage() {
                                         setTaxaMarketplaceFixa={(v) => atualizarCampo('vendas', 'taxaMarketplaceFixa', v)}
                                     />
                                 </WrapperCard>
-                                <WrapperCard title="Custos Adicionais" step="04" zPriority="z-10">
+                                <WrapperCard title="Gastos Extras" step="04" zPriority="z-10">
                                     <CardEmbalagem
                                         custoEmbalagem={dadosFormulario.custosExtras.embalagem}
                                         setCustoEmbalagem={(v) => atualizarCampo('custosExtras', 'embalagem', v)}
@@ -349,7 +344,7 @@ export default function CalculadoraPage() {
 
                             {/* COLUNA 3: ESTRATÉGIA E WIDGET */}
                             <div className="flex flex-col gap-4 relative z-10">
-                                <WrapperCard title="Estratégia de Ganhos" step="05">
+                                <WrapperCard title="Lucro e Estratégia" step="05">
                                     <CardPreco
                                         margemLucro={dadosFormulario.config.margemLucro}
                                         setMargemLucro={(v) => atualizarCampo('config', 'margemLucro', v)}
@@ -364,7 +359,6 @@ export default function CalculadoraPage() {
                                         tempoTotalHoras={resultados.tempoTotalHoras}
                                     />
                                 </WrapperCard>
-                                <MakersHubWidget resultados={resultados} entradas={dadosFormulario} nomeProjeto={dadosFormulario.nomeProjeto} />
                             </div>
                         </div>
                     </div>
@@ -380,17 +374,17 @@ export default function CalculadoraPage() {
                             </button>
                             <button type="button" onClick={() => setAbaAtiva('config')}
                                 className={`flex-1 rounded text-[11px] font-black uppercase transition-all flex items-center justify-center gap-2 ${abaAtiva === 'config' ? 'bg-sky-600 text-white shadow-lg shadow-sky-900/40' : 'text-zinc-500 hover:text-zinc-300'}`}>
-                                <Settings2 size={14} /> Oficina
+                                <Settings2 size={14} /> Minha Oficina
                             </button>
                         </div>
                     </div>
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
                         {abaAtiva === 'resumo' ? (
-                            <Summary
-                                resultados={resultados}
+                            <Summary resultados={resultados}
                                 entradas={dadosFormulario}
                                 salvar={lidarSalvarNoHistorico}
+                                onGoToSettings={() => setAbaAtiva('config')}
                             />
                         ) : (
                             <PainelConfiguracoesCalculo

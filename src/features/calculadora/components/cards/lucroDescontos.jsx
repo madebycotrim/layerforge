@@ -1,4 +1,3 @@
-// src/features/calculadora/components/Precificacao.jsx
 import React, { useMemo, useState, useEffect } from "react";
 import { 
   DollarSign, Landmark, ShieldAlert, Tag, 
@@ -16,7 +15,7 @@ export default function Precificacao({
   tempoTotalHoras = 0
 }) {
   const [markupLocal, setMarkupLocal] = useState("1.00");
-  // ESTADO PARA O TOOLTIP (DICA)
+  // ESTADO PARA A DICA (TOOLTIP)
   const [exibirDica, setExibirDica] = useState(false);
 
   // 1. SINCRONIZAÇÃO: Margem (%) -> Markup (x)
@@ -58,11 +57,11 @@ export default function Precificacao({
 
   const statusPrecificacao = useMemo(() => {
     if (ehCritico) return { color: "text-rose-500", bg: "bg-rose-500/10", border: "border-rose-500/20", label: "MATEMATICAMENTE INVIÁVEL" };
-    if (ehPerigoso) return { color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20", label: "MARGEM AGRESSIVA / RISCO" };
+    if (ehPerigoso) return { color: "text-amber-500", bg: "bg-amber-500/10", border: "border-amber-500/20", label: "MARGEM ARRISCADA / ALTO RISCO" };
     return { color: "text-sky-400", bg: "bg-zinc-900/50", border: "border-zinc-800", label: "ESTRUTURA DE TAXAS SAUDÁVEL" };
   }, [ehCritico, ehPerigoso]);
 
-  // 4. PERFORMANCE FINANCEIRA
+  // 4. DESEMPENHO FINANCEIRO
   const lucroPorHora = useMemo(() => {
     const horas = parseFloat(tempoTotalHoras) || 0;
     return horas > 0 ? lucroRealItem / horas : 0;
@@ -71,14 +70,14 @@ export default function Precificacao({
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-500">
       
-      {/* CABEÇALHO ESTRATÉGICO */}
+      {/* CABEÇALHO DE ESTRATÉGIA */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-emerald-500" />
-          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Estratégia de Ganho</span>
+          <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Estratégia de Lucro</span>
         </div>
         
-        {/* DICA COM ESTADO REACT */}
+        {/* DICA COM ESTADO DO REACT */}
         <div className="relative flex items-center h-fit">
           <HelpCircle 
             size={14} 
@@ -91,16 +90,16 @@ export default function Precificacao({
             <div className="absolute right-0 top-6 w-56 p-3 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl 
                           animate-in fade-in zoom-in-95 duration-200 z-[100] origin-top-right pointer-events-none">
               <p className="text-[8px] text-zinc-400 leading-relaxed uppercase font-bold">
-                <span className="text-sky-400 font-black">Método do Divisor:</span> O lucro é calculado sobre o preço final. 
+                <span className="text-sky-400 font-black">Método do Divisor:</span> O lucro é calculado sobre o preço final de venda. 
                 <br/><br/>
-                Ex: Margem de 50% significa que metade do valor pago pelo cliente fica com você.
+                Ex: Uma margem de 50% quer dizer que metade do valor pago pelo cliente fica com você.
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* ENTRADAS PRINCIPAIS */}
+      {/* CAMPOS PRINCIPAIS */}
       <div className="grid grid-cols-2 gap-4">
         <div className="relative">
           <UnifiedInput
@@ -113,7 +112,7 @@ export default function Precificacao({
             value={margemLucro}
             onChange={(e) => {
               const val = e.target.value;
-              // Impede que a margem seja igual ou superior a 100% (divisor zero ou negativo)
+              // Evita que a margem seja 100% ou mais (para não zerar ou negativar o divisor)
               if (parseFloat(val) < 100 || val === "") setMargemLucro(val);
             }}
           />
@@ -122,7 +121,7 @@ export default function Precificacao({
 
         <div className="relative">
           <UnifiedInput
-            label="Markup Ref."
+            label="Markup de Ref."
             icon={TrendingUp}
             suffix="x"
             type="number"
@@ -146,7 +145,7 @@ export default function Precificacao({
           onChange={(e) => setImposto(e.target.value)}
         />
         <UnifiedInput
-          label="Teto Desconto"
+          label="Limite de Desconto"
           icon={Tag}
           suffix="%"
           type="number"
@@ -166,7 +165,7 @@ export default function Precificacao({
         placeholder="0"
         value={taxaFalha}
         onChange={(e) => setTaxaFalha(e.target.value)}
-        subtitle="Seguro de Impressão"
+        subtitle="Garantia da Impressão"
       />
 
       {/* PAINEL DE SAÚDE FINANCEIRA */}
@@ -197,8 +196,8 @@ export default function Precificacao({
           {!ehCritico && lucroRealItem > 0 && (
             <div className="flex items-center justify-between border-t border-white/5 pt-2 mt-0.5">
               <div className="flex flex-col">
-                <span className="text-[7px] font-black text-zinc-500 uppercase leading-none">Ganho por Hora</span>
-                <span className="text-[6px] text-zinc-600 uppercase font-bold tracking-tighter italic">Efetividade</span>
+                <span className="text-[7px] font-black text-zinc-500 uppercase leading-none">Ganhos por Hora</span>
+                <span className="text-[6px] text-zinc-600 uppercase font-bold tracking-tighter italic">Produtividade</span>
               </div>
               <span className={`text-[11px] font-mono font-bold ${lucroPorHora < 5 ? 'text-amber-500' : 'text-emerald-500'}`}>
                 R$ {lucroPorHora.toFixed(2)}/h
@@ -209,7 +208,7 @@ export default function Precificacao({
           {ehCritico && (
             <div className="flex items-center gap-2 text-rose-500 mt-1">
               <AlertTriangle size={12} className="animate-pulse" />
-              <span className="text-[7px] font-black uppercase leading-tight">Margens impossíveis detectadas.</span>
+              <span className="text-[7px] font-black uppercase leading-tight">Margens impossíveis identificadas.</span>
             </div>
           )}
         </div>

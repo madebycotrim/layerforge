@@ -1,282 +1,383 @@
-// src/features/calculadora/components/Summary.jsx
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "../../../utils/numbers";
 import {
-    Save, CircleDashed, Calculator, ShieldCheck,
-    Activity, FileText, Loader2, AlertTriangle, TrendingUp,
-    Check, HelpCircle, RotateCcw, Package, Zap, Clock, Truck, Wrench, Landmark, Store
+    Save, Calculator, FileText, Loader2, Wand2, X, 
+    MessageCircle, Target, Package, Zap, Clock, Wrench, 
+    Landmark, RotateCcw, Send, Copy, Check, Settings2,
+    Truck, ShoppingBag, Tag, ShieldAlert, Box
 } from "lucide-react";
 
 import { generateProfessionalPDF } from "../../../utils/pdfGenerator";
+import { useSettingsStore } from "../logic/calculator";
 
-/* ---------- COMPONENTE: LINHA DE DETALHAMENTO ---------- */
-const LinhaResumo = ({ icon: Icon, label, value, total, color = "text-zinc-200" }) => {
-    const valorNumerico = Number(value || 0);
-    const valorTotal = Number(total || 0);
-    
-    // Oculta linhas com valores irrelevantes
-    if (valorNumerico < 0.01) return null;
-    
-    // Cálculo do peso percentual deste custo sobre o preço de venda
-    const percentual = valorTotal > 0 ? Math.round((valorNumerico / valorTotal) * 100) : 0;
+/* ---------- SUB-COMPONENTE: NÚMERO ANIMADO ---------- */
+const AnimatedNumber = ({ value, duration = 800 }) => {
+    const [displayValue, setDisplayValue] = useState(value);
+    const frameRef = useRef();
+    const startTimeRef = useRef();
+    const startValueRef = useRef(displayValue);
 
+    useEffect(() => {
+        startValueRef.current = displayValue;
+        startTimeRef.current = performance.now();
+        const animate = (now) => {
+            const elapsed = now - startTimeRef.current;
+            const progress = Math.min(elapsed / duration, 1);
+            const easeOutQuad = (t) => t * (2 - t);
+            const nextValue = startValueRef.current + (value - startValueRef.current) * easeOutQuad(progress);
+            setDisplayValue(nextValue);
+            if (progress < 1) frameRef.current = requestAnimationFrame(animate);
+        };
+        frameRef.current = requestAnimationFrame(animate);
+        return () => cancelAnimationFrame(frameRef.current);
+    }, [value]);
+
+    return <span>{formatCurrency(displayValue)}</span>;
+};
+
+/* ---------- SUB-COMPONENTE: JANELA MODAL (POPUP) ---------- */
+const Modal = ({ isOpen, onClose, title, children, actions }) => {
+    if (!isOpen) return null;
     return (
-        <div className="flex items-center justify-between px-3 -mx-1 py-1.5 rounded-lg group hover:bg-white/5 transition-all duration-200">
-            <div className="flex items-center gap-2.5 min-w-0">
-                <div className="rounded bg-zinc-900 border border-white/5 flex items-center justify-center text-zinc-500 group-hover:text-sky-400 w-7 h-7 shrink-0 transition-colors">
-                    <Icon size={12} strokeWidth={2.5} />
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
+                <div className="px-6 py-4 border-b border-white/[0.03] flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{title}</span>
+                    <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors"><X size={16} /></button>
                 </div>
-                <span className="font-bold text-zinc-500 uppercase tracking-widest truncate group-hover:text-zinc-300 text-[9px]">{label}</span>
-            </div>
-            <div className="text-right shrink-0">
-                <span className={`block font-mono font-bold leading-none text-xs ${color}`}>{formatCurrency(valorNumerico)}</span>
-                <span className="text-[7px] font-black text-zinc-600 uppercase tracking-tighter">{percentual}% da venda</span>
+                <div className="p-6 text-zinc-300 text-sm leading-relaxed">{children}</div>
+                {actions && <div className="px-6 py-4 bg-white/[0.02] flex gap-3 justify-end border-t border-white/[0.03]">{actions}</div>}
             </div>
         </div>
     );
 };
 
 /* ---------- COMPONENTE PRINCIPAL ---------- */
-export default function Resumo({ resultados = {}, entradas = {}, salvar = () => { } }) {
+export default function Resumo({ resultados = {}, entradas = {}, salvar = () => { }, onOpenSettings }) {
     const {
-        custoUnitario = 0, precoSugerido = 0, precoComDesconto = 0, margemEfetivaPct = 0,
-        lucroBrutoUnitario = 0, custoMaterial = 0, custoEnergia = 0, custoMaquina = 0,
-        custoMaoDeObra = 0, custoEmbalagem = 0, custoFrete = 0, custoSetup = 0,
-        valorImpostos = 0, valorMarketplace = 0, valorRisco = 0, tempoTotalHoras = 0
+        lucroBrutoUnitario = 0, precoSugerido = 0, precoComDesconto = 0, tempoTotalHoras = 0,
+        custoMaterial = 0, custoEnergia = 0, custoMaquina = 0, custoMaoDeObra = 0,
+        custoSetup = 0, valorImpostos = 0, valorMarketplace = 0, margemEfetivaPct = 0,
+        custoUnitario = 0, custoEmbalagem = 0, custoFrete = 0, custosExtras = 0,
+        valorRisco = 0
     } = resultados;
+
+    const { settings } = useSettingsStore();
 
     const [estaSalvo, setEstaSalvo] = useState(false);
     const [estaGravando, setEstaGravando] = useState(false);
+    const [modalConfig, setModalConfig] = useState({ open: false, type: '' });
+    const [precoArredondado, setPrecoArredondado] = useState(null);
+    const [copiado, setCopiado] = useState(false);
+    const [copiadoPreco, setCopiadoPreco] = useState(false);
+    
+    const [whatsappModal, setWhatsappModal] = useState(false);
+    const [mensagemEditavel, setMensagemEditavel] = useState("");
 
-    // Reseta o estado visual de "Salvo" se houver qualquer alteração nos inputs ou resultados
-    useEffect(() => { 
-        setEstaSalvo(false); 
-    }, [entradas, resultados.precoSugerido]);
+    const possuiDesconto = precoComDesconto > 0 && Math.abs(precoComDesconto - precoSugerido) > 0.01;
+    const precoBase = possuiDesconto ? precoComDesconto : (precoSugerido || 0);
+    const precoFinalVenda = precoArredondado || precoBase;
+    const temDados = precoSugerido > 0.01;
+    const nomeProjeto = entradas?.nomeProjeto || "";
 
-    const lidarSalvar = async () => {
-        setEstaGravando(true);
-        try { 
-            await salvar(); 
-            setEstaSalvo(true); 
-        } catch (erro) { 
-            console.error("Erro ao persistir cálculo:", erro); 
-        } finally { 
-            setEstaGravando(false); 
-        }
-    };
+    useEffect(() => {
+        setEstaSalvo(false);
+        setPrecoArredondado(null);
+    }, [resultados, entradas]);
 
-    const lidarNovoCalculo = () => {
-        if (window.confirm("Deseja limpar todos os campos e iniciar um novo cálculo?")) {
-            window.location.reload(); 
-        }
-    };
+    const paybackInsumo = useMemo(() => {
+        if (!custoMaterial || !lucroBrutoUnitario) return 0;
+        return (lucroBrutoUnitario / custoMaterial).toFixed(1);
+    }, [custoMaterial, lucroBrutoUnitario]);
 
-    // VALIDAÇÃO DE DADOS MÍNIMOS PARA EXIBIÇÃO
-    const temDadosSuficientes = useMemo(() => {
-        const material = entradas.material || {};
-        const peso = Number(material.pesoModelo) ||
-            (material.slots?.reduce((acc, s) => acc + (Number(s.weight) || 0), 0)) || 0;
-        
-        const tempo = (Number(entradas.tempo?.impressaoHoras) || 0) + (Number(entradas.tempo?.impressaoMinutos) || 0);
-        
-        return peso > 0 && tempo > 0;
-    }, [entradas]);
-
-    const precoFinalVenda = temDadosSuficientes ? Number(precoComDesconto || precoSugerido || 0) : 0;
-    const possuiDesconto = precoComDesconto > 0 && precoComDesconto < (precoSugerido - 0.01);
-    const estaNeutro = !temDadosSuficientes || precoFinalVenda <= 0.01;
-
-    // MÉTRICA FINANCEIRA: Ganho por Hora (Efetividade do tempo)
-    const ganhoPorHora = useMemo(() => {
-        if (estaNeutro || tempoTotalHoras <= 0) return 0;
-        return lucroBrutoUnitario / tempoTotalHoras;
-    }, [estaNeutro, lucroBrutoUnitario, tempoTotalHoras]);
-
-    // INDICADOR VISUAL DE SAÚDE DO PROJETO
     const saudeProjeto = useMemo(() => {
-        if (estaNeutro) return { label: "AGUARDANDO DADOS", color: "text-zinc-600", glow: "border-zinc-800", bg: "bg-zinc-900/20", icon: CircleDashed, bar: "bg-zinc-800" };
-        if (margemEfetivaPct <= 0) return { label: "🔴 OPERAÇÃO INVIÁVEL", color: "text-rose-500", glow: "border-rose-500 animate-pulse", bg: "bg-rose-500/5", icon: AlertTriangle, bar: "bg-rose-500" };
-        if (margemEfetivaPct < 15) return { label: "🟡 MARGEM APERTADA", color: "text-amber-500", glow: "border-amber-500/50", bg: "bg-amber-500/5", icon: Activity, bar: "bg-amber-500" };
-        return { label: "🟢 PROJETO SAUDÁVEL", color: "text-emerald-500", glow: "border-emerald-500/50", bg: "bg-emerald-500/5", icon: ShieldCheck, bar: "bg-emerald-500" };
-    }, [estaNeutro, margemEfetivaPct]);
+        if (!temDados) return { label: "AGUARDANDO DADOS", color: "text-zinc-600", bar: "bg-zinc-800", dot: "bg-zinc-800" };
+        if (margemEfetivaPct <= 0) return { label: "VALOR INVIÁVEL", color: "text-rose-500", bar: "bg-rose-500", dot: "bg-rose-500" };
+        return { label: "PROJETO SAUDÁVEL", color: "text-[#10b981]", bar: "bg-[#10b981]", dot: "bg-[#10b981]" };
+    }, [temDados, margemEfetivaPct]);
 
-    // Cálculo da proporção visual Custo vs Lucro
-    const somaEncargosVenda = valorImpostos + valorMarketplace;
-    const custoTotalReal = custoUnitario + somaEncargosVenda;
-    const percentualCusto = precoFinalVenda <= 0 ? 0 : Math.min(100, Math.round((custoTotalReal / precoFinalVenda) * 100));
-    const percentualLucro = Math.max(0, 100 - percentualCusto);
+    const handleSmartRound = () => {
+        if (!temDados) return;
+        const current = precoArredondado || precoBase;
+        const valorInteiro = Math.floor(current);
+        const centavos = Number((current % 1).toFixed(2));
+        
+        let next;
+        if (centavos < 0.90) {
+            next = valorInteiro + 0.90;
+        } else {
+            next = valorInteiro + 1.90;
+        }
+        setPrecoArredondado(next);
+    };
+
+    const handleCopyPrice = () => {
+        if (!temDados) return;
+        navigator.clipboard.writeText(precoFinalVenda.toFixed(2));
+        setCopiadoPreco(true);
+        setTimeout(() => setCopiadoPreco(false), 2000);
+    };
+
+    const lidarSalvarResumo = async () => {
+        if (!nomeProjeto.trim()) {
+            setModalConfig({ open: true, type: 'NAME_REQ' });
+            return;
+        }
+        setEstaGravando(true);
+        try {
+            await salvar();
+            setEstaSalvo(true);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setEstaGravando(false);
+        }
+    };
+
+    const abrirModalWhatsapp = () => {
+        if (!temDados) return;
+        const template = settings?.whatsappTemplate || "Olá! Segue o orçamento para o projeto *{projeto}*:\n\nValor: *{valor}*\nTempo estimado: *{tempo}*\n\nPodemos fechar?";
+        const formatado = template
+            .replace(/{projeto}/g, nomeProjeto || "Impressão 3D")
+            .replace(/{valor}/g, formatCurrency(precoFinalVenda))
+            .replace(/{tempo}/g, `${tempoTotalHoras}h`);
+        setMensagemEditavel(formatado);
+        setWhatsappModal(true);
+    };
+
+    const enviarParaWhatsapp = () => {
+        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagemEditavel)}`;
+        window.open(url, "_blank");
+        setWhatsappModal(false);
+    };
+
+    const copiarMensagem = () => {
+        navigator.clipboard.writeText(mensagemEditavel);
+        setCopiado(true);
+        setTimeout(() => setCopiado(false), 2000);
+    };
+
+    const composicaoItens = useMemo(() => {
+        return [
+            { label: 'Matéria-Prima', val: custoMaterial, icon: Package },
+            { label: 'Energia Elétrica', val: custoEnergia, icon: Zap },
+            { label: 'Depreciação Máquina', val: custoMaquina, icon: Clock },
+            { label: 'Mão de Obra', val: custoMaoDeObra, icon: Wrench },
+            { label: 'Taxa de Setup', val: custoSetup, icon: Settings2 },
+            { label: 'Embalagem', val: custoEmbalagem, icon: Box },
+            { label: 'Frete de Entrega', val: custoFrete, icon: Truck },
+            { label: 'Gastos Adicionais', val: custosExtras, icon: Tag },
+            { label: 'Reserva p/ Falhas', val: valorRisco, icon: ShieldAlert, color: 'text-amber-400/70' },
+            { label: 'Impostos', val: valorImpostos, icon: Landmark, color: 'text-rose-400/60' },
+            { label: 'Taxas de Venda', val: valorMarketplace, icon: ShoppingBag, color: 'text-rose-400/60' }
+        ].filter(item => item.val > 0.009);
+    }, [custoMaterial, custoEnergia, custoMaquina, custoMaoDeObra, custoSetup, custoEmbalagem, custoFrete, custosExtras, valorRisco, valorImpostos, valorMarketplace]);
 
     return (
-        <div className="h-full flex flex-col gap-3 select-none animate-in fade-in duration-700">
+        <div className="h-full flex flex-col gap-3 select-none animate-in fade-in duration-500">
 
-            {/* CARD 01: PERFORMANCE E LUCRO LÍQUIDO */}
-            <div className={`relative rounded-2xl border-2 p-5 transition-all duration-500 ${saudeProjeto.bg} ${saudeProjeto.glow} backdrop-blur-md`}>
+            {/* CARD 01: DESEMPENHO FINANCEIRO */}
+            <div className="bg-[#0c0c0e] border border-white/[0.05] rounded-3xl p-5 relative overflow-hidden shrink-0">
                 <div className="flex justify-between items-start mb-4">
                     <div className="flex items-center gap-2">
-                        <saudeProjeto.icon size={14} className={saudeProjeto.color} />
-                        <span className={`text-[10px] font-black tracking-[0.2em] ${saudeProjeto.color}`}>{saudeProjeto.label}</span>
+                        <div className={`w-2 h-2 rounded-full ${saudeProjeto.dot} ${temDados ? 'animate-pulse' : ''} shadow-[0_0_8px_currentColor]`} />
+                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] ${saudeProjeto.color}`}>{saudeProjeto.label}</span>
                     </div>
-                    {!estaNeutro && (
-                        <div className="text-right">
-                            <span className="text-[7px] font-black text-zinc-500 uppercase block leading-none mb-1">Ganho por Hora</span>
-                            <span className={`text-[11px] font-mono font-bold ${saudeProjeto.color}`}>
-                                {formatCurrency(ganhoPorHora)}/h
-                            </span>
+                    {temDados && (
+                        <div className="flex gap-3">
+                            <div className="text-right">
+                                <span className="text-[7px] font-bold text-zinc-600 uppercase block leading-none mb-1">Retorno do Material</span>
+                                <span className="text-[10px] font-mono font-bold text-zinc-300">{paybackInsumo}x</span>
+                            </div>
+                            <div className="text-right">
+                                <span className="text-[7px] font-bold text-zinc-600 uppercase block leading-none mb-1">Ganhos por Hora</span>
+                                <span className={`text-[10px] font-mono font-bold ${saudeProjeto.color}`}>{formatCurrency(lucroBrutoUnitario / Math.max(1, tempoTotalHoras))}/h</span>
+                            </div>
                         </div>
                     )}
                 </div>
 
                 <div className="mb-4">
-                    <h2 className={`text-5xl font-black font-mono tracking-tighter ${estaNeutro ? 'text-zinc-800' : 'text-white'}`}>
-                        {estaNeutro ? formatCurrency(0) : formatCurrency(lucroBrutoUnitario)}
+                    <h2 className={`text-5xl font-black font-mono tracking-tighter leading-none ${temDados ? 'text-white' : 'text-zinc-800'}`}>
+                        {temDados ? <AnimatedNumber value={lucroBrutoUnitario} /> : "R$ 0,00"}
                     </h2>
-                    <div className="flex items-center gap-2 mt-1">
-                        <p className="text-[9px] text-zinc-500 uppercase font-bold tracking-widest">Lucro Líquido Real</p>
-                        {!estaNeutro && (
-                            <div className="flex items-center gap-1">
-                                <TrendingUp size={10} className={saudeProjeto.color} />
-                                <span className={`text-[10px] font-mono font-bold ${saudeProjeto.color}`}>{Math.round(margemEfetivaPct)}%</span>
-                            </div>
-                        )}
+                    <div className="flex justify-between items-end mt-2">
+                        <span className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">Lucro Líquido Real</span>
+                        <span className={`text-[10px] font-bold font-mono ${temDados ? 'text-zinc-400' : 'text-zinc-800'}`}>{Math.round(margemEfetivaPct)}% DE MARGEM</span>
                     </div>
                 </div>
 
-                {/* Barra de Progresso Comparativa */}
-                <div className="h-1.5 w-full bg-zinc-950/80 rounded-full overflow-hidden flex p-[1px] border border-white/5">
-                    <div style={{ width: `${percentualCusto}%` }} className="bg-zinc-700 h-full transition-all duration-1000" />
-                    <div style={{ width: `${percentualLucro}%` }} className={`${saudeProjeto.bar} h-full transition-all duration-1000 shadow-[0_0_8px_rgba(0,0,0,0.3)]`} />
-                </div>
-                <div className="flex justify-between mt-2">
-                    <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Despesas ({estaNeutro ? 0 : percentualCusto}%)</span>
-                    <span className="text-[7px] font-black text-zinc-600 uppercase tracking-widest">Lucro ({estaNeutro ? 0 : percentualLucro}%)</span>
+                <div className="h-[2px] w-full bg-zinc-900 rounded-full flex overflow-hidden">
+                    <div style={{ width: `${temDados ? (custoUnitario / Math.max(precoFinalVenda, 0.01) * 100) : 0}%` }} className="bg-zinc-800 h-full transition-all duration-1000" />
+                    <div style={{ width: `${temDados ? (lucroBrutoUnitario / Math.max(precoFinalVenda, 0.01) * 100) : 0}%` }} className={`${saudeProjeto.bar} h-full transition-all duration-1000 shadow-[0_0_10px_rgba(0,0,0,0.5)]`} />
                 </div>
             </div>
 
-            {/* CARD 02: PREÇO FINAL (EXIBIÇÃO COMERCIAL) */}
-            <div className="bg-zinc-900/60 border border-white/10 rounded-2xl py-5 px-6 relative overflow-hidden group hover:border-sky-500/40 transition-all text-center">
-                <span className="text-[8px] font-black text-zinc-500 uppercase tracking-[0.4em] block mb-3 group-hover:text-sky-400 transition-colors">Valor Final de Venda</span>
+            {/* CARD 02: PREÇO FINAL DE VENDA */}
+            <div className="bg-[#0c0c0e] border border-white/[0.05] rounded-3xl p-5 relative group shrink-0">
+                <div className="absolute top-4 right-4 flex gap-2">
+                    <button
+                        onClick={handleCopyPrice}
+                        disabled={!temDados}
+                        title="Copiar Preço"
+                        className={`p-2.5 rounded-xl border border-white/5 transition-all active:scale-90 disabled:opacity-20 ${copiadoPreco ? 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30' : 'bg-zinc-900/50 text-zinc-600 hover:text-sky-400'}`}
+                    >
+                        {copiadoPreco ? <Check size={14} /> : <Copy size={14} />}
+                    </button>
+                    <button
+                        onClick={handleSmartRound}
+                        disabled={!temDados}
+                        title="Arredondar para ,90"
+                        className={`p-2.5 rounded-xl border border-white/5 transition-all active:scale-90 disabled:opacity-20 ${precoArredondado ? 'bg-sky-500/20 text-sky-400 border-sky-500/30' : 'bg-zinc-900/50 text-zinc-600 hover:text-sky-400'}`}
+                    >
+                        <Wand2 size={14} />
+                    </button>
+                </div>
 
-                <div className="flex flex-col items-center">
-                    {possuiDesconto && (
-                        <div className="flex items-center gap-2 mb-1 animate-in slide-in-from-top-2">
-                            <span className="text-zinc-600 font-mono text-base line-through decoration-rose-500/40">
+                <span className="text-[9px] font-bold text-zinc-500 uppercase tracking-[0.3em] block mb-3">Preço Sugerido</span>
+
+                <div className="flex flex-col">
+                    {possuiDesconto ? (
+                        <div className="flex flex-col animate-in slide-in-from-left-2">
+                            <span className="text-zinc-600 font-mono text-sm line-through decoration-rose-500/40 mb-1">
                                 {formatCurrency(precoSugerido)}
                             </span>
-                            <div className="bg-sky-500/10 text-sky-500 text-[8px] px-2 py-0.5 rounded border border-sky-500/20 font-black tracking-tighter">
-                                COM DESCONTO
-                            </div>
+                            <h3 className="text-5xl font-black font-mono tracking-tighter text-white leading-none">
+                                <AnimatedNumber value={precoFinalVenda} />
+                            </h3>
                         </div>
-                    )}
-                    <span className={`text-5xl font-black font-mono tracking-tighter ${estaNeutro ? 'text-zinc-800' : 'text-white'}`}>
-                        {formatCurrency(precoFinalVenda)}
-                    </span>
-                </div>
-                {possuiDesconto && <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/5 blur-3xl rounded-full -mr-12 -mt-12" />}
-            </div>
-
-            {/* CARD 03: DETALHAMENTO TÉCNICO */}
-            <div className="flex-1 bg-zinc-950/20 border border-white/5 rounded-2xl flex flex-col overflow-hidden backdrop-blur-md">
-                <div className="px-4 py-2 border-b border-white/5 bg-white/5 flex items-center justify-between">
-                    <h3 className="text-[9px] font-black text-zinc-400 uppercase tracking-widest">Distribuição de Custos</h3>
-                    <div className="group/help relative cursor-help">
-                        <HelpCircle size={12} className="text-zinc-700 hover:text-zinc-500" />
-                        <div className="absolute right-0 top-5 w-48 p-2 bg-zinc-900 border border-zinc-800 rounded-lg shadow-2xl invisible group-hover/help:visible opacity-0 group-hover/help:opacity-100 transition-all z-50">
-                           <p className="text-[7px] text-zinc-400 uppercase font-bold leading-tight">Cálculos baseados no Método do Divisor, garantindo que suas taxas não consumam seu lucro líquido.</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-4">
-                    {temDadosSuficientes ? (
-                        <>
-                            {/* Custos Diretos */}
-                            <div>
-                                <h4 className="text-[7px] font-black text-zinc-600 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-                                    <div className="w-1 h-1 rounded-full bg-zinc-600" /> Produção Direta
-                                </h4>
-                                <LinhaResumo icon={Package} label="Materiais Insumos" value={custoMaterial} total={precoFinalVenda} />
-                                <LinhaResumo icon={Zap} label="Consumo Elétrico" value={custoEnergia} total={precoFinalVenda} />
-                                <LinhaResumo icon={Clock} label="Depreciação Máquina" value={custoMaquina} total={precoFinalVenda} />
-                                <LinhaResumo icon={Wrench} label="Trabalho e Setup" value={custoMaoDeObra + custoSetup} total={precoFinalVenda} />
-                                <LinhaResumo icon={ShieldCheck} label="Fundo de Falhas" value={valorRisco} total={precoFinalVenda} color="text-amber-400/70" />
-                            </div>
-
-                            {/* Logística */}
-                            {(custoEmbalagem > 0 || custoFrete > 0) && (
-                                <div>
-                                    <h4 className="text-[7px] font-black text-zinc-600 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-                                        <div className="w-1 h-1 rounded-full bg-zinc-600" /> Logística Interna
-                                    </h4>
-                                    <LinhaResumo icon={Truck} label="Embalagem e Frete" value={custoEmbalagem + custoFrete} total={precoFinalVenda} />
-                                </div>
-                            )}
-
-                            {/* Impostos e Taxas */}
-                            <div>
-                                <h4 className="text-[7px] font-black text-rose-900 uppercase tracking-widest mb-2 px-1 flex items-center gap-2">
-                                    <div className="w-1 h-1 rounded-full bg-rose-900" /> Taxas de Venda
-                                </h4>
-                                <LinhaResumo icon={Landmark} label="Impostos e Tributos" value={valorImpostos} total={precoFinalVenda} color="text-rose-400/80" />
-                                <LinhaResumo icon={Store} label="Comissão Plataforma" value={valorMarketplace} total={precoFinalVenda} color="text-rose-400/80" />
-                            </div>
-                        </>
                     ) : (
-                        <div className="flex flex-col items-center justify-center h-full text-zinc-800 gap-3 opacity-30">
-                            <Calculator size={32} strokeWidth={1} />
-                            <span className="text-[9px] uppercase font-black tracking-[0.4em]">Aguardando Dados</span>
+                        <h3 className={`text-5xl font-black font-mono tracking-tighter leading-none ${temDados ? 'text-white' : 'text-zinc-800'}`}>
+                            {temDados ? <AnimatedNumber value={precoFinalVenda} /> : "R$ 0,00"}
+                        </h3>
+                    )}
+                </div>
+            </div>
+
+            {/* CARD 03: COMPOSIÇÃO DOS CUSTOS */}
+            <div className="flex-1 bg-zinc-900/10 border border-white/[0.05] rounded-3xl flex flex-col overflow-hidden min-h-0">
+                <div className="px-5 py-3 border-b border-white/[0.03] flex justify-between items-center text-[9px] font-bold text-zinc-600 uppercase tracking-widest shrink-0">
+                    <span>Composição dos Custos</span>
+                    <Target size={12} className="opacity-20" />
+                </div>
+                <div className="flex-1 overflow-y-auto px-5 custom-scrollbar">
+                    {temDados && composicaoItens.length > 0 ? (
+                        <div className="py-2 space-y-0.5">
+                            {composicaoItens.map((item, i) => (
+                                <div key={i} className="flex justify-between py-1.5 border-b border-white/[0.01] last:border-0 group animate-in fade-in slide-in-from-left-1">
+                                    <span className="text-[8px] text-zinc-500 uppercase font-bold tracking-widest flex items-center gap-2 group-hover:text-zinc-300 transition-colors">
+                                        <item.icon size={11} className="shrink-0" /> {item.label}
+                                    </span>
+                                    <span className={`text-[10px] font-mono font-bold ${item.color || 'text-zinc-300'}`}>{formatCurrency(item.val)}</span>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="h-full flex flex-col items-center justify-center opacity-5">
+                            <Calculator size={40} />
                         </div>
                     )}
                 </div>
+            </div>
 
-                {/* Rodapé do Detalhamento */}
-                <div className="p-4 bg-zinc-900/80 border-t border-white/5 flex justify-between items-center">
-                    <div>
-                        <span className="text-[9px] font-black text-zinc-500 uppercase tracking-widest block leading-none">Custo Operacional</span>
-                        <span className="text-[7px] text-zinc-600 uppercase font-bold italic">Base de Cálculo</span>
+            {/* AÇÕES */}
+            <div className="flex flex-col gap-2 shrink-0">
+                <div className="flex gap-2 h-14">
+                    <button
+                        onClick={lidarSalvarResumo}
+                        disabled={!temDados || estaSalvo || estaGravando}
+                        className={`flex-1 rounded-2xl flex items-center justify-center gap-3 font-bold text-[10px] uppercase tracking-[0.2em] transition-all 
+                        ${estaSalvo ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-[#0095ff] hover:bg-[#007cd6] text-white shadow-lg shadow-sky-500/10'}`}
+                    >
+                        {estaGravando ? <Loader2 className="animate-spin" size={16} /> : <Save size={18} />}
+                        {estaSalvo ? "PROJETO SALVO" : "GERAR E SALVAR"}
+                    </button>
+                    <button 
+                        onClick={abrirModalWhatsapp}
+                        disabled={!temDados}
+                        className="w-14 h-14 rounded-2xl bg-[#10b981] hover:bg-[#0da472] text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-emerald-500/10 disabled:opacity-20"
+                    >
+                        <MessageCircle size={24} fill="currentColor" />
+                    </button>
+                </div>
+                <div className="grid grid-cols-2 gap-2 h-10">
+                    <button onClick={() => setModalConfig({ open: true, type: 'RESET' })} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all">
+                        <RotateCcw size={12} /> Reiniciar
+                    </button>
+                    <button onClick={() => generateProfessionalPDF(resultados, entradas, precoFinalVenda)} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all">
+                        <FileText size={12} /> Gerar Orçamento
+                    </button>
+                </div>
+            </div>
+
+            {/* MODAL WHATSAPP */}
+            <Modal
+                isOpen={whatsappModal}
+                onClose={() => setWhatsappModal(false)}
+                title="Personalizar Mensagem"
+                actions={
+                    <div className="flex w-full gap-2">
+                        <button onClick={copiarMensagem} className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-2.5 rounded-xl flex items-center justify-center gap-2">
+                            {copiado ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                            {copiado ? "Copiado" : "Copiar"}
+                        </button>
+                        <button onClick={enviarParaWhatsapp} className="flex-[2] bg-[#10b981] text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl flex items-center justify-center gap-2">
+                            <Send size={14} /> Enviar Agora
+                        </button>
                     </div>
-                    <span className={`text-lg font-black font-mono ${estaNeutro ? 'text-zinc-800' : 'text-zinc-200'}`}>
-                        {temDadosSuficientes ? formatCurrency(custoTotalReal) : formatCurrency(0)}
-                    </span>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="flex flex-col gap-2">
+                        <label className="text-[9px] font-bold text-zinc-500 uppercase tracking-widest">Visualização da Mensagem</label>
+                        <textarea
+                            className="w-full h-48 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-xs text-zinc-300 outline-none focus:border-emerald-500/50 transition-all resize-none font-sans leading-relaxed"
+                            value={mensagemEditavel}
+                            onChange={(e) => setMensagemEditavel(e.target.value)}
+                        />
+                    </div>
+                    <div className="flex flex-col gap-3">
+                        <p className="text-[8px] text-zinc-600 uppercase font-bold leading-tight">
+                            Dica: Você pode editar o texto acima livremente antes de enviar para o cliente.
+                        </p>
+                        <button 
+                            onClick={() => { setWhatsappModal(false); onOpenSettings(); }}
+                            className="flex items-center gap-2 text-[8px] font-black text-zinc-500 hover:text-sky-400 uppercase tracking-widest transition-colors w-fit"
+                        >
+                            <Settings2 size={12} /> Alterar modelo padrão nas configurações
+                        </button>
+                    </div>
                 </div>
-            </div>
+            </Modal>
 
-            {/* BOTÕES DE AÇÃO */}
-            <div className="flex flex-col gap-3 pt-2">
-                <button
-                    type="button"
-                    onClick={lidarSalvar}
-                    disabled={estaNeutro || estaSalvo || estaGravando}
-                    className={`h-14 w-full rounded-xl font-black text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all
-                    ${estaSalvo
-                            ? "bg-emerald-600/20 text-emerald-500 border border-emerald-500/30 cursor-default"
-                            : "bg-sky-600 hover:bg-sky-500 text-white shadow-lg shadow-sky-900/20 active:scale-95 disabled:bg-zinc-900 disabled:text-zinc-700 disabled:border-transparent"}
-                    `}
-                >
-                    {estaGravando ? <Loader2 size={20} className="animate-spin" /> : estaSalvo ? <Check size={20} strokeWidth={3} /> : <Calculator size={20} />}
-                    {estaGravando ? "SALVANDO..." : estaSalvo ? "CÁLCULO ARQUIVADO" : "GERAR ORÇAMENTO E SALVAR"}
-                </button>
+            <Modal
+                isOpen={modalConfig.open && modalConfig.type === 'NAME_REQ'}
+                onClose={() => setModalConfig({ open: false, type: '' })}
+                title="Ação Necessária"
+                actions={<button onClick={() => setModalConfig({ open: false, type: '' })} className="bg-[#0095ff] text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl w-full">Entendi</button>}
+            >
+                Por favor, dê um nome para o seu projeto antes de salvar.
+            </Modal>
 
-                <div className="grid grid-cols-2 gap-2">
-                    <button
-                        type="button"
-                        onClick={lidarNovoCalculo}
-                        className="h-12 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 hover:bg-zinc-800 text-zinc-500 hover:text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
-                    >
-                        <RotateCcw size={14} />
-                        Reiniciar
-                    </button>
+            <Modal
+                isOpen={modalConfig.open && modalConfig.type === 'RESET'}
+                onClose={() => setModalConfig({ open: false, type: '' })}
+                title="Confirmação"
+                actions={
+                    <>
+                        <button onClick={() => setModalConfig({ open: false, type: '' })} className="text-[10px] font-bold text-zinc-500 uppercase px-4">Cancelar</button>
+                        <button onClick={() => window.location.reload()} className="bg-rose-600 text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl">Sim, apagar tudo</button>
+                    </>
+                }
+            >
+                Deseja realmente apagar todos os dados deste cálculo?
+            </Modal>
 
-                    <button
-                        type="button"
-                        onClick={() => generateProfessionalPDF(resultados, entradas)}
-                        disabled={estaNeutro}
-                        className="h-12 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-sky-500/50 hover:bg-zinc-800 text-zinc-400 hover:text-white text-xs font-bold uppercase tracking-widest flex items-center justify-center gap-2 transition-all active:scale-[0.98] disabled:opacity-30"
-                    >
-                        <FileText size={16} />
-                        Gerar PDF
-                    </button>
-                </div>
-            </div>
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+            `}} />
         </div>
     );
 }

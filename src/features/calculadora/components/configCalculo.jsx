@@ -1,13 +1,13 @@
-// src/features/calculadora/components/PainelConfiguracoesCalculo.jsx
 import React, { useState, useRef, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import {
     User, Zap, Monitor, Settings2, Save, Check,
-    RefreshCw, RotateCcw, Loader2, Cpu, AlertCircle
+    RefreshCw, RotateCcw, Loader2, Cpu, AlertCircle,
+    MessageCircle, X, Layout, Copy, Send, Info
 } from "lucide-react";
 import { useSettingsStore } from "../logic/calculator";
 
-// TOOLTIP VIA PORTAL (Mantém o foco e evita quebra de layout)
+// TOOLTIP VIA PORTAL
 const TooltipPortal = ({ texto, referenciaAlvo, visivel }) => {
     const [coordenadas, setCoordenadas] = useState({ top: 0, left: 0 });
 
@@ -32,7 +32,34 @@ const TooltipPortal = ({ texto, referenciaAlvo, visivel }) => {
     );
 };
 
-// INPUT DE CONFIGURAÇÃO REUTILIZÁVEL
+/* ---------- SUB-COMPONENTE: MODAL IGUAL AO RESUMO (ESTILO CARD) ---------- */
+const ModalEstiloResumo = ({ isOpen, onClose, title, children, actions }) => {
+    if (!isOpen) return null;
+    return (
+        <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl w-full max-w-[360px] overflow-hidden shadow-2xl flex flex-col max-h-[90%]">
+                <div className="px-6 py-4 border-b border-white/[0.03] flex justify-between items-center shrink-0">
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{title}</span>
+                    <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors">
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 custom-scrollbar">
+                    {children}
+                </div>
+
+                {actions && (
+                    <div className="px-6 py-5 bg-white/[0.01] border-t border-white/[0.03] shrink-0">
+                        {actions}
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+// COMPONENTE DE ENTRADA DE CONFIGURAÇÃO
 const EntradaConfiguracao = ({ rotulo, sufixo, valor, aoAlterar, icone: Icone, textoAjuda, cor = "text-zinc-600" }) => {
     const [estaSendoFocado, setEstaSendoFocado] = useState(false);
     const referenciaIcone = useRef(null);
@@ -65,7 +92,7 @@ const EntradaConfiguracao = ({ rotulo, sufixo, valor, aoAlterar, icone: Icone, t
 };
 
 export default function PainelConfiguracoesCalculo({
-    config, // Objeto de configuração vindo do estado pai
+    config,
     valorHoraHumana, setValorHoraHumana,
     custoKwh, setCustoKwh,
     consumoImpressoraKw, setConsumoImpressoraKw,
@@ -73,23 +100,27 @@ export default function PainelConfiguracoesCalculo({
     taxaSetup, setTaxaSetup,
     onSaved
 }) {
-    const { saveSettings, fetchSettings, isLoading: estaGravando } = useSettingsStore();
+    const { settings, saveSettings, fetchSettings, isLoading: estaGravando } = useSettingsStore();
     const [estaSincronizando, setEstaSincronizando] = useState(false);
     const [configuracaoSincronizada, setConfiguracaoSincronizada] = useState(true);
 
-    // Sincronizar dados com o banco D1 (Nuvem)
+    // Estados para o Modal de WhatsApp
+    const [whatsappModal, setWhatsappModal] = useState(false);
+    const [tempTemplate, setTempTemplate] = useState(settings?.whatsappTemplate || "");
+    const [copiado, setCopiado] = useState(false);
+
     const lidarSincronizacao = async () => {
         setEstaSincronizando(true);
         const sucesso = await fetchSettings();
         if (sucesso) {
             setConfiguracaoSincronizada(true);
+            setTempTemplate(settings?.whatsappTemplate || "");
         }
         setEstaSincronizando(false);
     };
 
-    // Resetar campos locais
     const lidarResetLocal = () => {
-        if (window.confirm("Limpar alterações locais e voltar aos campos vazios?")) {
+        if (window.confirm("Quer limpar as alterações locais?")) {
             setValorHoraHumana("");
             setCustoKwh("");
             setConsumoImpressoraKw("");
@@ -99,142 +130,193 @@ export default function PainelConfiguracoesCalculo({
         }
     };
 
-    // Persistir no Banco de Dados via Store
     const lidarSalvarConfiguracoes = async () => {
-        // Garante que o objeto enviado contenha os valores mais recentes dos estados
         const dadosParaSalvar = {
             ...config,
             valorHoraHumana,
             custoKwh,
             consumoKw: consumoImpressoraKw,
             custoHoraMaquina,
-            taxaSetup
+            taxaSetup,
+            whatsappTemplate: settings.whatsappTemplate
+        };
+
+        const sucesso = await saveSettings(dadosParaSalvar);
+        if (sucesso) setConfiguracaoSincronizada(true);
+    };
+
+    const lidarSalvarWhatsApp = async () => {
+        const dadosParaSalvar = {
+            ...settings,
+            custoKwh,
+            valorHoraHumana,
+            consumoKw: consumoImpressoraKw,
+            custoHoraMaquina,
+            taxaSetup,
+            whatsappTemplate: tempTemplate
         };
 
         const sucesso = await saveSettings(dadosParaSalvar);
         if (sucesso) {
+            setWhatsappModal(false);
             setConfiguracaoSincronizada(true);
             if (onSaved) onSaved();
-        } else {
-            alert("Erro ao salvar na nuvem. Verifique sua conexão.");
         }
     };
 
-    // Monitor de alterações para avisar que há dados não salvos
+    const copiarExemplo = () => {
+        navigator.clipboard.writeText(tempTemplate);
+        setCopiado(true);
+        setTimeout(() => setCopiado(false), 2000);
+    };
+
     const lidarMudancaInput = (setter) => (valor) => {
         setter(valor);
         setConfiguracaoSincronizada(false);
     };
 
     return (
-        <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-500 pb-10">
+        <div className="relative h-full flex flex-col">
 
-            {/* BARRA DE FERRAMENTAS */}
-            <div className="flex items-center justify-between pb-4 border-b border-zinc-800/50">
-                <div className="flex flex-col">
-                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 leading-none mb-1">Backup na Nuvem</span>
+            <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-500 pb-10">
+                {/* CABEÇALHO / BACKUP */}
+                <div className="flex items-center justify-between pb-4 border-b border-zinc-800/50">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500 leading-none mb-1">Backup na Nuvem</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-tighter">{configuracaoSincronizada ? 'Sincronizado' : 'Alterado'}</span>
+                            {!configuracaoSincronizada && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                        </div>
+                    </div>
+
                     <div className="flex items-center gap-2">
-                        <span className="text-[9px] font-mono text-zinc-600 uppercase tracking-tighter">Status: {configuracaoSincronizada ? 'Sincronizado' : 'Alterado'}</span>
-                        {!configuracaoSincronizada && <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />}
+                        <button onClick={lidarResetLocal} className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-400 transition-colors">
+                            <RotateCcw size={14} />
+                        </button>
+                        <button onClick={lidarSincronizacao} className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-sky-400 transition-all">
+                            <RefreshCw size={14} className={estaSincronizando ? "animate-spin text-sky-400" : ""} />
+                        </button>
+                        <button
+                            onClick={lidarSalvarConfiguracoes}
+                            disabled={configuracaoSincronizada || estaGravando}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${configuracaoSincronizada ? "bg-zinc-900 text-zinc-600" : "bg-sky-600 text-white hover:bg-sky-500 shadow-lg active:scale-95"}`}
+                        >
+                            {estaGravando ? <Loader2 size={12} className="animate-spin" /> : (configuracaoSincronizada ? <Check size={12} /> : <Save size={12} />)}
+                            {estaGravando ? "..." : (configuracaoSincronizada ? "Salvo" : "Salvar")}
+                        </button>
                     </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                    <button onClick={lidarResetLocal} title="Limpar Local" className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-400 transition-colors">
-                        <RotateCcw size={14} />
-                    </button>
+                <div className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Consumo de Energia</h4>
+                        <div className="h-px flex-1 bg-zinc-900" />
+                    </div>
+                    <div className="space-y-2">
+                        <EntradaConfiguracao rotulo="Potência da Máquina" sufixo="Watts" icone={Monitor} cor="text-indigo-400" valor={consumoImpressoraKw ? (Number(consumoImpressoraKw) < 2 ? Math.round(Number(consumoImpressoraKw) * 1000) : consumoImpressoraKw) : ""} aoAlterar={lidarMudancaInput((v) => setConsumoImpressoraKw(v === "" ? "" : (Number(v) >= 2 ? String(Number(v) / 1000) : v)))} textoAjuda="Consumo em Watts." />
+                        <EntradaConfiguracao rotulo="Preço do kWh" sufixo="R$/kWh" icone={Zap} cor="text-amber-400" valor={custoKwh} aoAlterar={lidarMudancaInput(setCustoKwh)} textoAjuda="Valor da tarifa de luz." />
+                    </div>
+                </div>
 
-                    <button onClick={lidarSincronizacao} disabled={estaSincronizando} title="Buscar da Nuvem" className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-sky-400 transition-all">
-                        <RefreshCw size={14} className={estaSincronizando ? "animate-spin text-sky-400" : ""} />
-                    </button>
+                <div className="space-y-4 pt-2">
+                    <div className="flex items-center gap-3">
+                        <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Custos da Máquina</h4>
+                        <div className="h-px flex-1 bg-zinc-900" />
+                    </div>
+                    <div className="space-y-2">
+                        <EntradaConfiguracao rotulo="Depreciação/Hora" sufixo="R$/h" icone={Cpu} cor="text-blue-400" valor={custoHoraMaquina} aoAlterar={lidarMudancaInput(setCustoHoraMaquina)} textoAjuda="Custo de uso da máquina." />
+                        <EntradaConfiguracao rotulo="Taxa de Setup" sufixo="R$" icone={Settings2} cor="text-zinc-400" valor={taxaSetup} aoAlterar={lidarMudancaInput(setTaxaSetup)} textoAjuda="Custo inicial de fatiamento." />
+                    </div>
+                </div>
 
-                    <button 
-                        onClick={lidarSalvarConfiguracoes} 
-                        disabled={configuracaoSincronizada || estaGravando} 
-                        className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wide transition-all ${configuracaoSincronizada ? "bg-zinc-900 text-zinc-600 cursor-default" : "bg-sky-600 text-white hover:bg-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.2)] active:scale-95"}`}
+                <div className="space-y-4 pt-2">
+                    <div className="flex items-center gap-3">
+                        <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Trabalho Manual</h4>
+                        <div className="h-px flex-1 bg-zinc-900" />
+                    </div>
+                    <EntradaConfiguracao rotulo="Valor da sua Hora" sufixo="R$/h" icone={User} cor="text-emerald-400" valor={valorHoraHumana} aoAlterar={lidarMudancaInput(setValorHoraHumana)} textoAjuda="Quanto você quer ganhar por hora." />
+                </div>
+
+                <div className="space-y-4 pt-2">
+                    <div className="flex items-center gap-3">
+                        <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Comunicação</h4>
+                        <div className="h-px flex-1 bg-zinc-900" />
+                    </div>
+                    <button
+                        onClick={() => { setTempTemplate(settings?.whatsappTemplate || ""); setWhatsappModal(true); }}
+                        className="w-full group flex items-center justify-between p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/50 hover:border-emerald-500/30 transition-all duration-200"
                     >
-                        {estaGravando ? <Loader2 size={12} className="animate-spin mr-1" /> : (configuracaoSincronizada ? <Check size={12} strokeWidth={3} className="mr-1" /> : <Save size={12} className="mr-1" />)}
-                        {estaGravando ? "Gravando" : (configuracaoSincronizada ? "Salvo" : "Salvar Nuvem")}
+                        <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-center text-emerald-500 shadow-inner group-hover:scale-105 transition-transform">
+                                <MessageCircle size={14} strokeWidth={2.5} />
+                            </div>
+                            <div className="flex flex-col text-left">
+                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Template de WhatsApp</span>
+                                <span className="text-[8px] text-zinc-600 font-bold uppercase tracking-widest">Personalizar mensagem padrão</span>
+                            </div>
+                        </div>
+                        <Settings2 size={14} className="text-zinc-700 group-hover:text-emerald-500 transition-colors" />
                     </button>
                 </div>
             </div>
 
-            {/* SEÇÃO 1: ELÉTRICA */}
-            <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                    <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Consumo Elétrico</h4>
-                    <div className="h-px flex-1 bg-zinc-900" />
-                </div>
-                <div className="space-y-2">
-                    <EntradaConfiguracao
-                        rotulo="Potência do Hardware"
-                        sufixo="Watts"
-                        icone={Monitor}
-                        cor="text-indigo-400"
-                        // Exibição: Se o valor for decimal (kW), converte para Watts para o usuário
-                        valor={consumoImpressoraKw ? (Number(consumoImpressoraKw) < 2 ? Math.round(Number(consumoImpressoraKw) * 1000) : consumoImpressoraKw) : ""}
-                        aoAlterar={lidarMudancaInput((v) => {
-                            // Salvamento: Se o usuário digitar Watts (>2), converte para kW para o motor de cálculo
-                            const valorConvertido = v === "" ? "" : (Number(v) >= 2 ? String(Number(v) / 1000) : v);
-                            setConsumoImpressoraKw(valorConvertido);
-                        })}
-                        textoAjuda="Consumo médio da impressora em Watts (ex: 150W). O sistema converterá para kW automaticamente."
-                    />
-                    <EntradaConfiguracao
-                        rotulo="Preço do kWh" sufixo="R$/kWh" icone={Zap} cor="text-amber-400"
-                        valor={custoKwh}
-                        aoAlterar={lidarMudancaInput(setCustoKwh)}
-                        textoAjuda="Valor da tarifa de energia por kWh cobrado na sua fatura."
-                    />
-                </div>
-            </div>
+            {/* MODAL IDÊNTICO AO DE RESUMO */}
+            <ModalEstiloResumo
+                isOpen={whatsappModal}
+                onClose={() => setWhatsappModal(false)}
+                title="Personalizar Mensagem"
+                actions={
+                    <div className="flex flex-col gap-3">
+                        <div className="grid grid-cols-2 gap-2 h-11">
+                            <button onClick={copiarExemplo} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-400 hover:text-white flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all active:scale-95">
+                                {copiado ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
+                                {copiado ? "Copiado" : "Copiar"}
+                            </button>
+                            <button disabled className="rounded-xl bg-[#10b981]/10 border border-[#10b981]/20 text-[#10b981]/50 flex items-center justify-center gap-2 text-[10px] font-black uppercase cursor-not-allowed">
+                                <Send size={14} /> Enviar Agora
+                            </button>
+                        </div>
+                        <button
+                            onClick={lidarSalvarWhatsApp}
+                            className="w-full h-11 rounded-xl bg-zinc-800/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all shadow-lg active:scale-95"
+                        >
+                            <Layout size={14} /> Salvar como Layout Padrão
+                        </button>
+                    </div>
+                }
+            >
+                <div className="space-y-4">
+                    <div className="flex flex-col gap-3">
+                        <div className="flex justify-between items-center px-1">
+                            <label className="text-[9px] font-black text-zinc-500 uppercase tracking-[0.2em]">Visualização da Mensagem</label>
+                            <div className="flex gap-1.5">
+                                {['{projeto}', '{valor}', '{tempo}'].map(tag => (
+                                    <button key={tag} type="button" onClick={() => setTempTemplate(prev => prev + tag)} className="text-[8px] font-mono font-bold bg-zinc-900 text-zinc-500 px-1.5 py-0.5 rounded border border-white/5 hover:text-sky-400 transition-all">
+                                        {tag}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <textarea
+                            className="w-full h-48 bg-zinc-950/50 border border-zinc-800 rounded-2xl p-4 text-[11px] text-zinc-300 outline-none focus:border-emerald-500/40 transition-all resize-none font-sans leading-relaxed shadow-inner"
+                            value={tempTemplate}
+                            onChange={(e) => setTempTemplate(e.target.value)}
+                        />
+                    </div>
 
-            {/* SEÇÃO 2: MANUTENÇÃO */}
-            <div className="space-y-4 pt-2">
-                <div className="flex items-center gap-3">
-                    <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Custos de Máquina</h4>
-                    <div className="h-px flex-1 bg-zinc-900" />
+                    <p className="text-[8px] text-zinc-600 uppercase font-black leading-relaxed px-1">
+                        DICA: O TEXTO ACIMA SERÁ SALVO NA NUVEM. VOCÊ PODE EDITÁ-LO LIVREMENTE USANDO AS TAGS PARA PREENCHIMENTO AUTOMÁTICO.
+                    </p>
                 </div>
-                <div className="space-y-2">
-                    <EntradaConfiguracao
-                        rotulo="Depreciação/Hora" sufixo="R$/h" icone={Cpu} cor="text-blue-400"
-                        valor={custoHoraMaquina}
-                        aoAlterar={lidarMudancaInput(setCustoHoraMaquina)}
-                        textoAjuda="Custo de desgaste da máquina por hora (Ex: Valor da Máquina / Vida Útil em horas)."
-                    />
-                    <EntradaConfiguracao
-                        rotulo="Taxa de Setup" sufixo="R$" icone={Settings2} cor="text-zinc-400"
-                        valor={taxaSetup}
-                        aoAlterar={lidarMudancaInput(setTaxaSetup)}
-                        textoAjuda="Custo fixo inicial para preparar a máquina, fatiar e iniciar a produção."
-                    />
-                </div>
-            </div>
-
-            {/* SEÇÃO 3: LABORATÓRIO */}
-            <div className="space-y-4 pt-2">
-                <div className="flex items-center gap-3">
-                    <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Trabalho Humano</h4>
-                    <div className="h-px flex-1 bg-zinc-900" />
-                </div>
-                <div className="space-y-2">
-                    <EntradaConfiguracao
-                        rotulo="Valor da sua Hora" sufixo="R$/h" icone={User} cor="text-emerald-400"
-                        valor={valorHoraHumana}
-                        aoAlterar={lidarMudancaInput(setValorHoraHumana)}
-                        textoAjuda="Seu pró-labore. Quanto você quer receber por hora de trabalho manual direto."
-                    />
-                </div>
-            </div>
+            </ModalEstiloResumo>
 
             {/* AVISO DE CONFIGURAÇÃO */}
-            <div className="mt-4 p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex gap-3">
+            <div className="mt-auto p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex gap-3 mb-4">
                 <AlertCircle className="text-amber-500 shrink-0" size={16} />
-                <p className="text-[10px] text-amber-500/80 leading-relaxed uppercase font-bold tracking-tight">
-                    As configurações de oficina são globais. Qualquer alteração aqui será aplicada imediatamente em todos os cálculos de novos projetos.
+                <p className="text-[9px] text-amber-500/80 leading-relaxed uppercase font-black tracking-tight">
+                    As configurações valem para todos os novos orçamentos.
                 </p>
             </div>
-
         </div>
     );
 }

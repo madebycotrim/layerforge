@@ -1,4 +1,3 @@
-// src/features/calculadora/components/CustosLogisticos.jsx
 import React from "react";
 import { Box, Truck, Plus, Wrench, Tag, Trash2 } from "lucide-react";
 import { UnifiedInput } from "../../../../components/UnifiedInput";
@@ -12,31 +11,31 @@ export default function CustosLogisticos({
   setCustosExtras
 }) {
 
-  // Garante que a lista de extras seja sempre um array válido
+  // Garante que a lista de extras seja sempre um array válido para o código
   const extrasSeguros = Array.isArray(custosExtras) ? custosExtras : [];
 
-  // Cálculo da soma dos extras para exibição reativa no cabeçalho
+  // Soma todos os extras para mostrar o total no topo do card
   const totalExtrasSoma = extrasSeguros.reduce((acumulado, item) => {
     const valorNumerico = parseFloat(item?.valor) || 0;
     return acumulado + valorNumerico;
   }, 0);
 
-  // Adiciona um novo item vazio à lista
+  // Adiciona uma nova linha de custo na lista
   const adicionarExtra = () => {
     setCustosExtras([...extrasSeguros, { nome: "", valor: "" }]);
   };
 
-  // Remove um item específico pelo índice
+  // Remove um item da lista pelo índice dele
   const removerExtra = (index) => {
     const novaLista = extrasSeguros.filter((_, i) => i !== index);
     setCustosExtras(novaLista);
   };
 
-  // Atualiza os campos de nome ou valor de um item específico
+  // Atualiza o nome ou o valor de um custo extra específico
   const atualizarExtra = (index, campo, valor) => {
     const novaListaExtras = extrasSeguros.map((item, i) => {
       if (i === index) {
-        // Se for o campo nome, padroniza para maiúsculas
+        // Se for o nome, a gente deixa tudo em maiúsculo pra manter o padrão
         if (campo === "nome") {
           return { ...item, [campo]: valor.toUpperCase() };
         }
@@ -50,7 +49,7 @@ export default function CustosLogisticos({
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
 
-      {/* 1. INPUTS FIXOS: LOGÍSTICA BÁSICA */}
+      {/* 1. CAMPOS PADRÃO: LOGÍSTICA BÁSICA */}
       <div className="grid grid-cols-2 gap-4">
         <UnifiedInput
           label="Embalagem"
@@ -74,9 +73,9 @@ export default function CustosLogisticos({
         />
       </div>
 
-      {/* 2. SEÇÃO DE CUSTOS ADICIONAIS (EXTRAS) */}
+      {/* 2. SEÇÃO DE GASTOS EXTRAS */}
       <div className="space-y-3">
-        {/* Header com Contador e Somatório */}
+        {/* Cabeçalho com Contador e Total */}
         <div className="flex items-center justify-between px-1 border-b border-white/5 pb-2">
           <div className="flex items-center gap-2">
             <Wrench size={12} className="text-zinc-500" />
@@ -93,7 +92,7 @@ export default function CustosLogisticos({
               <span className="text-[10px] font-mono font-bold text-sky-400">
                 R$ {totalExtrasSoma.toFixed(2)}
               </span>
-              <span className="text-[7px] font-black text-zinc-700 uppercase tracking-tighter">Soma Extras</span>
+              <span className="text-[7px] font-black text-zinc-700 uppercase tracking-tighter">Total de Extras</span>
             </div>
             <button
               type="button"
@@ -105,15 +104,15 @@ export default function CustosLogisticos({
           </div>
         </div>
 
-        {/* LISTA DINÂMICA COM SCROLL INTERNO */}
+        {/* LISTA DE ITENS COM ROLAGEM INTERNA */}
         <div className="space-y-2 max-h-[234px] overflow-y-auto pr-1 custom-scrollbar overflow-x-hidden">
           {extrasSeguros.map((item, index) => (
             <div key={`extra-${index}`} className="flex items-end gap-2 group animate-in slide-in-from-right-2 duration-300 mb-1">
 
-              {/* DESCRIÇÃO DO CUSTO */}
-              <div className="flex-[2] min-w-0">
+              {/* DESCRIÇÃO DO GASTO */}
+              <div className="min-w-0 flex-[2]">
                 <UnifiedInput
-                  placeholder="EX: TINTA, LIXA..."
+                  placeholder="EX: TINTA, COLA, LIXA..."
                   type="text"
                   icon={Tag}
                   value={item.nome || ""}
@@ -121,7 +120,7 @@ export default function CustosLogisticos({
                 />
               </div>
 
-              {/* VALOR UNITÁRIO */}
+              {/* VALOR DO ITEM */}
               <div className="w-[85px] shrink-0">
                 <UnifiedInput
                   placeholder="0.00"
@@ -133,27 +132,33 @@ export default function CustosLogisticos({
                 />
               </div>
 
-              {/* BOTÃO REMOVER */}
+              {/* BOTÃO PRA REMOVER */}
               <button
                 type="button"
                 onClick={() => removerExtra(index)}
-                className="h-11 w-10 shrink-0 flex items-center justify-center rounded-xl border border-zinc-800/60 text-zinc-700 hover:text-rose-500 hover:border-rose-500/30 hover:bg-rose-500/5 transition-all shadow-sm"
+                className="mb-[1px] flex h-11 w-10 shrink-0 items-center justify-center rounded-xl border border-zinc-800/60 text-zinc-700 transition-all hover:border-rose-500/30 hover:bg-rose-500/5 hover:text-rose-500 shadow-sm"
               >
                 <Trash2 size={14} />
               </button>
             </div>
           ))}
 
-          {/* ESTADO VAZIO */}
+          {/* AVISO DE LISTA VAZIA */}
           {extrasSeguros.length === 0 && (
             <div className="py-8 text-center border-2 border-dashed border-zinc-900 rounded-2xl animate-in fade-in zoom-in-95">
               <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
-                Nenhum custo extra pendente
+                Nenhum custo extra por enquanto
               </p>
             </div>
           )}
         </div>
       </div>
+
+      <style dangerouslySetInnerHTML={{
+        __html: `
+        .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+      `}} />
     </div>
   );
 }

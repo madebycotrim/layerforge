@@ -1,4 +1,3 @@
-// src/features/calculadora/logic/calculator.js
 import { create } from 'zustand';
 import api from '../../../utils/api';
 import { parseNumber } from "../../../utils/numbers";
@@ -6,25 +5,30 @@ import { parseNumber } from "../../../utils/numbers";
 /**
  * MOTOR DE CÁLCULO PROFISSIONAL (MÉTODO DO DIVISOR)
  * Esta função processa a lógica financeira garantindo que as margens sejam preservadas.
+ * Inclui travas de segurança para evitar divisão por zero e tratamento de inputs vazios.
  */
 export function calcularTudo(dadosEntrada = {}) {
-    // Helper para extração segura de números de objetos aninhados ou planos
+    // Helper para extração segura de números e conversão de vírgula para ponto
     const obterValor = (caminho, caminhoAlternativo) => {
         const partes = caminho.split('.');
         let valor = dadosEntrada;
-        for (const parte of partes) { // <--- Aqui é 'parte'
-            valor = valor?.[parte];    // <--- Estava 'part', mude para 'parte'
+        for (const parte of partes) {
+            valor = valor?.[parte];
         }
         const resultado = valor !== undefined ? valor : dadosEntrada[caminhoAlternativo];
-        return parseNumber(resultado) || 0;
+        const stringLimpa = String(resultado || "0").replace(',', '.');
+        return parseNumber(stringLimpa) || 0;
     };
 
     const quantidade = Math.max(1, obterValor('qtdPecas', 'qtdPecas'));
 
-    // Soma de custos extras da lista dinâmica
+    // Soma de custos extras da lista dinâmica (Saneamento de inputs)
     const listaExtras = dadosEntrada.custosExtras?.lista || [];
     const somaExtrasAdicionais = Array.isArray(listaExtras)
-        ? listaExtras.reduce((acumulado, item) => acumulado + parseNumber(item?.valor), 0)
+        ? listaExtras.reduce((acumulado, item) => {
+            const val = parseFloat(String(item?.valor || "0").replace(',', '.')) || 0;
+            return acumulado + val;
+        }, 0)
         : 0;
 
     // Parâmetros normalizados e convertidos
@@ -48,20 +52,27 @@ export function calcularTudo(dadosEntrada = {}) {
         tempoImp: obterValor('tempo.impressaoHoras', 'tempoImpressaoHoras') + (obterValor('tempo.impressaoMinutos', 'tempoImpressaoMinutos') / 60),
         tempoTrab: obterValor('tempo.trabalhoHoras', 'tempoTrabalhoHoras') + (obterValor('tempo.trabalhoMinutos', 'tempoTrabalhoMinutos') / 60),
 
-        // Trata Watts (ex: 150) vs kW (ex: 0.15)
-        consumoKw: obterValor('config.consumoKw', 'consumoImpressoraKw') > 2
+        consumoKw: obterValor('config.consumoKw', 'consumoImpressoraKw') >= 2
             ? obterValor('config.consumoKw', 'consumoImpressoraKw') / 1000
             : obterValor('config.consumoKw', 'consumoImpressoraKw')
     };
 
-    // --- CÁLCULO DE MATERIAIS ---
+    // --- CÁLCULO DE MATERIAIS (Saneamento de Insumos) ---
     let custoMaterialUnitario = 0;
     const slots = dadosEntrada.material?.slots || [];
-    const slotsValidos = slots.filter(s => parseNumber(s.weight) > 0);
+    
+    // Filtramos slots que não possuem peso ou preço para evitar resultados NaN
+    const slotsValidos = slots.filter(s => {
+        const peso = parseFloat(String(s?.weight || "0").replace(',', '.'));
+        const preco = parseFloat(String(s?.priceKg || "0").replace(',', '.'));
+        return peso > 0 && preco > 0;
+    });
 
     if (slotsValidos.length > 0) {
         custoMaterialUnitario = slotsValidos.reduce((acc, slot) => {
-            return acc + ((parseNumber(slot.priceKg) / 1000) * parseNumber(slot.weight));
+            const weight = parseFloat(String(slot.weight).replace(',', '.'));
+            const priceKg = parseFloat(String(slot.priceKg).replace(',', '.'));
+            return acc + ((priceKg / 1000) * weight);
         }, 0);
     } else {
         const custoRolo = obterValor('material.custoRolo', 'custoRolo');
@@ -78,21 +89,25 @@ export function calcularTudo(dadosEntrada = {}) {
 
     const custoDiretoTotal = custoMaterialUnitario + custoEnergiaUnit + custoBaseMaquinaUnit + reservaManutencaoUnit + custoMaoDeObraUnit + custoSetupUnit;
 
-    // Taxa de Falha (Markup de Risco)
-    const custoComRisco = p.taxaFalha < 1 ? custoDiretoTotal / (1 - p.taxaFalha) : custoDiretoTotal * 1.05;
+    // Taxa de Falha (Markup de Risco) - Travada em no máximo 95% para não quebrar a divisão
+    const fatorFalhaSeguro = Math.min(p.taxaFalha, 0.95);
+    const custoComRisco = custoDiretoTotal / (1 - fatorFalhaSeguro);
     const valorRiscoUnitario = custoComRisco - custoDiretoTotal;
 
     const custoFixoSaidaUnitario = p.embalagem + p.frete + (p.extras / p.quantidade);
     const custoTotalOperacional = custoComRisco + custoFixoSaidaUnitario;
 
     // --- FORMAÇÃO DE PREÇO (MÉTODO DO DIVISOR) ---
-    const divisor = 1 - (p.imposto + p.taxaMkt + p.margemLucro);
+    // Proteção de Cálculo: Se a soma das taxas for >= 100%, o divisor seria zero ou negativo.
+    // Travamos o divisor em no mínimo 0.05 (5%) para garantir a viabilidade do cálculo.
+    const somaTaxasELucro = p.imposto + p.taxaMkt + p.margemLucro;
+    const divisor = Math.max(0.05, 1 - somaTaxasELucro);
 
-    let precoVendaFinal = divisor > 0.10
-        ? (custoTotalOperacional + (p.taxaMktFixa / p.quantidade)) / divisor
-        : custoTotalOperacional * 2.5;
+    let precoVendaFinal = (custoTotalOperacional + (p.taxaMktFixa / p.quantidade)) / divisor;
 
-    const precoSugerido = p.desconto < 1 ? precoVendaFinal / (1 - p.desconto) : precoVendaFinal;
+    // Aplicação do Markup de Desconto
+    const divisorDesconto = Math.max(0.01, 1 - p.desconto);
+    const precoSugerido = precoVendaFinal / divisorDesconto;
     const precoComDesconto = precoSugerido * (1 - p.desconto);
 
     // --- RESULTADOS REAIS ---
@@ -131,15 +146,16 @@ export function calcularTudo(dadosEntrada = {}) {
  */
 export const useSettingsStore = create((set) => ({
     settings: {
-        custoKwh: "0.85",
-        valorHoraHumana: "20.00",
-        custoHoraMaquina: "2.00",
-        taxaSetup: "5.00",
-        consumoKw: "0.15",
-        margemLucro: "30",
-        imposto: "6",
-        taxaFalha: "5",
-        desconto: "0"
+        custoKwh: "",
+        valorHoraHumana: "",
+        custoHoraMaquina: "",
+        taxaSetup: "",
+        consumoKw: "",
+        margemLucro: "",
+        imposto: "",
+        taxaFalha: "",
+        desconto: "",
+        whatsappTemplate: ""
     },
     isLoading: false,
 
@@ -147,21 +163,20 @@ export const useSettingsStore = create((set) => ({
         set({ isLoading: true });
         try {
             const { data } = await api.get('/settings');
-
-            // O D1 pode retornar o objeto direto ou dentro de um array 'results'
             const d = Array.isArray(data) ? data[0] : (data?.results ? data.results[0] : data);
 
             if (d) {
                 const mapeado = {
-                    custoKwh: String(d.custo_kwh ?? "0.85"),
-                    valorHoraHumana: String(d.valor_hora_humana ?? "0"),
-                    custoHoraMaquina: String(d.custo_hora_maquina ?? "0"),
-                    taxaSetup: String(d.taxa_setup ?? "0"),
-                    consumoKw: String(d.consumo_impressora_kw ?? "0.15"),
-                    margemLucro: String(d.margem_lucro ?? "30"),
-                    imposto: String(d.imposto ?? "0"),
-                    taxaFalha: String(d.taxa_falha ?? "5"),
-                    desconto: String(d.desconto ?? "0")
+                    custoKwh: String(d.custo_kwh ?? ""),
+                    valorHoraHumana: String(d.valor_hora_humana ?? ""),
+                    custoHoraMaquina: String(d.custo_hora_maquina ?? ""),
+                    taxaSetup: String(d.taxa_setup ?? ""),
+                    consumoKw: String(d.consumo_impressora_kw ?? ""),
+                    margemLucro: String(d.margem_lucro ?? ""),
+                    imposto: String(d.imposto ?? ""),
+                    taxaFalha: String(d.taxa_falha ?? ""),
+                    desconto: String(d.desconto ?? ""),
+                    whatsappTemplate: d.whatsapp_template || d.template_whatsapp || "Segue o orçamento do projeto *{projeto}*:\n\n💰 Valor: *{valor}*\n⏱️ Tempo estimado: *{tempo}*\n\nPodemos fechar?"
                 };
                 set({ settings: mapeado, isLoading: false });
                 return true;
@@ -177,15 +192,16 @@ export const useSettingsStore = create((set) => ({
         set({ isLoading: true });
         try {
             const paraEnviar = {
-                custo_kwh: parseNumber(dados.custoKwh),
-                valor_hora_humana: parseNumber(dados.valorHoraHumana),
-                custo_hora_maquina: parseNumber(dados.custoHoraMaquina),
-                taxa_setup: parseNumber(dados.taxaSetup),
-                consumo_impressora_kw: parseNumber(dados.consumoKw),
-                margem_lucro: parseNumber(dados.margemLucro),
-                imposto: parseNumber(dados.imposto),
-                taxa_falha: parseNumber(dados.taxaFalha),
-                desconto: parseNumber(dados.desconto)
+                custo_kwh: parseNumber(String(dados.custoKwh).replace(',', '.')),
+                valor_hora_humana: parseNumber(String(dados.valorHoraHumana).replace(',', '.')),
+                custo_hora_maquina: parseNumber(String(dados.custoHoraMaquina).replace(',', '.')),
+                taxa_setup: parseNumber(String(dados.taxaSetup).replace(',', '.')),
+                consumo_impressora_kw: parseNumber(String(dados.consumoKw).replace(',', '.')),
+                margem_lucro: parseNumber(String(dados.margemLucro).replace(',', '.')),
+                imposto: parseNumber(String(dados.imposto).replace(',', '.')),
+                taxa_falha: parseNumber(String(dados.taxaFalha).replace(',', '.')),
+                desconto: parseNumber(String(dados.desconto).replace(',', '.')),
+                whatsapp_template: dados.whatsappTemplate
             };
 
             await api.post('/settings', paraEnviar);

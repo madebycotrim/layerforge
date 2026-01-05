@@ -1,4 +1,3 @@
-// src/features/calculadora/components/cards/materiaPrima.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import { Plus, Trash2, Package, DollarSign, Tag, Layers, Loader2 } from "lucide-react";
 import { useFilamentStore } from "../../../filamentos/logic/filaments";
@@ -27,20 +26,20 @@ const LinhaFilamento = ({ indice, total, dadosSlot, opcoesSelecao, aoAtualizar, 
             <div className="w-[82px] shrink-0 relative">
                 <UnifiedInput
                     placeholder="0"
-                    type="number"
-                    suffix="G"
+                    type="text"
+                    suffix="g"
                     value={dadosSlot.weight || ""}
-                    onChange={(e) => aoAtualizar(indice, { weight: e.target.value })}
+                    onChange={(e) => aoAtualizar(indice, { weight: e.target.value.replace(',', '.') })}
                 />
             </div>
 
             <div className="w-[82px] shrink-0 relative">
                 <UnifiedInput
                     placeholder="0.00"
-                    type="number"
+                    type="text"
                     suffix="R$"
                     value={dadosSlot.priceKg || ""}
-                    onChange={(e) => aoAtualizar(indice, { priceKg: e.target.value })}
+                    onChange={(e) => aoAtualizar(indice, { priceKg: e.target.value.replace(',', '.') })}
                 />
             </div>
 
@@ -151,6 +150,7 @@ export default function MaterialModule({
                 {["single", "multi"].map(m => (
                     <button
                         key={m}
+                        type="button"
                         onClick={() => alternarModo(m)}
                         className={`flex-1 py-1.5 rounded-lg text-[8px] font-black uppercase tracking-widest transition-all
                         ${modo === m ? "bg-zinc-800 text-sky-400 border border-white/5 shadow-lg" : "text-zinc-600 hover:text-zinc-400"}`}
@@ -175,7 +175,7 @@ export default function MaterialModule({
                                 if (id !== 'manual') {
                                     const item = filamentos.find(f => String(f.id) === String(id));
                                     if (item && Number(item.peso_total) > 0) {
-                                        const precoPorKg = ((Number(item.preco) / Number(item.peso_total)) * 1000).toFixed(2);
+                                        const precoPorKg = ((Number(itemEstoque.preco) / Number(itemEstoque.peso_total)) * 1000).toFixed(2);
                                         setCustoRolo(String(precoPorKg));
                                     }
                                 }
@@ -185,20 +185,22 @@ export default function MaterialModule({
 
                     <div className="grid grid-cols-2 gap-3 relative z-10">
                         <UnifiedInput
-                            label="Peso Modelo"
-                            suffix="G"
+                            label="Peso da Peça"
+                            suffix="g"
+                            placeholder="0"
                             icon={Package}
-                            type="number"
+                            type="text"
                             value={pesoModelo || ""}
-                            onChange={(e) => setPesoModelo(e.target.value)}
+                            onChange={(e) => setPesoModelo(e.target.value.replace(',', '.'))}
                         />
                         <UnifiedInput
-                            label="Preço / KG"
+                            label="Preço por KG"
                             suffix="R$"
+                            placeholder="0.00"
                             icon={DollarSign}
-                            type="number"
+                            type="text"
                             value={custoRolo || ""}
-                            onChange={(e) => setCustoRolo(e.target.value)}
+                            onChange={(e) => setCustoRolo(e.target.value.replace(',', '.'))}
                         />
                     </div>
                 </div>
@@ -231,7 +233,7 @@ export default function MaterialModule({
                         {materialSlots.length === 0 ? (
                             <div className="py-8 text-center border-2 border-dashed border-zinc-900 rounded-2xl animate-in fade-in zoom-in-95">
                                 <p className="text-[9px] font-black uppercase tracking-[0.2em] text-zinc-700">
-                                    Nenhum filamento adicionado ao rack
+                                    Nenhum filamento no rack
                                 </p>
                             </div>
                         ) : (

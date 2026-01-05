@@ -1,4 +1,3 @@
-// src/features/calculadora/components/historico.jsx
 import React, { useEffect, useMemo, useState } from "react";
 import {
     X, History, Package, RotateCcw, Trash2, Search,
@@ -33,11 +32,11 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
     }, [projetos, busca]);
 
     /**
-     * Formata datas vindas do Banco de Dados (ISO ou Timestamp)
-     * para o padrão brasileiro amigável.
+     * Formata as datas que vêm do banco de dados (ISO ou Timestamp)
+     * para o padrão brasileiro que todo mundo entende.
      */
     const formatarDataLocal = (stringData) => {
-        if (!stringData) return "Data Indisponível";
+        if (!stringData) return "Data indisponível";
         try {
             const data = new Date(stringData);
             return new Intl.DateTimeFormat('pt-BR', {
@@ -71,7 +70,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                         </div>
                         <div>
                             <h2 className="text-[10px] font-black text-zinc-400 uppercase tracking-[0.3em] mb-1">MakersLog Cloud</h2>
-                            <p className="text-xs font-bold text-white uppercase tracking-wider">Histórico de Orçamentos</p>
+                            <p className="text-xs font-bold text-white uppercase tracking-wider">Histórico de orçamentos</p>
                         </div>
                     </div>
                     <button
@@ -89,7 +88,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600" size={16} />
                         <input
                             className="w-full bg-zinc-900/50 border border-zinc-800 rounded-2xl pl-12 pr-4 h-12 text-sm font-medium text-zinc-300 outline-none focus:border-sky-500/50 transition-all"
-                            placeholder="Buscar projeto no histórico..."
+                            placeholder="Pesquisar projeto no histórico..."
                             value={busca}
                             onChange={(e) => setBusca(e.target.value)}
                         />
@@ -100,8 +99,8 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                 <div className="flex-1 overflow-y-auto px-6 pb-6 space-y-4 custom-scrollbar">
                     {projetosFiltrados.length > 0 ? (
                         projetosFiltrados.map((projeto) => {
-                            // Extração segura de dados baseado no contrato do projects.js
-                            const dados = projeto.data || {};
+                            // Extração segura de dados
+                            const dados = projeto.data || projeto.payload || {};
                             const entradas = dados.entradas || {};
                             const resultados = dados.resultados || {};
                             const status = dados.status || "rascunho";
@@ -110,7 +109,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                             const margemEfetiva = Number(resultados.margemEfetivaPct || 0);
                             const valorVendaFinal = resultados.precoComDesconto || resultados.precoSugerido || 0;
 
-                            // Cálculo de Peso considerando Múltiplas Cores e Quantidade total
+                            // Cálculo de peso considerando múltiplas cores e quantidade total
                             const slotsMaterial = entradas.material?.slots || [];
                             const pesoUnitario = slotsMaterial.length > 0
                                 ? slotsMaterial.reduce((acc, s) => acc + (Number(s.weight) || 0), 0)
@@ -127,7 +126,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                     key={projeto.id}
                                     className="bg-zinc-900/30 border border-white/5 rounded-3xl p-5 hover:bg-zinc-900/60 hover:border-zinc-700/50 transition-all cursor-default group relative overflow-hidden space-y-4"
                                 >
-                                    {/* Indicador Lateral de Status/Saúde */}
+                                    {/* Indicador lateral de status/saúde */}
                                     <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${status === 'aprovado' ? 'bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]' : margemEfetiva > 15 ? 'bg-emerald-500' : margemEfetiva > 0 ? 'bg-amber-500' : 'bg-rose-500'}`} />
 
                                     <div className="flex justify-between items-start">
@@ -138,7 +137,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                             <div className="flex items-center gap-2 mt-1">
                                                 <Calendar size={12} className="text-zinc-600" />
                                                 <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">
-                                                    {formatarDataLocal(projeto.timestamp || projeto.created_at || dados.ultimaAtualizacao)}
+                                                    {formatarDataLocal(projeto.timestamp || projeto.created_at || projeto.createdAt)}
                                                 </span>
                                             </div>
                                         </div>
@@ -153,13 +152,13 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                         </div>
                                     </div>
 
-                                    {/* Detalhes Técnicos Rápidos */}
+                                    {/* Detalhes técnicos rápidos */}
                                     <div className="flex gap-6">
                                         <div className="flex items-center gap-2">
                                             <Package size={12} className={slotsMaterial.length > 0 ? "text-sky-500" : "text-zinc-700"} />
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-zinc-400 font-mono leading-none">{pesoTotalPedido}g</span>
-                                                <span className="text-[6px] font-black text-zinc-600 uppercase tracking-widest">Insumo Total</span>
+                                                <span className="text-[6px] font-black text-zinc-600 uppercase tracking-widest">Insumo total</span>
                                             </div>
                                         </div>
                                         <div className="items-center flex gap-2">
@@ -168,35 +167,35 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                                 <span className="text-[10px] font-bold text-zinc-400 font-mono leading-none">
                                                     {horas}h{minutos > 0 ? `${minutos}m` : ''}
                                                 </span>
-                                                <span className="text-[6px] font-black text-zinc-600 uppercase tracking-widest">Tempo Peça</span>
+                                                <span className="text-[6px] font-black text-zinc-600 uppercase tracking-widest">Tempo por peça</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Ações de Controle */}
+                                    {/* Ações de controle */}
                                     <div className="flex gap-2 pt-2 border-t border-white/5">
 
-                                        {/* Aprovação e Baixa de Estoque */}
+                                        {/* Aprovação e baixa de estoque */}
                                         {status === 'rascunho' ? (
                                             <button
                                                 type="button"
                                                 onClick={() => {
-                                                    if (confirm("Deseja aprovar este orçamento? O estoque será baixado e o projeto irá para Produção.")) aprovarOrcamento(projeto);
+                                                    if (window.confirm("Quer aprovar esse orçamento? O estoque vai ser atualizado e o projeto irá para a produção.")) aprovarOrcamento(projeto);
                                                 }}
                                                 className="flex-1 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black uppercase flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
                                             >
-                                                <Check size={14} strokeWidth={3} /> Aprovar Projeto
+                                                <Check size={14} strokeWidth={3} /> Aprovar projeto
                                             </button>
                                         ) : (
                                             <div className="flex-1 h-10 rounded-xl bg-zinc-800/30 border border-white/5 text-zinc-600 text-[9px] font-black uppercase flex items-center justify-center gap-2">
-                                                <Check size={14} className="text-sky-500" /> Orçamento Aprovado
+                                                <Check size={14} className="text-sky-500" /> Orçamento aprovado
                                             </div>
                                         )}
 
                                         <button
                                             type="button"
                                             onClick={() => { onRestore(projeto); onClose(); }}
-                                            title="Restaurar na Calculadora"
+                                            title="Restaurar na calculadora"
                                             className="w-10 h-10 flex items-center justify-center rounded-xl bg-sky-600/10 border border-sky-500/20 text-sky-500 hover:bg-sky-600 hover:text-white transition-all"
                                         >
                                             <RotateCcw size={16} />
@@ -204,7 +203,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
 
                                         <button
                                             type="button"
-                                            onClick={() => { if (confirm("Remover este registro permanentemente?")) removerEntrada(projeto.id); }}
+                                            onClick={() => { if (window.confirm("Quer apagar esse registro para sempre?")) removerEntrada(projeto.id); }}
                                             className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-600 hover:text-rose-500 hover:border-rose-500/30 transition-all"
                                         >
                                             <Trash2 size={16} />
@@ -217,25 +216,31 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                         <div className="h-64 flex flex-col items-center justify-center text-zinc-800 gap-4 opacity-40">
                             <Database size={48} strokeWidth={1} />
                             <div className="text-center">
-                                <p className="text-[10px] font-black uppercase tracking-[0.4em]">Histórico Vazio</p>
+                                <p className="text-[10px] font-black uppercase tracking-[0.4em]">O histórico está vazio</p>
                             </div>
                         </div>
                     )}
                 </div>
 
-                {/* Rodapé de Gerenciamento de Dados */}
+                {/* Rodapé de gerenciamento de dados */}
                 {projetosFiltrados.length > 3 && (
                     <div className="p-6 border-t border-white/5 bg-zinc-900/10">
                         <button
                             type="button"
-                            onClick={() => { if (confirm("Atenção: Isso apagará TODOS os orçamentos salvos. Continuar?")) limparHistorico(); }}
+                            onClick={() => { if (window.confirm("Atenção: isso vai apagar TODOS os orçamentos salvos. Quer continuar?")) limparHistorico(); }}
                             className="w-full h-12 rounded-2xl border border-rose-500/20 text-rose-500/50 hover:text-rose-500 hover:bg-rose-500/5 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all"
                         >
-                            <Trash2 size={14} /> Limpar Base de Dados
+                            <Trash2 size={14} /> Limpar banco de dados
                         </button>
                     </div>
                 )}
             </aside>
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .custom-scrollbar::-webkit-scrollbar { width: 3px; }
+                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+            `}} />
         </>
     );
 }
