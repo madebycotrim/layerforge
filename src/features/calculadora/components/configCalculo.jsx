@@ -1,9 +1,9 @@
-import React, { useState, useRef, useLayoutEffect } from "react";
+import React, { useState, useRef, useLayoutEffect, useEffect } from "react";
 import { createPortal } from "react-dom";
 import {
     User, Zap, Monitor, Settings2, Save, Check,
     RefreshCw, RotateCcw, Loader2, Cpu, AlertCircle,
-    MessageCircle, X, Layout, Copy, Send, Info
+    MessageCircle, X, Layout, Copy, Send
 } from "lucide-react";
 import { useSettingsStore } from "../logic/calculator";
 
@@ -32,7 +32,7 @@ const TooltipPortal = ({ texto, referenciaAlvo, visivel }) => {
     );
 };
 
-/* ---------- SUB-COMPONENTE: MODAL IGUAL AO RESUMO (ESTILO CARD) ---------- */
+/* ---------- SUB-COMPONENTE: MODAL ESTILO CARD ---------- */
 const ModalEstiloResumo = ({ isOpen, onClose, title, children, actions }) => {
     if (!isOpen) return null;
     return (
@@ -106,8 +106,15 @@ export default function PainelConfiguracoesCalculo({
 
     // Estados para o Modal de WhatsApp
     const [whatsappModal, setWhatsappModal] = useState(false);
-    const [tempTemplate, setTempTemplate] = useState(settings?.whatsappTemplate || "");
+    const [tempTemplate, setTempTemplate] = useState("");
     const [copiado, setCopiado] = useState(false);
+
+    // Sincroniza o template temporário quando as configurações mudam
+    useEffect(() => {
+        if (settings?.whatsappTemplate) {
+            setTempTemplate(settings.whatsappTemplate);
+        }
+    }, [settings]);
 
     const lidarSincronizacao = async () => {
         setEstaSincronizando(true);
@@ -131,25 +138,30 @@ export default function PainelConfiguracoesCalculo({
     };
 
     const lidarSalvarConfiguracoes = async () => {
+        // CORREÇÃO: Mesclamos os valores locais com os globais (spread settings)
+        // Isso garante que Margem de Lucro, Impostos etc não sejam perdidos.
         const dadosParaSalvar = {
-            ...config,
-            valorHoraHumana,
-            custoKwh,
-            consumoKw: consumoImpressoraKw,
-            custoHoraMaquina,
-            taxaSetup,
-            whatsappTemplate: settings.whatsappTemplate
+            ...settings, 
+            valorHoraHumana: valorHoraHumana,
+            custoKwh: custoKwh,
+            consumoKw: consumoImpressoraKw, // Nome correto para a Store processar
+            custoHoraMaquina: custoHoraMaquina,
+            taxaSetup: taxaSetup,
+            whatsappTemplate: tempTemplate || settings.whatsappTemplate
         };
 
         const sucesso = await saveSettings(dadosParaSalvar);
-        if (sucesso) setConfiguracaoSincronizada(true);
+        if (sucesso) {
+            setConfiguracaoSincronizada(true);
+            if (onSaved) onSaved();
+        }
     };
 
     const lidarSalvarWhatsApp = async () => {
         const dadosParaSalvar = {
             ...settings,
-            custoKwh,
             valorHoraHumana,
+            custoKwh,
             consumoKw: consumoImpressoraKw,
             custoHoraMaquina,
             taxaSetup,
@@ -190,10 +202,10 @@ export default function PainelConfiguracoesCalculo({
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button onClick={lidarResetLocal} className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-400 transition-colors">
+                        <button onClick={lidarResetLocal} title="Resetar Campos" className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-rose-400 transition-colors">
                             <RotateCcw size={14} />
                         </button>
-                        <button onClick={lidarSincronizacao} className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-sky-400 transition-all">
+                        <button onClick={lidarSincronizacao} title="Sincronizar Nuvem" className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-sky-400 transition-all">
                             <RefreshCw size={14} className={estaSincronizando ? "animate-spin text-sky-400" : ""} />
                         </button>
                         <button
@@ -213,8 +225,17 @@ export default function PainelConfiguracoesCalculo({
                         <div className="h-px flex-1 bg-zinc-900" />
                     </div>
                     <div className="space-y-2">
-                        <EntradaConfiguracao rotulo="Potência da Máquina" sufixo="Watts" icone={Monitor} cor="text-indigo-400" valor={consumoImpressoraKw ? (Number(consumoImpressoraKw) < 2 ? Math.round(Number(consumoImpressoraKw) * 1000) : consumoImpressoraKw) : ""} aoAlterar={lidarMudancaInput((v) => setConsumoImpressoraKw(v === "" ? "" : (Number(v) >= 2 ? String(Number(v) / 1000) : v)))} textoAjuda="Consumo em Watts." />
-                        <EntradaConfiguracao rotulo="Preço do kWh" sufixo="R$/kWh" icone={Zap} cor="text-amber-400" valor={custoKwh} aoAlterar={lidarMudancaInput(setCustoKwh)} textoAjuda="Valor da tarifa de luz." />
+                        {/* A lógica de exibição Watts/kW continua aqui para o usuário, mas o valor salvo será processado pela Store */}
+                        <EntradaConfiguracao 
+                            rotulo="Potência da Máquina" 
+                            sufixo="Watts" 
+                            icone={Monitor} 
+                            cor="text-indigo-400" 
+                            valor={consumoImpressoraKw ? (Number(consumoImpressoraKw) < 2 ? Math.round(Number(consumoImpressoraKw) * 1000) : consumoImpressoraKw) : ""} 
+                            aoAlterar={lidarMudancaInput((v) => setConsumoImpressoraKw(v === "" ? "" : (Number(v) >= 2 ? String(Number(v) / 1000) : v)))} 
+                            textoAjuda="Consumo médio da impressora. Se digitar acima de 2, o sistema entende como Watts e converte para kW automaticamente." 
+                        />
+                        <EntradaConfiguracao rotulo="Preço do kWh" sufixo="R$/kWh" icone={Zap} cor="text-amber-400" valor={custoKwh} aoAlterar={lidarMudancaInput(setCustoKwh)} textoAjuda="Valor da tarifa de energia da sua região." />
                     </div>
                 </div>
 
@@ -224,8 +245,8 @@ export default function PainelConfiguracoesCalculo({
                         <div className="h-px flex-1 bg-zinc-900" />
                     </div>
                     <div className="space-y-2">
-                        <EntradaConfiguracao rotulo="Depreciação/Hora" sufixo="R$/h" icone={Cpu} cor="text-blue-400" valor={custoHoraMaquina} aoAlterar={lidarMudancaInput(setCustoHoraMaquina)} textoAjuda="Custo de uso da máquina." />
-                        <EntradaConfiguracao rotulo="Taxa de Setup" sufixo="R$" icone={Settings2} cor="text-zinc-400" valor={taxaSetup} aoAlterar={lidarMudancaInput(setTaxaSetup)} textoAjuda="Custo inicial de fatiamento." />
+                        <EntradaConfiguracao rotulo="Depreciação/Hora" sufixo="R$/h" icone={Cpu} cor="text-blue-400" valor={custoHoraMaquina} aoAlterar={lidarMudancaInput(setCustoHoraMaquina)} textoAjuda="Quanto a máquina custa por hora ligada (manutenção + desgaste)." />
+                        <EntradaConfiguracao rotulo="Taxa de Setup" sufixo="R$" icone={Settings2} cor="text-zinc-400" valor={taxaSetup} aoAlterar={lidarMudancaInput(setTaxaSetup)} textoAjuda="Custo fixo inicial para cada novo projeto (tempo de fatiamento/limpeza)." />
                     </div>
                 </div>
 
@@ -234,7 +255,7 @@ export default function PainelConfiguracoesCalculo({
                         <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Trabalho Manual</h4>
                         <div className="h-px flex-1 bg-zinc-900" />
                     </div>
-                    <EntradaConfiguracao rotulo="Valor da sua Hora" sufixo="R$/h" icone={User} cor="text-emerald-400" valor={valorHoraHumana} aoAlterar={lidarMudancaInput(setValorHoraHumana)} textoAjuda="Quanto você quer ganhar por hora." />
+                    <EntradaConfiguracao rotulo="Valor da sua Hora" sufixo="R$/h" icone={User} cor="text-emerald-400" valor={valorHoraHumana} aoAlterar={lidarMudancaInput(setValorHoraHumana)} textoAjuda="Quanto você deseja receber livre por hora de trabalho manual." />
                 </div>
 
                 <div className="space-y-4 pt-2">
@@ -243,7 +264,7 @@ export default function PainelConfiguracoesCalculo({
                         <div className="h-px flex-1 bg-zinc-900" />
                     </div>
                     <button
-                        onClick={() => { setTempTemplate(settings?.whatsappTemplate || ""); setWhatsappModal(true); }}
+                        onClick={() => { setWhatsappModal(true); }}
                         className="w-full group flex items-center justify-between p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/50 hover:border-emerald-500/30 transition-all duration-200"
                     >
                         <div className="flex items-center gap-3">
@@ -260,7 +281,7 @@ export default function PainelConfiguracoesCalculo({
                 </div>
             </div>
 
-            {/* MODAL IDÊNTICO AO DE RESUMO */}
+            {/* MODAL DE WHATSAPP */}
             <ModalEstiloResumo
                 isOpen={whatsappModal}
                 onClose={() => setWhatsappModal(false)}
@@ -300,12 +321,15 @@ export default function PainelConfiguracoesCalculo({
                         <textarea
                             className="w-full h-48 bg-zinc-950/50 border border-zinc-800 rounded-2xl p-4 text-[11px] text-zinc-300 outline-none focus:border-emerald-500/40 transition-all resize-none font-sans leading-relaxed shadow-inner"
                             value={tempTemplate}
-                            onChange={(e) => setTempTemplate(e.target.value)}
+                            onChange={(e) => {
+                                setTempTemplate(e.target.value);
+                                setConfiguracaoSincronizada(false);
+                            }}
                         />
                     </div>
 
                     <p className="text-[8px] text-zinc-600 uppercase font-black leading-relaxed px-1">
-                        DICA: O TEXTO ACIMA SERÁ SALVO NA NUVEM. VOCÊ PODE EDITÁ-LO LIVREMENTE USANDO AS TAGS PARA PREENCHIMENTO AUTOMÁTICO.
+                        DICA: O TEXTO ACIMA SERÁ SALVO NA NUVEM. USE AS TAGS PARA PREENCHIMENTO AUTOMÁTICO NO MOMENTO DO ENVIO.
                     </p>
                 </div>
             </ModalEstiloResumo>
@@ -314,7 +338,7 @@ export default function PainelConfiguracoesCalculo({
             <div className="mt-auto p-4 rounded-2xl bg-amber-500/5 border border-amber-500/10 flex gap-3 mb-4">
                 <AlertCircle className="text-amber-500 shrink-0" size={16} />
                 <p className="text-[9px] text-amber-500/80 leading-relaxed uppercase font-black tracking-tight">
-                    As configurações valem para todos os novos orçamentos.
+                    As configurações valem para todos os novos orçamentos. Salve para aplicar na nuvem.
                 </p>
             </div>
         </div>
