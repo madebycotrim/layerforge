@@ -1,6 +1,6 @@
 // src/features/calculadora/logic/projects.js
 import { create } from 'zustand';
-import api from '../../../utils/api'; 
+import api from '../../../utils/api';
 import { parseNumber } from "../../../utils/numbers";
 
 /**
@@ -32,7 +32,7 @@ export const useProjectsStore = create((set, get) => ({
         set({ isLoading: true });
         try {
             const listaAtual = get().projects;
-            
+
             // Localiza projeto existente para preservar status
             const projetoExistente = id ? listaAtual.find(p => String(p.id) === String(id)) : null;
             const statusAtual = projetoExistente?.data?.status || "rascunho";
@@ -44,18 +44,18 @@ export const useProjectsStore = create((set, get) => ({
             const payloadParaBanco = {
                 id: String(id || crypto.randomUUID()), // Garante String e ID único
                 label: String(nomeProjeto),
-                entradas: entradas || {}, 
+                entradas: entradas || {},
                 resultados: resultados || {},
                 status: statusAtual,
                 ultimaAtualizacao: new Date().toISOString()
             };
 
             const { data } = await api.post('/projects', payloadParaBanco);
-            
+
             // Atualiza a lista local após salvar com sucesso
             await get().fetchHistory();
             set({ isLoading: false });
-            
+
             return data;
         } catch (erro) {
             console.error("Erro ao salvar projeto (500):", erro);
@@ -69,33 +69,33 @@ export const useProjectsStore = create((set, get) => ({
         if (!projeto || !projeto.id) return false;
 
         set({ isLoading: true });
-        
+
         // Extração segura dos dados independente da estrutura (data ou flat)
         const d = projeto.data || projeto;
         const entradas = d.entradas || {};
         const resultados = d.resultados || {};
-        
+
         const quantidade = Math.max(1, Number(entradas.quantidade || entradas.qtdPecas || 1));
 
         // Processamento de materiais para baixa de estoque
         let filamentosParaBaixa = [];
         const material = entradas.material || {};
-        
+
         // Caso 1: Multi-material (Slots)
         if (material.slots && material.slots.length > 0) {
             filamentosParaBaixa = material.slots
                 .filter(slot => slot.id && slot.id !== 'manual')
-                .map(slot => ({ 
-                    id: String(slot.id), 
-                    peso: Number(slot.weight || 0) * quantidade 
+                .map(slot => ({
+                    id: String(slot.id),
+                    peso: Number(slot.weight || 0) * quantidade
                 }));
-        } 
+        }
         // Caso 2: Material Único
         else if (entradas.selectedFilamentId && entradas.selectedFilamentId !== 'manual') {
             const pesoUnitario = Number(entradas.pesoModelo || resultados.custoMaterial > 0 ? (resultados.custoMaterial / (resultados.precoKg / 1000)) : 0);
             if (pesoUnitario > 0) {
-                filamentosParaBaixa = [{ 
-                    id: String(entradas.selectedFilamentId), 
+                filamentosParaBaixa = [{
+                    id: String(entradas.selectedFilamentId),
                     peso: pesoUnitario * quantidade
                 }];
             }
@@ -125,7 +125,7 @@ export const useProjectsStore = create((set, get) => ({
     // 4. ATUALIZAR STATUS (Ex: Produção -> Finalizado)
     updateProjectStatus: async (projetoId, novoStatus) => {
         if (!projetoId) return false;
-        
+
         set({ isLoading: true });
         try {
             const lista = get().projects;
@@ -142,7 +142,7 @@ export const useProjectsStore = create((set, get) => ({
             };
 
             await api.post('/projects', payloadAtualizado);
-            
+
             await get().fetchHistory();
             set({ isLoading: false });
             return true;
@@ -158,7 +158,10 @@ export const useProjectsStore = create((set, get) => ({
         if (!id) return false;
         set({ isLoading: true });
         try {
-            await api.delete(`/projects?id=${id}`);
+            // Tente mudar de: .delete(`/projects?id=${id}`)
+            // Para:
+            await api.delete(`/projects/${id}`);
+
             set((estado) => ({
                 projects: estado.projects.filter(p => String(p.id) !== String(id)),
                 isLoading: false
@@ -175,7 +178,7 @@ export const useProjectsStore = create((set, get) => ({
     clearHistory: async () => {
         set({ isLoading: true });
         try {
-            await api.delete('/projects'); 
+            await api.delete('/projects');
             set({ projects: [], isLoading: false });
             return true;
         } catch (erro) {
