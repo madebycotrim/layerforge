@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom"; // Importação necessária para navegação
+import { useLocation } from "wouter"; // Hook de navegação do wouter
 import {
     X, History, Package, RotateCcw, Trash2, Search,
     Database, Loader2, Calendar, TrendingUp, Clock, Check,
@@ -10,7 +10,8 @@ import { formatCurrency } from "../../../utils/numbers";
 import Popup from "../../../components/Popup";
 
 export default function GavetaHistorico({ open, onClose, onRestore }) {
-    const navigate = useNavigate(); // Inicializa o hook de navegação
+    // No wouter, useLocation retorna [location, setLocation]
+    const [, setLocation] = useLocation(); 
     
     const {
         projects: projetos,
@@ -23,6 +24,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
 
     const [busca, setBusca] = useState("");
 
+    // --- CONFIGURAÇÕES DO SISTEMA INTELIGENTE ---
     const MARGEM_MINIMA_IDEAL = 20;
 
     const [confirmacao, setConfirmacao] = useState({
@@ -53,7 +55,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
         } catch { return "Erro na data"; }
     };
 
-    // --- LÓGICA DE APROVAÇÃO COM REDIRECIONAMENTO ---
+    // --- LÓGICA DE APROVAÇÃO COM REDIRECIONAMENTO (WOUTER) ---
     const perguntarAprovacao = (projeto, margem) => {
         const margemRiscada = margem < MARGEM_MINIMA_IDEAL;
         setConfirmacao({
@@ -66,10 +68,10 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
             variant: margemRiscada ? "danger" : "success",
             onConfirm: () => {
                 aprovarOrcamento(projeto); // Aprova no banco
-                onRestore(projeto);      // Carrega os dados no estado global/simulador
+                onRestore(projeto);      // Restaura no simulador
                 fecharConfirmacao();
                 onClose();               // Fecha a gaveta
-                navigate("/orcamentos"); // Vai para a página de orçamentos
+                setLocation("/orcamentos"); // Navega usando wouter
             }
         });
     };
@@ -131,7 +133,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                             <p className="text-xs font-bold text-white uppercase tracking-tight">Histórico de projetos</p>
                         </div>
                     </div>
-                    <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-500 hover:text-white hover:bg-white/5 transition-all">
+                    <button type="button" onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-full text-zinc-500 hover:text-white transition-all">
                         <X size={20} />
                     </button>
                 </div>
@@ -159,6 +161,8 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                             // --- CÁLCULO DE LUCRO E MARGEM ---
                             const precoVenda = Number(resultados.precoComDesconto || resultados.precoSugerido || 0);
                             const margemPct = Number(resultados.margemEfetivaPct || resultados.margem || 0);
+                            
+                            // Cálculo matemático garantido: Venda * (Margem / 100)
                             const lucro = Number(resultados.lucroLiquido || resultados.lucro || (precoVenda * (margemPct / 100)));
 
                             return (
@@ -232,7 +236,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                                 onClick={() => { 
                                                     onRestore(projeto); 
                                                     onClose(); 
-                                                    navigate("/orcamentos"); // Também navega ao clicar em Ver Orçamento
+                                                    setLocation("/orcamentos"); // Navegação wouter
                                                 }}
                                                 className="flex-1 h-9 rounded-lg bg-sky-600 border border-sky-400/20 text-white text-[10px] font-black uppercase tracking-wider hover:bg-sky-500 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-sky-900/20 active:scale-95"
                                             >
@@ -273,9 +277,9 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                         <button
                             type="button"
                             onClick={perguntarLimparTudo}
-                            className="w-full h-10 rounded-xl border border-rose-500/10 text-rose-500/40 hover:text-rose-400 hover:border-rose-500/30 text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all group"
+                            className="w-full h-10 rounded-xl border border-rose-500/10 text-rose-500/40 hover:text-rose-400 hover:border-rose-500/30 text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all"
                         >
-                            <Trash2 size={14} className="group-hover:animate-pulse" /> Purgar Histórico Completo
+                            <Trash2 size={14} /> Purgar Histórico Completo
                         </button>
                     </div>
                 )}
@@ -289,18 +293,11 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                 icon={confirmacao.icon}
                 footer={
                     <div className="flex gap-2 w-full">
-                        <button
-                            onClick={fecharConfirmacao}
-                            className="flex-1 h-12 rounded-xl bg-zinc-900 text-zinc-500 text-[10px] font-black uppercase hover:text-white transition-all"
-                        >
-                            Cancelar
-                        </button>
+                        <button onClick={fecharConfirmacao} className="flex-1 h-12 rounded-xl bg-zinc-900 text-zinc-500 text-[10px] font-black uppercase hover:text-white transition-all">Cancelar</button>
                         <button
                             onClick={confirmacao.onConfirm}
                             className={`flex-[2] h-12 rounded-xl text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${confirmacao.variant === 'danger' ? 'bg-red-600 hover:bg-red-500 shadow-red-900/20' : 'bg-sky-600 hover:bg-sky-500 shadow-sky-900/20'}`}
-                        >
-                            Confirmar Ação
-                        </button>
+                        >Confirmar Ação</button>
                     </div>
                 }
             >
