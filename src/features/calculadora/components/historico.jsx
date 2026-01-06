@@ -161,7 +161,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                 >
                                     {/* Indicador Lateral de Status */}
                                     <div className={`absolute left-0 top-8 bottom-8 w-1 rounded-r-full transition-all duration-500 ${isAprovado ? 'bg-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.5)]' :
-                                            margemEfetiva > 20 ? 'bg-emerald-500' : 'bg-amber-500'
+                                        margemEfetiva > 20 ? 'bg-emerald-500' : 'bg-amber-500'
                                         }`} />
 
                                     <div className="flex justify-between items-start mb-6">
@@ -216,7 +216,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                             <button
                                                 type="button"
                                                 onClick={() => perguntarAprovacao(projeto)}
-                                                className="flex-1 h-10 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg shadow-sky-900/20 active:scale-95"
+                                                className={`flex-1 h-10 rounded-xl text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${margemEfetiva > 20 ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20' : 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20'}`}
                                             >
                                                 <Check size={14} strokeWidth={3} /> Aprovar Projeto
                                             </button>
