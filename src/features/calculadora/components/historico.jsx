@@ -148,64 +148,101 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                 ? slotsMaterial.reduce((acc, s) => acc + (Number(s.weight) || 0), 0)
                                 : (Number(entradas.material?.pesoModelo) || 0);
 
-                            const pesoTotalPedido = pesoUnitario * quantidade;
+                            const pesoTotalPedido = (pesoUnitario * quantidade).toFixed(0);
                             const horas = entradas.tempo?.impressaoHoras || 0;
                             const minutos = entradas.tempo?.impressaoMinutos || 0;
 
-                            return (
-                                <div key={projeto.id} className="bg-zinc-900/30 border border-white/5 rounded-3xl p-5 hover:bg-zinc-900/60 hover:border-zinc-700/50 transition-all cursor-default group relative overflow-hidden space-y-4">
-                                    <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${status === 'aprovado' ? 'bg-sky-500 shadow-[0_0_10px_rgba(14,165,233,0.5)]' : margemEfetiva > 15 ? 'bg-emerald-500' : margemEfetiva > 0 ? 'bg-amber-500' : 'bg-rose-500'}`} />
+                            const isAprovado = status === 'aprovado';
 
-                                    <div className="flex justify-between items-start">
-                                        <div className="min-w-0">
-                                            <h3 className="font-black text-white text-lg tracking-tighter uppercase truncate pr-4">{projeto.label || "Projeto sem nome"}</h3>
-                                            <div className="flex items-center gap-2 mt-1">
-                                                <Calendar size={12} className="text-zinc-600" />
-                                                <span className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">{formatarDataLocal(projeto.timestamp || projeto.created_at)}</span>
+                            return (
+                                <div
+                                    key={projeto.id}
+                                    className="group relative bg-zinc-900/40 border border-white/5 rounded-[2rem] p-5 transition-all duration-300 hover:bg-zinc-900/60 hover:border-white/10"
+                                >
+                                    {/* Indicador Lateral Refinado */}
+                                    <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-full transition-all duration-500 ${isAprovado ? 'bg-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.4)]' :
+                                            margemEfetiva > 20 ? 'bg-emerald-500' : 'bg-amber-500'
+                                        }`} />
+
+                                    <div className="flex justify-between items-start mb-6">
+                                        <div className="min-w-0 pl-2">
+                                            <h3 className="text-sm font-bold text-white uppercase tracking-tight truncate mb-1">
+                                                {projeto.label || "Sem nome"}
+                                            </h3>
+                                            <div className="flex items-center gap-2 text-zinc-500">
+                                                <Calendar size={12} />
+                                                <span className="text-[10px] font-medium tracking-wider">
+                                                    {formatarDataLocal(projeto.timestamp || projeto.created_at)}
+                                                </span>
                                             </div>
                                         </div>
-                                        <div className="text-right shrink-0">
-                                            <div className={`text-[10px] font-black font-mono flex items-center justify-end gap-1 mb-1 ${margemEfetiva > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
+
+                                        <div className="text-right">
+                                            <div className={`text-[10px] font-black font-mono flex items-center justify-end gap-1 mb-1 ${margemEfetiva > 0 ? 'text-emerald-500' : 'text-rose-500'
+                                                }`}>
                                                 <TrendingUp size={12} /> {Math.round(margemEfetiva)}%
                                             </div>
-                                            <div className="text-xl font-black text-white font-mono leading-none">{formatCurrency(valorVendaFinal)}</div>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex gap-6">
-                                        <div className="flex items-center gap-2">
-                                            <Package size={12} className={slotsMaterial.length > 0 ? "text-sky-500" : "text-zinc-700"} />
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-zinc-400 font-mono leading-none">{pesoTotalPedido}g</span>
-                                                <span className="text-[6px] font-black text-zinc-600 uppercase tracking-widest">Insumo total</span>
-                                            </div>
-                                        </div>
-                                        <div className="items-center flex gap-2">
-                                            <Clock size={12} className="text-zinc-700" />
-                                            <div className="flex flex-col">
-                                                <span className="text-[10px] font-bold text-zinc-400 font-mono leading-none">{horas}h{minutos > 0 ? `${minutos}m` : ''}</span>
-                                                <span className="text-[6px] font-black text-zinc-600 uppercase tracking-widest">Tempo por peça</span>
+                                            <div className="text-lg font-black text-white font-mono leading-none">
+                                                {formatCurrency(valorVendaFinal)}
                                             </div>
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-2 pt-2 border-t border-white/5">
-                                        {status === 'rascunho' ? (
+                                    {/* Grid de Specs Técnicas */}
+                                    <div className="grid grid-cols-2 gap-4 mb-6 px-2">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center text-zinc-500">
+                                                <Package size={14} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-zinc-300 font-mono leading-tight">{pesoTotalPedido}g</span>
+                                                <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Insumo Total</span>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center text-zinc-500">
+                                                <Clock size={14} />
+                                            </div>
+                                            <div className="flex flex-col">
+                                                <span className="text-[10px] font-bold text-zinc-300 font-mono leading-tight">{horas}h{minutos > 0 ? `${minutos}m` : '00'}</span>
+                                                <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Tempo Peça</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Ações do Card */}
+                                    <div className="flex gap-2">
+                                        {!isAprovado ? (
                                             <button
                                                 type="button"
                                                 onClick={() => perguntarAprovacao(projeto)}
-                                                className="flex-1 h-10 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-[9px] font-black uppercase flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95"
+                                                className="flex-1 h-10 rounded-xl bg-sky-600/10 border border-sky-500/20 text-sky-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all hover:bg-sky-600 hover:text-white active:scale-95"
                                             >
-                                                <Check size={14} strokeWidth={3} /> Aprovar projeto
+                                                <Check size={14} strokeWidth={3} /> Aprovar Orçamento
                                             </button>
                                         ) : (
-                                            <div className="flex-1 h-10 rounded-xl bg-zinc-800/30 border border-white/5 text-zinc-600 text-[9px] font-black uppercase flex items-center justify-center gap-2">
-                                                <Check size={14} className="text-sky-500" /> Orçamento aprovado
+                                            <div className="flex-1 h-10 rounded-xl bg-zinc-950/50 border border-white/5 text-zinc-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                                <CheckCircle2 size={14} className="text-sky-500" /> Sincronizado
                                             </div>
                                         )}
 
-                                        <button type="button" onClick={() => { onRestore(projeto); onClose(); }} className="w-10 h-10 flex items-center justify-center rounded-xl bg-sky-600/10 border border-sky-500/20 text-sky-500 hover:bg-sky-600 hover:text-white transition-all"><RotateCcw size={16} /></button>
-                                        <button type="button" onClick={() => perguntarExclusao(projeto.id)} className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-950 border border-zinc-800 text-zinc-600 hover:text-rose-500 hover:border-rose-500/30 transition-all"><Trash2 size={16} /></button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { onRestore(projeto); onClose(); }}
+                                            title="Restaurar"
+                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all active:scale-90"
+                                        >
+                                            <RotateCcw size={16} />
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={() => perguntarExclusao(projeto.id)}
+                                            title="Excluir"
+                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-600 hover:text-rose-500 hover:border-rose-500/20 transition-all active:scale-90"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
                                 </div>
                             );
@@ -213,7 +250,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                     ) : (
                         <div className="h-64 flex flex-col items-center justify-center text-zinc-800 gap-4 opacity-40">
                             <Database size={48} strokeWidth={1} />
-                            <p className="text-[10px] font-black uppercase tracking-[0.4em]">O histórico está vazio</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.4em]">Histórico Vazio</p>
                         </div>
                     )}
                 </div>
@@ -236,13 +273,13 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                 icon={confirmacao.icon}
                 footer={
                     <div className="flex gap-2 w-full">
-                        <button 
+                        <button
                             onClick={fecharConfirmacao}
                             className="flex-1 h-12 rounded-xl bg-zinc-900 text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all"
                         >
                             Cancelar
                         </button>
-                        <button 
+                        <button
                             onClick={confirmacao.onConfirm}
                             className={`flex-[2] h-12 rounded-xl text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg active:scale-95 ${confirmacao.color.includes('rose') ? 'bg-rose-600 hover:bg-rose-500' : 'bg-emerald-600 hover:bg-emerald-500'}`}
                         >
