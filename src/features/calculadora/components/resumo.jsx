@@ -242,8 +242,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
             <Popup
                 isOpen={showSuccessPopup}
                 onClose={() => setShowSuccessPopup(false)}
-                title="Sincronizado com a Nuvem"
-                subtitle="MakersLog Cloud Sync"
+                title="Projeto salvo com sucesso"
                 icon={CheckCircle2}
                 footer={
                     <button
@@ -256,9 +255,6 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
             >
                 <div className="p-8 space-y-6">
                     <div className="text-center space-y-2">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 text-[9px] font-black uppercase tracking-widest">
-                            <Globe size={10} /> Backup Ativo
-                        </div>
                         <h3 className="text-xl font-black text-white uppercase tracking-tighter">
                             {nomeProjeto || "Orçamento Sem Nome"}
                         </h3>
@@ -279,6 +275,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                             </span>
                         </div>
                     </div>
+
                 </div>
             </Popup>
 
