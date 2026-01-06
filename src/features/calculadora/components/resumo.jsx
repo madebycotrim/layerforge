@@ -279,21 +279,6 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                             </span>
                         </div>
                     </div>
-
-                    <div className="p-5 rounded-3xl bg-zinc-900/30 border border-white/5 flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-sky-500">
-                                <History size={18} />
-                            </div>
-                            <div className="flex flex-col">
-                                <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">Histórico Cloud</span>
-                                <span className="text-[8px] font-black text-zinc-600 uppercase">Sincronizado via D1 Database</span>
-                            </div>
-                        </div>
-                        <div className="text-right">
-                            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Ativo</span>
-                        </div>
-                    </div>
                 </div>
             </Popup>
 
