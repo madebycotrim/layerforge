@@ -185,24 +185,27 @@ export async function onRequest(context) {
 
             if (method === 'POST' || method === 'PUT') {
                 const p = await request.json();
-                const id = p.id || idFromPath || crypto.randomUUID();
-                const label = p.label || "Novo Orçamento";
-                const dataStr = JSON.stringify(p.entradas ? p : (p.data || p.payload || p));
 
-                await db.prepare("INSERT INTO projects (id, user_id, label, data) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label=excluded.label, data=excluded.data")
-                    .bind(id, userId, label, dataStr).run();
+                // Proteção: Garante que os valores nunca sejam undefined
+                const id = String(p.id || idFromPath || crypto.randomUUID());
+                const label = String(p.label || "Novo Orçamento");
 
-                return Response.json({ id, label, data: JSON.parse(dataStr) }, { headers: corsHeaders });
-            }
+                // Limpeza: Envia apenas o necessário para o banco para evitar objetos gigantes
+                const payloadParaSalvar = {
+                    entradas: p.entradas || p.data?.entradas || {},
+                    resultados: p.resultados || p.data?.resultados || {},
+                    status: p.status || p.data?.status || 'rascunho'
+                };
+                const dataStr = JSON.stringify(payloadParaSalvar);
 
-            if (method === 'DELETE') {
-                const id = idFromPath || url.searchParams.get('id');
-                if (id) {
-                    await db.prepare("DELETE FROM projects WHERE id = ? AND user_id = ?").bind(id, userId).run();
-                } else {
-                    await db.prepare("DELETE FROM projects WHERE user_id = ?").bind(userId).run();
+                try {
+                    await db.prepare("INSERT INTO projects (id, user_id, label, data) VALUES (?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label=excluded.label, data=excluded.data")
+                        .bind(id, userId, label, dataStr).run();
+
+                    return Response.json({ id, label, data: payloadParaSalvar }, { headers: corsHeaders });
+                } catch (err) {
+                    return Response.json({ error: "Erro ao salvar projeto no D1", details: err.message }, { status: 500, headers: corsHeaders });
                 }
-                return Response.json({ success: true }, { headers: corsHeaders });
             }
         }
 
@@ -210,7 +213,11 @@ export async function onRequest(context) {
         // ROTEAMENTO: APROVAR ORÇAMENTO (BAIXA NO ESTOQUE)
         // ---------------------------------------------------------
         if (entity === 'approve-budget' && method === 'POST') {
-            const { projectId, printerId, filaments, totalTime } = await request.json();
+            const p = await request.json();
+            const projectId = String(p.projectId || "");
+            const printerId = String(p.printerId || "");
+
+            if (!projectId) return Response.json({ error: "ID do projeto é obrigatório" }, { status: 400, headers: corsHeaders });
 
             const project = await db.prepare("SELECT data FROM projects WHERE id = ? AND user_id = ?").bind(projectId, userId).first();
             if (!project) return Response.json({ error: "Projeto não encontrado" }, { status: 404, headers: corsHeaders });
@@ -219,14 +226,22 @@ export async function onRequest(context) {
             pData.status = "aprovado";
 
             const batch = [
-                db.prepare("UPDATE projects SET data = ? WHERE id = ? AND user_id = ?").bind(JSON.stringify(pData), projectId, userId),
-                db.prepare("UPDATE printers SET horas_totais = horas_totais + ?, status = 'printing' WHERE id = ? AND user_id = ?").bind(Number(totalTime || 0), printerId, userId)
+                db.prepare("UPDATE projects SET data = ? WHERE id = ? AND user_id = ?").bind(JSON.stringify(pData), projectId, userId)
             ];
 
-            if (Array.isArray(filaments)) {
-                filaments.forEach(f => {
-                    if (f.id && f.id !== 'manual') {
-                        batch.push(db.prepare("UPDATE filaments SET peso_atual = MAX(0, peso_atual - ?) WHERE id = ? AND user_id = ?").bind(Number(f.peso || f.weight || 0), f.id, userId));
+            // Se houver impressora, atualiza o status dela
+            if (printerId) {
+                batch.push(db.prepare("UPDATE printers SET horas_totais = horas_totais + ?, status = 'printing' WHERE id = ? AND user_id = ?")
+                    .bind(Number(p.totalTime || 0), printerId, userId));
+            }
+
+            // Baixa de estoque de filamentos
+            if (Array.isArray(p.filaments)) {
+                p.filaments.forEach(f => {
+                    const fid = String(f.id || "");
+                    if (fid && fid !== 'manual') {
+                        batch.push(db.prepare("UPDATE filaments SET peso_atual = MAX(0, peso_atual - ?) WHERE id = ? AND user_id = ?")
+                            .bind(Number(f.peso || f.weight || 0), fid, userId));
                     }
                 });
             }

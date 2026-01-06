@@ -1,6 +1,7 @@
 // src/features/calculadora/logic/projects.js
 import { create } from 'zustand';
 import api from '../../../utils/api'; 
+import { parseNumber } from "../../../utils/numbers";
 
 /**
  * useProjectsStore - Gestão de Orçamentos e Produção
@@ -15,7 +16,7 @@ export const useProjectsStore = create((set, get) => ({
         set({ isLoading: true });
         try {
             const { data } = await api.get('/projects');
-            // Garante que sempre teremos um array, mesmo se o banco estiver vazio
+            // O backend retorna um array de objetos {id, label, data, created_at}
             const projetosFormatados = Array.isArray(data) ? data : [];
             set({ projects: projetosFormatados, isLoading: false });
             return projetosFormatados;
@@ -32,38 +33,32 @@ export const useProjectsStore = create((set, get) => ({
         try {
             const listaAtual = get().projects;
             
-            // Localiza projeto existente para preservar status ou define como rascunho
+            // Localiza projeto existente para preservar status
             const projetoExistente = id ? listaAtual.find(p => String(p.id) === String(id)) : null;
             const statusAtual = projetoExistente?.data?.status || "rascunho";
 
             // Garante que o label tenha um fallback válido
             const nomeProjeto = label || entradas.nomeProjeto || "Novo Orçamento";
 
+            // PAYLOAD BLINDADO: Nunca enviamos valores undefined ou null para o banco D1
             const payloadParaBanco = {
-                id: id, 
-                label: nomeProjeto,
-                data: { 
-                    entradas, 
-                    resultados,
-                    status: statusAtual,
-                    ultimaAtualizacao: new Date().toISOString()
-                }
+                id: String(id || crypto.randomUUID()), // Garante String e ID único
+                label: String(nomeProjeto),
+                entradas: entradas || {}, 
+                resultados: resultados || {},
+                status: statusAtual,
+                ultimaAtualizacao: new Date().toISOString()
             };
 
             const { data } = await api.post('/projects', payloadParaBanco);
             
-            // Atualização do estado local: remove versão antiga (se houver) e adiciona a nova
-            set((estado) => {
-                const projetosFiltrados = estado.projects.filter(p => String(p.id) !== String(data.id));
-                return { 
-                    projects: [data, ...projetosFiltrados], 
-                    isLoading: false 
-                };
-            });
+            // Atualiza a lista local após salvar com sucesso
+            await get().fetchHistory();
+            set({ isLoading: false });
             
             return data;
         } catch (erro) {
-            console.error("Erro ao salvar projeto:", erro);
+            console.error("Erro ao salvar projeto (500):", erro);
             set({ isLoading: false });
             return null;
         }
@@ -71,93 +66,94 @@ export const useProjectsStore = create((set, get) => ({
 
     // 3. APROVAR ORÇAMENTO (Move para Produção e abate insumos)
     approveBudget: async (projeto) => {
-        if (!projeto || !projeto.data) return false;
+        if (!projeto || !projeto.id) return false;
 
         set({ isLoading: true });
-        const { entradas, resultados } = projeto.data;
         
-        // Normalização da quantidade para evitar cálculos com undefined/NaN
-        const quantidade = Number(entradas.quantidade || entradas.qtdPecas || 1);
+        // Extração segura dos dados independente da estrutura (data ou flat)
+        const d = projeto.data || projeto;
+        const entradas = d.entradas || {};
+        const resultados = d.resultados || {};
+        
+        const quantidade = Math.max(1, Number(entradas.quantidade || entradas.qtdPecas || 1));
 
         // Processamento de materiais para baixa de estoque
         let filamentosParaBaixa = [];
         const material = entradas.material || {};
         
-        // Caso 1: Múltiplas Cores (Slots)
-        if (material.selectedFilamentId === 'multi' || (material.slots && material.slots.length > 0)) {
-            filamentosParaBaixa = (material.slots || [])
-                .filter(slot => slot.id && slot.id !== 'manual' && Number(slot.weight || 0) > 0)
+        // Caso 1: Multi-material (Slots)
+        if (material.slots && material.slots.length > 0) {
+            filamentosParaBaixa = material.slots
+                .filter(slot => slot.id && slot.id !== 'manual')
                 .map(slot => ({ 
-                    id: slot.id, 
-                    // Soma o peso do slot multiplicado pela quantidade total de peças
-                    peso: Number(slot.weight) * quantidade 
+                    id: String(slot.id), 
+                    peso: Number(slot.weight || 0) * quantidade 
                 }));
         } 
-        // Caso 2: Cor Única
-        else if (material.selectedFilamentId && material.selectedFilamentId !== 'manual') {
-            // Usa o peso do modelo ou o peso total calculado nos resultados
-            const pesoUnitario = Number(material.pesoModelo || resultados.pesoTotal || 0);
+        // Caso 2: Material Único
+        else if (entradas.selectedFilamentId && entradas.selectedFilamentId !== 'manual') {
+            const pesoUnitario = Number(entradas.pesoModelo || resultados.custoMaterial > 0 ? (resultados.custoMaterial / (resultados.precoKg / 1000)) : 0);
             if (pesoUnitario > 0) {
                 filamentosParaBaixa = [{ 
-                    id: material.selectedFilamentId, 
+                    id: String(entradas.selectedFilamentId), 
                     peso: pesoUnitario * quantidade
                 }];
             }
         }
 
         try {
-            // Chamada atômica: Atualiza status, abate estoque e registra horas na impressora
+            // Chamada ao Worker para atualizar status e subtrair estoque (Transação Batch)
             await api.post('/approve-budget', {
-                projectId: projeto.id,
-                printerId: entradas.selectedPrinterId,
+                projectId: String(projeto.id),
+                printerId: entradas.selectedPrinterId ? String(entradas.selectedPrinterId) : null,
                 filaments: filamentosParaBaixa,
-                totalTime: Number(resultados.tempoTotalHoras || 0)
+                // Garante que o tempo nunca seja NaN para não quebrar o Worker
+                totalTime: isNaN(Number(resultados.tempoTotalHoras)) ? 0 : Number(resultados.tempoTotalHoras)
             });
 
-            // Atualiza a lista local para refletir a mudança de status (de Orçamento para Produção)
+            // Sincroniza a lista local
             await get().fetchHistory();
             set({ isLoading: false });
             return true;
         } catch (erro) {
-            console.error("Falha na aprovação do orçamento:", erro);
+            console.error("Falha na aprovação (500):", erro);
             set({ isLoading: false });
             return false;
         }
     },
 
-    // 4. ATUALIZAR STATUS (Ex: Produção -> Finalizado ou Cancelado)
+    // 4. ATUALIZAR STATUS (Ex: Produção -> Finalizado)
     updateProjectStatus: async (projetoId, novoStatus) => {
         if (!projetoId) return false;
         
         set({ isLoading: true });
         try {
-            const projetoAtual = get().projects.find(p => String(p.id) === String(projetoId));
+            const lista = get().projects;
+            const projetoAtual = lista.find(p => String(p.id) === String(projetoId));
             if (!projetoAtual) throw new Error("Projeto não encontrado");
 
             const payloadAtualizado = {
-                id: projetoId,
-                label: projetoAtual.label,
-                data: {
-                    ...projetoAtual.data,
-                    status: novoStatus,
-                    ultimaAtualizacao: new Date().toISOString()
-                }
+                id: String(projetoId),
+                label: String(projetoAtual.label),
+                entradas: projetoAtual.data?.entradas || {},
+                resultados: projetoAtual.data?.resultados || {},
+                status: String(novoStatus),
+                ultimaAtualizacao: new Date().toISOString()
             };
 
             await api.post('/projects', payloadAtualizado);
             
-            // Sincroniza estado local após a alteração de status
             await get().fetchHistory();
             set({ isLoading: false });
             return true;
         } catch (erro) {
-            console.error("Erro ao transicionar status:", erro);
+            console.error("Erro ao mudar status (500):", erro);
             set({ isLoading: false });
             return false;
         }
     },
 
-    // 5. REMOVER ENTRADA DO HISTÓRICO
+    // 5. REMOVER ENTRADA
     removeHistoryEntry: async (id) => {
         if (!id) return false;
         set({ isLoading: true });
@@ -177,15 +173,13 @@ export const useProjectsStore = create((set, get) => ({
 
     // 6. LIMPAR HISTÓRICO COMPLETO
     clearHistory: async () => {
-        if (!confirm("Tem certeza que deseja apagar todo o histórico?")) return false;
-        
         set({ isLoading: true });
         try {
             await api.delete('/projects'); 
             set({ projects: [], isLoading: false });
             return true;
         } catch (erro) {
-            console.error("Erro ao limpar base de dados:", erro);
+            console.error("Erro ao limpar base:", erro);
             set({ isLoading: false });
             return false;
         }
