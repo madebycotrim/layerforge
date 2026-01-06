@@ -4,13 +4,12 @@ import {
     Save, Calculator, FileText, Loader2, Wand2,
     MessageCircle, Target, Package, Zap, Clock, Wrench,
     Landmark, RotateCcw, Send, Copy, Check, Settings2,
-    Truck, ShoppingBag, Tag, ShieldAlert, Box, AlertTriangle,
-    History
+    Truck, ShoppingBag, Tag, ShieldAlert, Box, AlertTriangle
 } from "lucide-react";
 
 import { generateProfessionalPDF } from "../../../utils/pdfGenerator";
 import { useSettingsStore } from "../logic/calculator";
-import Popup from "../../../components/Popup"; // Importando o componente universal
+import Popup from "../../../components/Popup";
 
 /* ---------- SUB-COMPONENTE: NÚMERO ANIMADO ---------- */
 const AnimatedNumber = ({ value, duration = 800 }) => {
@@ -52,7 +51,6 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
     const [estaSalvo, setEstaSalvo] = useState(false);
     const [estaGravando, setEstaGravando] = useState(false);
     
-    // Estados para os Popups
     const [whatsappModal, setWhatsappModal] = useState(false);
     const [genericModal, setGenericModal] = useState({ 
         open: false, type: '', title: '', message: '', onConfirm: null, icon: ShieldAlert 
@@ -66,7 +64,13 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
     const possuiDesconto = precoComDesconto > 0 && Math.abs(precoComDesconto - precoSugerido) > 0.01;
     const precoBase = possuiDesconto ? precoComDesconto : (precoSugerido || 0);
     const precoFinalVenda = precoArredondado || precoBase;
+    
+    // Define se temos dados suficientes para mostrar o resumo financeiro geral
     const temDados = precoSugerido > 0.01;
+    
+    // NOVA VALIDAÇÃO: Verifica se o usuário já preencheu a matéria-prima
+    const temMaterial = custoMaterial > 0;
+
     const nomeProjeto = entradas?.nomeProjeto || "";
 
     useEffect(() => {
@@ -85,7 +89,6 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
         return { label: "PROJETO SAUDÁVEL", color: "text-[#10b981]", bar: "bg-[#10b981]", dot: "bg-[#10b981]" };
     }, [temDados, margemEfetivaPct]);
 
-    // HANDLERS
     const handleSmartRound = () => {
         if (!temDados) return;
         const current = precoArredondado || precoBase;
@@ -237,7 +240,8 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                     <Target size={12} className="opacity-20" />
                 </div>
                 <div className="flex-1 overflow-y-auto px-5 custom-scrollbar">
-                    {temDados && composicaoItens.length > 0 ? (
+                    {/* ALTERAÇÃO AQUI: Verifica se temMaterial é verdadeiro para listar os itens */}
+                    {temMaterial && composicaoItens.length > 0 ? (
                         <div className="py-2 space-y-0.5">
                             {composicaoItens.map((item, i) => (
                                 <div key={i} className="flex justify-between py-1.5 border-b border-white/[0.01] last:border-0 group animate-in fade-in slide-in-from-left-1">
@@ -293,7 +297,6 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 </div>
             </div>
 
-            {/* POPUP WHATSAPP */}
             <Popup
                 isOpen={whatsappModal}
                 onClose={() => setWhatsappModal(false)}
@@ -326,7 +329,6 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 </div>
             </Popup>
 
-            {/* POPUP GENÉRICO (ALERTA / CONFIRMAÇÃO) */}
             <Popup
                 isOpen={genericModal.open}
                 onClose={() => setGenericModal({ ...genericModal, open: false })}
