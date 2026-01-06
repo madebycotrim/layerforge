@@ -227,7 +227,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                             </button>
                                         ) : (
                                             <div className="flex-1 h-10 rounded-xl bg-zinc-950/50 border border-white/5 text-zinc-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                                                <CheckCircle2 size={14} className="text-sky-500" /> Sincronizado
+                                                <CheckCircle2 size={14} className="text-sky-500" /> Aprovado
                                             </div>
                                         )}
 
