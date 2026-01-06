@@ -2,29 +2,13 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     User, Lock, Save, RefreshCw, Camera,
     CheckCircle2, Database, Cloud, AlertTriangle, Trash2, Search, X,
-    AlertCircle, Info, LogOut
+    AlertCircle, Info, LogOut, ShieldAlert
 } from 'lucide-react';
 import { useClerk, useUser } from "@clerk/clerk-react";
 
 import MainSidebar from "../layouts/mainSidebar";
 import Toast from "../components/Toast";
-
-// --- SUB-COMPONENTE: JANELA MODAL (ESTILO HUD) ---
-const Modal = ({ isOpen, onClose, title, children, actions }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
-                <div className="px-6 py-4 border-b border-white/[0.03] flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{title}</span>
-                    <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors"><X size={16} /></button>
-                </div>
-                <div className="p-6 text-zinc-300 text-sm leading-relaxed">{children}</div>
-                {actions && <div className="px-6 py-4 bg-white/[0.02] flex gap-3 justify-end border-t border-white/[0.03]">{actions}</div>}
-            </div>
-        </div>
-    );
-};
+import Popup from "../components/Popup"; // Componente Unificado
 
 // --- COMPONENTE: INPUT HUD ---
 const HUDInput = ({ label, value, onChange, placeholder, type = "text", info, disabled }) => (
@@ -71,8 +55,8 @@ export default function ConfigPage() {
 
     // Estado para Toasts e Modais
     const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-    const [modalConfig, setModalConfig] = useState({ 
-        open: false, title: "", message: "", type: "info", onConfirm: null 
+    const [modalConfig, setModalConfig] = useState({
+        open: false, title: "", message: "", type: "info", icon: Info, onConfirm: null
     });
 
     const { signOut } = useClerk();
@@ -105,16 +89,15 @@ export default function ConfigPage() {
             title: "Protocolo de Rescisão",
             message: "ALERTA CRÍTICO: Esta ação é irreversível. Todos os seus dados de oficina, históricos e filamentos serão apagados permanentemente. Deseja prosseguir?",
             type: "danger",
+            icon: ShieldAlert,
             onConfirm: async () => {
                 try {
                     setIsSaving(true);
                     await user.delete();
                 } catch (err) {
                     setToast({ show: true, message: "Erro ao processar exclusão.", type: 'error' });
-                } finally { 
-                    setIsSaving(false); 
                     setModalConfig(prev => ({ ...prev, open: false }));
-                }
+                } finally { setIsSaving(false); }
             }
         });
     };
@@ -310,29 +293,47 @@ export default function ConfigPage() {
                 </div>
             </main>
 
-            {/* MODAL GLOBAL DE ALERTAS E CONFIRMAÇÕES */}
-            <Modal
+            {/* POPUP GLOBAL DE ALERTAS E CONFIRMAÇÕES (UNIFICADO) */}
+            <Popup
                 isOpen={modalConfig.open}
                 onClose={() => setModalConfig({ ...modalConfig, open: false })}
                 title={modalConfig.title}
-                actions={
+                subtitle="Segurança de Dados"
+                icon={modalConfig.icon}
+                footer={
                     <div className="flex w-full gap-2">
                         {modalConfig.type === 'danger' ? (
                             <>
-                                <button onClick={() => setModalConfig({ ...modalConfig, open: false })} className="flex-1 text-[10px] font-bold text-zinc-500 uppercase px-4">Cancelar</button>
-                                <button onClick={modalConfig.onConfirm} className="flex-1 bg-rose-600 text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl">Excluir Tudo</button>
+                                <button
+                                    onClick={() => setModalConfig({ ...modalConfig, open: false })}
+                                    className="flex-1 text-[10px] font-bold text-zinc-500 uppercase h-12"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={modalConfig.onConfirm}
+                                    className="flex-1 bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase h-12 rounded-xl transition-all shadow-lg shadow-rose-900/20"
+                                >
+                                    Excluir Tudo
+                                </button>
                             </>
                         ) : (
-                            <button onClick={() => setModalConfig({ ...modalConfig, open: false })} className="w-full bg-sky-600 text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl">Entendi</button>
+                            <button
+                                onClick={() => setModalConfig({ ...modalConfig, open: false })}
+                                className="w-full bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black uppercase h-12 rounded-xl"
+                            >
+                                Entendi
+                            </button>
                         )}
                     </div>
                 }
             >
-                <div className="flex flex-col items-center text-center gap-4">
-                    {modalConfig.type === 'danger' ? <AlertTriangle size={40} className="text-rose-500/50" /> : <Info size={40} className="text-sky-500/50" />}
-                    <p className="text-sm text-zinc-400 font-medium leading-relaxed">{modalConfig.message}</p>
+                <div className="p-8 flex flex-col items-center text-center gap-4">
+                    <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+                        {modalConfig.message}
+                    </p>
                 </div>
-            </Modal>
+            </Popup>
         </div>
     );
 }

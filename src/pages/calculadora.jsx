@@ -1,11 +1,15 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
     Settings2, BarChart3, HelpCircle, ChevronRight,
-    X, CheckCircle2, AlertCircle, AlertTriangle
+    CheckCircle2, AlertCircle, AlertTriangle, History as HistoryIcon,
+    Layout
 } from "lucide-react";
 
-// Layout e Componentes
+// Layout e Componentes Universais
 import MainSidebar from "../layouts/mainSidebar.jsx";
+import Popup from "../components/Popup.jsx"; // Componente Unificado
+
+// Componentes de Feature
 import Header from "../features/calculadora/components/header.jsx";
 import Summary from "../features/calculadora/components/resumo.jsx";
 import HistoryDrawer from "../features/calculadora/components/historico.jsx";
@@ -26,23 +30,6 @@ import { usePrinterStore } from "../features/impressoras/logic/printer.js";
 import { useProjectsStore } from "../features/orcamentos/logic/projects.js";
 
 const CONFIG_SIDEBAR = { COLAPSADO: 68, EXPANDIDO: 256 };
-
-/* ---------- SUB-COMPONENTE: JANELA MODAL PERSONALIZADA ---------- */
-const Modal = ({ isOpen, onClose, title, children, actions }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl scale-in-center">
-                <div className="px-6 py-4 border-b border-white/[0.03] flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{title}</span>
-                    <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors"><X size={16} /></button>
-                </div>
-                <div className="p-6 text-zinc-300 text-sm leading-relaxed">{children}</div>
-                {actions && <div className="px-6 py-4 bg-white/[0.02] flex gap-3 justify-end border-t border-white/[0.03]">{actions}</div>}
-            </div>
-        </div>
-    );
-};
 
 /* ---------- WRAPPER CARD: ESTRUTURA VISUAL ---------- */
 const WrapperCard = React.memo(({ children, title, step, className = "", zPriority = "z-10" }) => {
@@ -85,9 +72,9 @@ export default function CalculadoraPage() {
     const [precisaConfigurar, setPrecisaConfigurar] = useState(false);
     const [idProjetoAtual, setIdProjetoAtual] = useState(null);
 
-    // Estado para Modais (Substitui o window.alert)
+    // Estado para Popups (Centralizado)
     const [modalConfig, setModalConfig] = useState({
-        open: false, title: "", message: "", type: "info"
+        open: false, title: "", message: "", icon: AlertCircle, color: "text-sky-500"
     });
 
     const { printers: impressoras, fetchPrinters: buscarImpressoras } = usePrinterStore();
@@ -167,8 +154,6 @@ export default function CalculadoraPage() {
         localStorage.setItem("last_printer_id", proximoHardware.id);
         const potencia = Number(proximoHardware.potencia || proximoHardware.power || 0);
         atualizarCampo('config', 'consumoKw', String(potencia >= 2 ? potencia / 1000 : potencia));
-        const custoH = proximoHardware.custo_hora || proximoHardware.custo_hora_maquina;
-        if (custoH) atualizarCampo('config', 'custoHoraMaquina', String(custoH));
     }, [impressoras, hardwareSelecionado, atualizarCampo]);
 
     const entradasParaCalculo = useDebounce(dadosFormulario, 250);
@@ -187,8 +172,9 @@ export default function CalculadoraPage() {
             setModalConfig({
                 open: true,
                 title: "Atenção",
-                message: "Por favor, dê um nome para o seu projeto no topo da página antes de salvar.",
-                type: "warning"
+                message: "Dê um nome para o seu projeto no topo da página antes de salvar.",
+                icon: AlertCircle,
+                color: "text-amber-500"
             });
             return;
         }
@@ -205,8 +191,9 @@ export default function CalculadoraPage() {
             setModalConfig({
                 open: true,
                 title: "Sucesso",
-                message: "O orçamento foi salvo e atualizado com sucesso no seu histórico.",
-                type: "success"
+                message: "Orçamento salvo e atualizado com sucesso no seu histórico cloud.",
+                icon: CheckCircle2,
+                color: "text-emerald-500"
             });
         }
     }, [dadosFormulario, resultados, hardwareSelecionado, salvarNoBanco, idProjetoAtual]);
@@ -255,9 +242,11 @@ export default function CalculadoraPage() {
 
             <main className="flex-1 flex flex-row relative h-full overflow-hidden transition-all duration-300" style={{ marginLeft: `${larguraSidebar}px` }}>
 
+                {/* Grid Background */}
                 <div className="absolute inset-x-0 top-0 h-[500px] z-0 opacity-[0.05] pointer-events-none"
                     style={{ backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`, backgroundSize: '40px 40px' }} />
 
+                {/* Coluna de Inputs */}
                 <div className="flex-1 flex flex-col h-full min-w-0 relative z-10 border-r border-white/5">
                     <Header
                         nomeProjeto={dadosFormulario.nomeProjeto}
@@ -274,7 +263,7 @@ export default function CalculadoraPage() {
                     <div className="flex-1 overflow-y-auto p-4 xl:p-6 custom-scrollbar">
                         <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 pb-10">
 
-                            <div className="flex flex-col gap-4 relative z-30">
+                            <div className="flex flex-col gap-4">
                                 <WrapperCard title="Matéria-Prima" step="01" zPriority="z-20">
                                     <CardMaterial
                                         custoRolo={dadosFormulario.material.custoRolo} setCustoRolo={(v) => atualizarCampo('material', 'custoRolo', v)}
@@ -293,7 +282,7 @@ export default function CalculadoraPage() {
                                 </WrapperCard>
                             </div>
 
-                            <div className="flex flex-col gap-4 relative z-20">
+                            <div className="flex flex-col gap-4">
                                 <WrapperCard title="Canais de Venda" step="03" zPriority="z-20">
                                     <CardCanal
                                         canalVenda={dadosFormulario.vendas.canal} setCanalVenda={(v) => atualizarCampo('vendas', 'canal', v)}
@@ -310,7 +299,7 @@ export default function CalculadoraPage() {
                                 </WrapperCard>
                             </div>
 
-                            <div className="flex flex-col gap-4 relative z-10">
+                            <div className="flex flex-col gap-4">
                                 <WrapperCard title="Lucro e Estratégia" step="05">
                                     <CardPreco
                                         margemLucro={dadosFormulario.config.margemLucro} setMargemLucro={(v) => atualizarCampo('config', 'margemLucro', v)}
@@ -325,6 +314,7 @@ export default function CalculadoraPage() {
                     </div>
                 </div>
 
+                {/* Sidebar Direita: Resumo/Config */}
                 <aside className="w-[400px] h-full bg-zinc-950/40 backdrop-blur-2xl flex flex-col z-20 border-l border-white/5">
                     <div className="h-[80px] border-b border-white/5 flex items-center px-4">
                         <div className="flex w-full h-12 bg-zinc-950 rounded-lg border border-zinc-800 p-1 shadow-inner">
@@ -341,10 +331,9 @@ export default function CalculadoraPage() {
 
                     <div className="flex-1 overflow-y-auto custom-scrollbar p-4">
                         {abaAtiva === 'resumo' ? (
-                            <Summary resultados={resultados} entradas={dadosFormulario} salvar={lidarSalvarNoHistorico} onGoToSettings={() => setAbaAtiva('config')} />
+                            <Summary resultados={resultados} entradas={dadosFormulario} salvar={lidarSalvarNoHistorico} />
                         ) : (
                             <PainelConfiguracoesCalculo
-                                config={dadosFormulario.config}
                                 valorHoraHumana={dadosFormulario.config.valorHoraHumana} setValorHoraHumana={(v) => atualizarCampo('config', 'valorHoraHumana', v)}
                                 custoKwh={dadosFormulario.config.custoKwh} setCustoKwh={(v) => atualizarCampo('config', 'custoKwh', v)}
                                 consumoImpressoraKw={dadosFormulario.config.consumoKw} setConsumoImpressoraKw={(v) => atualizarCampo('config', 'consumoKw', v)}
@@ -359,26 +348,31 @@ export default function CalculadoraPage() {
 
             <HistoryDrawer open={historicoAberto} onClose={() => setHistoricoAberto(false)} onRestore={lidarRestauracao} />
 
-            {/* MODAL GLOBAL DE MENSAGENS */}
-            <Modal
+            {/* POPUP GLOBAL DE MENSAGENS (Unificado) */}
+            <Popup
                 isOpen={modalConfig.open}
                 onClose={() => setModalConfig({ ...modalConfig, open: false })}
                 title={modalConfig.title}
-                actions={
-                    <button onClick={() => setModalConfig({ ...modalConfig, open: false })}
-                        className={`w-full text-[10px] font-black uppercase px-6 py-2.5 rounded-xl transition-all ${modalConfig.type === 'success' ? 'bg-emerald-600' : modalConfig.type === 'warning' ? 'bg-amber-600' : 'bg-sky-600'
-                            } text-white shadow-lg`}>
-                        Entendi
+                subtitle="Notificação de Sistema"
+                icon={modalConfig.icon}
+                footer={
+                    <button
+                        onClick={() => setModalConfig({ ...modalConfig, open: false })}
+                        className={`w-full h-12 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg active:scale-95 text-white ${modalConfig.icon === CheckCircle2 ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20' :
+                                modalConfig.icon === AlertTriangle ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-900/20' :
+                                    'bg-sky-600 hover:bg-sky-500 shadow-sky-900/20'
+                            }`}
+                    >
+                        Entendi, fechar aviso
                     </button>
                 }
             >
-                <div className="flex flex-col items-center text-center gap-4">
-                    {modalConfig.type === 'success' && <CheckCircle2 size={40} className="text-emerald-500/50" />}
-                    {modalConfig.type === 'warning' && <AlertCircle size={40} className="text-amber-500/50" />}
-                    {modalConfig.type === 'error' && <AlertTriangle size={40} className="text-rose-500/50" />}
-                    <p className="text-sm text-zinc-400 font-medium">{modalConfig.message}</p>
+                <div className="p-8 flex flex-col items-center text-center gap-4">
+                    <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+                        {modalConfig.message}
+                    </p>
                 </div>
-            </Modal>
+            </Popup>
         </div>
     );
 }

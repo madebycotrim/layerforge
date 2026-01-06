@@ -1,14 +1,16 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "../../../utils/numbers";
 import {
-    Save, Calculator, FileText, Loader2, Wand2, X,
+    Save, Calculator, FileText, Loader2, Wand2,
     MessageCircle, Target, Package, Zap, Clock, Wrench,
     Landmark, RotateCcw, Send, Copy, Check, Settings2,
-    Truck, ShoppingBag, Tag, ShieldAlert, Box, AlertTriangle
+    Truck, ShoppingBag, Tag, ShieldAlert, Box, AlertTriangle,
+    History
 } from "lucide-react";
 
 import { generateProfessionalPDF } from "../../../utils/pdfGenerator";
 import { useSettingsStore } from "../logic/calculator";
+import Popup from "../../../components/Popup"; // Importando o componente universal
 
 /* ---------- SUB-COMPONENTE: NÚMERO ANIMADO ---------- */
 const AnimatedNumber = ({ value, duration = 800 }) => {
@@ -35,25 +37,8 @@ const AnimatedNumber = ({ value, duration = 800 }) => {
     return <span>{formatCurrency(displayValue)}</span>;
 };
 
-/* ---------- SUB-COMPONENTE: JANELA MODAL ---------- */
-const Modal = ({ isOpen, onClose, title, children, actions }) => {
-    if (!isOpen) return null;
-    return (
-        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl w-full max-w-sm overflow-hidden shadow-2xl">
-                <div className="px-6 py-4 border-b border-white/[0.03] flex justify-between items-center">
-                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{title}</span>
-                    <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors"><X size={16} /></button>
-                </div>
-                <div className="p-6 text-zinc-300 text-sm leading-relaxed">{children}</div>
-                {actions && <div className="px-6 py-4 bg-white/[0.02] flex gap-3 justify-end border-t border-white/[0.03]">{actions}</div>}
-            </div>
-        </div>
-    );
-};
-
 /* ---------- COMPONENTE PRINCIPAL ---------- */
-export default function Resumo({ resultados = {}, entradas = {}, salvar = () => { }, onGoToSettings }) {
+export default function Resumo({ resultados = {}, entradas = {}, salvar = () => { } }) {
     const {
         lucroBrutoUnitario = 0, precoSugerido = 0, precoComDesconto = 0, tempoTotalHoras = 0,
         custoMaterial = 0, custoEnergia = 0, custoMaquina = 0, custoMaoDeObra = 0,
@@ -67,19 +52,15 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
     const [estaSalvo, setEstaSalvo] = useState(false);
     const [estaGravando, setEstaGravando] = useState(false);
     
-    // Estado de modal genérico para alertas
-    const [modalConfig, setModalConfig] = useState({ 
-        open: false, 
-        type: '', 
-        title: '', 
-        message: '',
-        onConfirm: null 
+    // Estados para os Popups
+    const [whatsappModal, setWhatsappModal] = useState(false);
+    const [genericModal, setGenericModal] = useState({ 
+        open: false, type: '', title: '', message: '', onConfirm: null, icon: ShieldAlert 
     });
 
     const [precoArredondado, setPrecoArredondado] = useState(null);
     const [copiado, setCopiado] = useState(false);
     const [copiadoPreco, setCopiadoPreco] = useState(false);
-    const [whatsappModal, setWhatsappModal] = useState(false);
     const [mensagemEditavel, setMensagemEditavel] = useState("");
 
     const possuiDesconto = precoComDesconto > 0 && Math.abs(precoComDesconto - precoSugerido) > 0.01;
@@ -123,25 +104,20 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
 
     const lidarSalvarResumo = async () => {
         if (!nomeProjeto.trim()) {
-            setModalConfig({ 
-                open: true, 
-                type: 'ALERT', 
-                title: 'Nome Obrigatório', 
-                message: 'Por favor, dê um nome para o seu projeto no topo da página antes de salvar.' 
+            setGenericModal({ 
+                open: true, type: 'ALERT', title: 'Nome Obrigatório', icon: AlertTriangle,
+                message: 'Dê um nome para o seu projeto no topo da página antes de salvar.' 
             });
             return;
         }
-
         setEstaGravando(true);
         try {
             await salvar();
             setEstaSalvo(true);
         } catch (error) {
-            setModalConfig({ 
-                open: true, 
-                type: 'ERROR', 
-                title: 'Erro ao Salvar', 
-                message: 'Não foi possível salvar os dados. Verifique sua conexão e tente novamente.' 
+            setGenericModal({ 
+                open: true, type: 'ERROR', title: 'Erro ao Salvar', icon: ShieldAlert,
+                message: 'Não foi possível salvar os dados. Verifique sua conexão.' 
             });
         } finally {
             setEstaGravando(false);
@@ -157,12 +133,6 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
             .replace(/{tempo}/g, `${tempoTotalHoras}h`);
         setMensagemEditavel(formatado);
         setWhatsappModal(true);
-    };
-
-    const enviarParaWhatsapp = () => {
-        const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagemEditavel)}`;
-        window.open(url, "_blank");
-        setWhatsappModal(false);
     };
 
     const composicaoItens = useMemo(() => {
@@ -286,7 +256,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 </div>
             </div>
 
-            {/* AÇÕES */}
+            {/* AÇÕES PRINCIPAIS */}
             <div className="flex flex-col gap-2 shrink-0">
                 <div className="flex gap-2 h-14">
                     <button
@@ -308,11 +278,9 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 </div>
                 <div className="grid grid-cols-2 gap-2 h-10">
                     <button 
-                        onClick={() => setModalConfig({ 
-                            open: true, 
-                            type: 'CONFIRM', 
-                            title: 'Reiniciar Cálculo', 
-                            message: 'Deseja realmente apagar todos os dados inseridos? Esta ação não pode ser desfeita.',
+                        onClick={() => setGenericModal({ 
+                            open: true, type: 'CONFIRM', title: 'Reiniciar Cálculo', icon: RotateCcw,
+                            message: 'Deseja apagar todos os dados inseridos? Esta ação é irreversível.',
                             onConfirm: () => window.location.reload()
                         })} 
                         className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all"
@@ -325,59 +293,63 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 </div>
             </div>
 
-            {/* MODAL WHATSAPP */}
-            <Modal
+            {/* POPUP WHATSAPP */}
+            <Popup
                 isOpen={whatsappModal}
                 onClose={() => setWhatsappModal(false)}
                 title="Personalizar Mensagem"
-                actions={
+                icon={MessageCircle}
+                footer={
                     <div className="flex w-full gap-2">
-                        <button onClick={() => { navigator.clipboard.writeText(mensagemEditavel); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }} className="flex-1 bg-zinc-900 border border-zinc-800 text-zinc-400 text-[10px] font-black uppercase px-4 py-2.5 rounded-xl flex items-center justify-center gap-2">
+                        <button 
+                            onClick={() => { navigator.clipboard.writeText(mensagemEditavel); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }} 
+                            className="flex-1 bg-zinc-900 border border-white/5 text-zinc-400 text-[10px] font-black uppercase h-12 rounded-xl flex items-center justify-center gap-2"
+                        >
                             {copiado ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                             {copiado ? "Copiado" : "Copiar"}
                         </button>
-                        <button onClick={enviarParaWhatsapp} className="flex-[2] bg-[#10b981] text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl flex items-center justify-center gap-2">
+                        <button 
+                            onClick={() => { const url = `https://api.whatsapp.com/send?text=${encodeURIComponent(mensagemEditavel)}`; window.open(url, "_blank"); setWhatsappModal(false); }} 
+                            className="flex-[2] bg-[#10b981] text-white text-[10px] font-black uppercase h-12 rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20"
+                        >
                             <Send size={14} /> Enviar Agora
                         </button>
                     </div>
                 }
             >
-                <textarea
-                    className="w-full h-48 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-xs text-zinc-300 outline-none focus:border-emerald-500/50 transition-all resize-none font-sans leading-relaxed"
-                    value={mensagemEditavel}
-                    onChange={(e) => setMensagemEditavel(e.target.value)}
-                />
-            </Modal>
+                <div className="p-6">
+                    <textarea
+                        className="w-full h-48 bg-zinc-950 border border-zinc-800 rounded-2xl p-4 text-xs text-zinc-300 outline-none focus:border-emerald-500/50 transition-all resize-none font-sans leading-relaxed"
+                        value={mensagemEditavel}
+                        onChange={(e) => setMensagemEditavel(e.target.value)}
+                    />
+                </div>
+            </Popup>
 
-            {/* MODAL DE ALERTA / ERRO / CONFIRMAÇÃO GENÉRICO */}
-            <Modal
-                isOpen={modalConfig.open}
-                onClose={() => setModalConfig({ ...modalConfig, open: false })}
-                title={modalConfig.title}
-                actions={
+            {/* POPUP GENÉRICO (ALERTA / CONFIRMAÇÃO) */}
+            <Popup
+                isOpen={genericModal.open}
+                onClose={() => setGenericModal({ ...genericModal, open: false })}
+                title={genericModal.title}
+                icon={genericModal.icon}
+                footer={
                     <div className="flex w-full gap-2">
-                        {modalConfig.type === 'CONFIRM' ? (
+                        {genericModal.type === 'CONFIRM' ? (
                             <>
-                                <button onClick={() => setModalConfig({ ...modalConfig, open: false })} className="flex-1 text-[10px] font-bold text-zinc-500 uppercase px-4">Cancelar</button>
-                                <button onClick={modalConfig.onConfirm} className="flex-1 bg-rose-600 text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl">Confirmar</button>
+                                <button onClick={() => setGenericModal({ ...genericModal, open: false })} className="flex-1 text-[10px] font-bold text-zinc-500 uppercase h-12">Cancelar</button>
+                                <button onClick={genericModal.onConfirm} className="flex-1 bg-rose-600 text-white text-[10px] font-black uppercase h-12 rounded-xl">Confirmar</button>
                             </>
                         ) : (
-                            <button onClick={() => setModalConfig({ ...modalConfig, open: false })} className="w-full bg-[#0095ff] text-white text-[10px] font-black uppercase px-6 py-2.5 rounded-xl">Entendi</button>
+                            <button onClick={() => setGenericModal({ ...genericModal, open: false })} className="w-full bg-[#0095ff] text-white text-[10px] font-black uppercase h-12 rounded-xl">Entendi</button>
                         )}
                     </div>
                 }
             >
-                <div className="flex flex-col items-center text-center gap-4">
-                    {modalConfig.type === 'ERROR' && <AlertTriangle size={32} className="text-rose-500 opacity-50" />}
-                    <p className="text-sm text-zinc-400">{modalConfig.message}</p>
+                <div className="p-8 flex flex-col items-center text-center gap-4">
+                    <p className="text-sm text-zinc-400 leading-relaxed">{genericModal.message}</p>
                 </div>
-            </Modal>
+            </Popup>
 
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .custom-scrollbar::-webkit-scrollbar { width: 3px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
-            `}} />
         </div>
     );
 }

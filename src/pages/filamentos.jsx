@@ -1,11 +1,15 @@
 import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from "react";
-import { Scan, AlertTriangle, Trash2, X } from "lucide-react"; // Importei ícones extras
+import { Scan, AlertTriangle, Trash2, X, PackageSearch, Database } from "lucide-react";
+
 // LAYOUT E COMPONENTES GLOBAIS
 import MainSidebar from "../layouts/mainSidebar";
 import Toast from "../components/Toast";
+import Popup from "../components/Popup"; // Componente Unificado
+
 // LÓGICA E STORE (Zustand)
 import { useFilamentStore } from "../features/filamentos/logic/filaments.js";
 import { useLocalWeather } from "../hooks/useLocalWeather";
+
 // COMPONENTES DA FUNCIONALIDADE (FILAMENTOS)
 import StatusFilamentos from "../features/filamentos/components/statusFilamentos";
 import FilamentHeader from "../features/filamentos/components/header";
@@ -25,13 +29,11 @@ export default function FilamentosPage() {
   const { filaments, fetchFilaments, saveFilament, deleteFilament, loading } = useFilamentStore();
 
   const [viewMode, setViewMode] = useState(() => localStorage.getItem(VIEW_MODE_KEY) || DEFAULT_VIEW_MODE);
-  
+
   // Estados de Controle de Modais
   const [modalAberto, setModalAberto] = useState(false);
   const [itemEdicao, setItemEdicao] = useState(null);
   const [itemConsumo, setItemConsumo] = useState(null);
-  
-  // NOVO: Estados para o Modal de Exclusão
   const [confirmacaoExclusao, setConfirmacaoExclusao] = useState({ aberta: false, item: null });
 
   const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
@@ -41,16 +43,7 @@ export default function FilamentosPage() {
   }, []);
 
   useEffect(() => {
-    let isMounted = true;
-    const loadData = async () => {
-      try {
-        await fetchFilaments();
-      } catch (error) {
-        if (isMounted) showToast("Erro ao carregar os filamentos.", "error");
-      }
-    };
-    loadData();
-    return () => { isMounted = false; };
+    fetchFilaments().catch(() => showToast("Erro ao carregar os filamentos.", "error"));
   }, [fetchFilaments, showToast]);
 
   useEffect(() => {
@@ -89,8 +82,6 @@ export default function FilamentosPage() {
       return acc;
     }, {});
 
-    Object.keys(map).forEach(key => map[key].sort((a, b) => (a.nome || "").localeCompare(b.nome || "")));
-
     return {
       grupos: map,
       lowStockCount: lowStock,
@@ -103,7 +94,7 @@ export default function FilamentosPage() {
     setModalAberto(false);
     setItemEdicao(null);
     setItemConsumo(null);
-    setConfirmacaoExclusao({ aberta: false, item: null }); // Fecha modal de exclusão
+    setConfirmacaoExclusao({ aberta: false, item: null });
   }, []);
 
   const aoSalvarFilamento = async (dados) => {
@@ -117,17 +108,9 @@ export default function FilamentosPage() {
     }
   };
 
-  // Gatilho que abre o modal de confirmação
-  const handleOpenDeleteModal = (id) => {
-    const item = filaments.find(f => f.id === id);
-    if (item) setConfirmacaoExclusao({ aberta: true, item });
-  };
-
-  // Execução real da exclusão
   const aoConfirmarExclusao = async () => {
     const { item } = confirmacaoExclusao;
     if (!item) return;
-
     try {
       await deleteFilament(item.id);
       showToast("Material removido com sucesso.");
@@ -155,13 +138,12 @@ export default function FilamentosPage() {
         style={{ marginLeft: `${larguraSidebar}px` }}
       >
         {/* FUNDO DECORATIVO */}
-        <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
-          <div className="absolute inset-0 opacity-[0.1]" style={{
-            backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
-            backgroundSize: '50px 50px',
-            maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
-          }} />
-        </div>
+        <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none opacity-[0.1]" style={{
+          backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
+          backgroundSize: '50px 50px',
+          maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
+        }}
+        />
 
         <FilamentHeader
           busca={busca}
@@ -171,7 +153,7 @@ export default function FilamentosPage() {
           onAddClick={() => { setItemEdicao(null); setModalAberto(true); }}
         />
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 xl:p-12 relative z-10 scroll-smooth">
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-8 xl:p-12 relative z-10">
           <div className="max-w-[1600px] mx-auto space-y-16">
             <div className="animate-in fade-in slide-in-from-top-4 duration-700">
               <StatusFilamentos
@@ -193,7 +175,7 @@ export default function FilamentosPage() {
                     currentHumidity={humidity}
                     acoes={{
                       onEdit: (item) => { setItemEdicao(item); setModalAberto(true); },
-                      onDelete: handleOpenDeleteModal, // Alterado aqui
+                      onDelete: (id) => setConfirmacaoExclusao({ aberta: true, item: filaments.find(f => f.id === id) }),
                       onConsume: setItemConsumo
                     }}
                   />
@@ -201,16 +183,17 @@ export default function FilamentosPage() {
               </div>
             ) : (
               !loading && (
-                <div className="py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-[2rem] bg-zinc-900/10">
-                   <Scan size={48} strokeWidth={1.2} className="text-sky-500/40" />
+                <div className="py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-[2rem] bg-zinc-900/10 opacity-40">
+                  <Scan size={48} strokeWidth={1} className="mb-4" />
+                  <p className="text-[10px] font-black uppercase tracking-[0.4em]">Nenhum material encontrado</p>
                 </div>
               )
             )}
           </div>
         </div>
 
-        {/* --- MODAIS --- */}
-        
+        {/* --- MODAIS DE NEGÓCIO --- */}
+
         <ModalFilamento
           aberto={modalAberto}
           aoFechar={fecharModais}
@@ -225,43 +208,45 @@ export default function FilamentosPage() {
           aoSalvar={aoSalvarFilamento}
         />
 
-        {/* NOVO: Modal de Confirmação de Exclusão Customizado */}
-        {confirmacaoExclusao.aberta && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
-            <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-              <div className="p-8">
-                <div className="flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-red-500/10 mx-auto">
-                  <AlertTriangle className="text-red-500" size={32} />
-                </div>
-                
-                <h3 className="text-xl font-bold text-center text-zinc-100 mb-2">
-                  Excluir Material?
-                </h3>
-                
-                <p className="text-center text-zinc-400 text-sm leading-relaxed">
-                  Você está prestes a remover <span className="text-zinc-200 font-semibold">"{confirmacaoExclusao.item?.nome}"</span>. 
-                  Essa ação é permanente e não poderá ser desfeita.
-                </p>
-              </div>
-
-              <div className="flex gap-3 p-6 bg-zinc-900/50 border-t border-zinc-800">
-                <button
-                  onClick={fecharModais}
-                  className="flex-1 px-6 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold uppercase tracking-widest transition-all"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={aoConfirmarExclusao}
-                  className="flex-1 px-6 py-4 rounded-2xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-red-900/20 flex items-center justify-center gap-2"
-                >
-                  <Trash2 size={16} />
-                  Excluir
-                </button>
-              </div>
+        {/* --- POPUP DE CONFIRMAÇÃO DE EXCLUSÃO (UNIFICADO) --- */}
+        <Popup
+          isOpen={confirmacaoExclusao.aberta}
+          onClose={fecharModais}
+          title="Excluir Material?"
+          subtitle="Gestão de Insumos"
+          icon={AlertTriangle}
+          footer={
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={fecharModais}
+                className="flex-1 h-12 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={aoConfirmarExclusao}
+                className="flex-1 h-12 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2"
+              >
+                <Trash2 size={16} /> Confirmar Exclusão
+              </button>
+            </div>
+          }
+        >
+          <div className="p-8 text-center space-y-4">
+            <p className="text-zinc-400 text-sm font-medium leading-relaxed">
+              Você está prestes a remover permanentemente o material <br />
+              <span className="text-zinc-100 font-bold uppercase tracking-tight">
+                "{confirmacaoExclusao.item?.nome}"
+              </span>
+            </p>
+            <div className="p-4 rounded-2xl bg-rose-500/5 border border-rose-500/10">
+              <p className="text-[10px] text-rose-500/80 font-black uppercase tracking-widest">
+                Atenção: Esta ação não pode ser desfeita e os dados históricos vinculados a este lote serão afetados.
+              </p>
             </div>
           </div>
-        )}
+        </Popup>
+
       </main>
     </div>
   );
