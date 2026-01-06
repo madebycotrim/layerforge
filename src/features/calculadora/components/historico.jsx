@@ -20,7 +20,10 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
 
     const [busca, setBusca] = useState("");
 
-    // Estado para o Popup de Confirmação
+    // --- CONFIGURAÇÕES DO SISTEMA INTELIGENTE ---
+    const MARGEM_MINIMA_IDEAL = 20; // % abaixo disso o sistema alerta risco
+
+    // Estado para o Popup de Confirmação Unificado
     const [confirmacao, setConfirmacao] = useState({
         open: false,
         title: "",
@@ -53,14 +56,18 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
         }
     };
 
-    // Handlers de Ações
-    const perguntarAprovacao = (projeto) => {
+    // --- HANDLERS DE AÇÕES COM LÓGICA INTELIGENTE ---
+    const perguntarAprovacao = (projeto, margem) => {
+        const margemRiscada = margem < MARGEM_MINIMA_IDEAL;
+
         setConfirmacao({
             open: true,
-            title: "Confirmar Aprovação",
-            message: "Ao aprovar, os insumos serão debitados do estoque e o status será atualizado. Deseja continuar?",
-            icon: CheckCircle2,
-            variant: "success",
+            title: margemRiscada ? "Atenção: Margem Crítica" : "Confirmar Aprovação",
+            message: margemRiscada 
+                ? `Este projeto possui apenas ${Math.round(margem)}% de margem. Tem certeza que deseja aprovar este orçamento com baixa rentabilidade?`
+                : "Deseja aprovar este orçamento? Os insumos serão baixados do estoque e o status será atualizado.",
+            icon: margemRiscada ? AlertTriangle : CheckCircle2,
+            variant: margemRiscada ? "danger" : "success",
             onConfirm: () => {
                 aprovarOrcamento(projeto);
                 fecharConfirmacao();
@@ -139,7 +146,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-600 group-focus-within:text-sky-500 transition-colors" size={16} />
                         <input
                             className="w-full bg-zinc-900/50 border border-zinc-800 rounded-xl pl-10 pr-4 h-11 text-xs font-medium text-zinc-200 outline-none focus:border-sky-500/40 focus:ring-4 focus:ring-sky-500/5 transition-all"
-                            placeholder="Localizar por nome do projeto..."
+                            placeholder="Pesquisar orçamento..."
                             value={busca}
                             onChange={(e) => setBusca(e.target.value)}
                         />
@@ -159,10 +166,10 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                             return (
                                 <div key={projeto.id} className="group relative bg-zinc-900/40 border border-white/5 rounded-2xl p-4 transition-all duration-300 hover:bg-zinc-900/60 hover:border-white/10">
                                     
-                                    {/* Indicador de Status Lateral */}
+                                    {/* Indicador de Status Lateral (Pulsa se a margem for baixa e não aprovado) */}
                                     <div className={`absolute left-0 top-4 bottom-4 w-1 rounded-r-full transition-all duration-500 ${
                                         isAprovado ? 'bg-sky-500 shadow-[2px_0_10px_rgba(14,165,233,0.4)]' : 
-                                        margem > 25 ? 'bg-emerald-500' : 'bg-amber-500'
+                                        margem >= MARGEM_MINIMA_IDEAL ? 'bg-emerald-500' : 'bg-red-500 animate-pulse'
                                     }`} />
 
                                     {/* Cabeçalho do Card */}
@@ -181,7 +188,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
 
                                         <div className="text-right shrink-0">
                                             <div className={`text-[9px] font-black flex items-center justify-end gap-1 mb-0.5 ${
-                                                margem > 0 ? 'text-emerald-400' : 'text-rose-400'
+                                                margem >= MARGEM_MINIMA_IDEAL ? 'text-emerald-400' : 'text-red-400'
                                             }`}>
                                                 <TrendingUp size={10} /> {Math.round(margem)}%
                                             </div>
@@ -191,7 +198,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                         </div>
                                     </div>
 
-                                    {/* Especificações Técnicas em Linha */}
+                                    {/* Especificações Técnicas */}
                                     <div className="flex gap-4 mb-4 pl-2 text-zinc-500">
                                         <div className="flex items-center gap-1.5">
                                             <Package size={12} className="opacity-50" />
@@ -207,31 +214,35 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                         </div>
                                     </div>
 
-                                    {/* Ações do Card */}
+                                    {/* Ações */}
                                     <div className="flex gap-1.5">
                                         {!isAprovado ? (
                                             <button
                                                 type="button"
-                                                onClick={() => perguntarAprovacao(projeto)}
-                                                className="flex-1 h-9 rounded-lg bg-emerald-600/10 border border-emerald-500/20 text-emerald-500 text-[10px] font-black uppercase tracking-wider hover:bg-emerald-600 hover:text-white transition-all flex items-center justify-center gap-1.5 active:scale-95"
+                                                onClick={() => perguntarAprovacao(projeto, margem)}
+                                                className={`flex-1 h-9 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
+                                                    margem < MARGEM_MINIMA_IDEAL 
+                                                    ? 'bg-red-600/10 border border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white' 
+                                                    : 'bg-emerald-600/10 border border-emerald-500/20 text-emerald-500 hover:bg-emerald-600 hover:text-white'
+                                                }`}
                                             >
-                                                <Check size={14} strokeWidth={3} /> Aprovar
+                                                <Check size={14} strokeWidth={3} /> {margem < MARGEM_MINIMA_IDEAL ? 'Risco' : 'Aprovar'}
                                             </button>
                                         ) : (
                                             <button
                                                 type="button"
                                                 onClick={() => { onRestore(projeto); onClose(); }}
-                                                className="flex-1 h-9 rounded-lg bg-sky-600 border border-sky-400/20 text-white text-[10px] font-black uppercase tracking-wider hover:bg-sky-500 transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-sky-900/20 active:scale-95"
+                                                className="flex-1 h-9 rounded-lg bg-sky-600 border border-sky-400/20 text-white text-[10px] font-black uppercase tracking-wider hover:bg-sky-500 transition-all flex items-center justify-center gap-1.5 shadow-lg active:scale-95"
                                             >
-                                                <ExternalLink size={14} /> Ver Orçamento
+                                                <ExternalLink size={14} /> Abrir Orçamento
                                             </button>
                                         )}
 
                                         <button
                                             type="button"
                                             onClick={() => { onRestore(projeto); onClose(); }}
-                                            title="Restaurar dados no simulador"
-                                            className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-800/40 text-zinc-400 hover:text-white hover:bg-zinc-800 transition-all active:scale-90"
+                                            title="Restaurar dados"
+                                            className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-800/40 text-zinc-400 hover:text-white transition-all active:scale-90"
                                         >
                                             <RotateCcw size={14} />
                                         </button>
@@ -239,8 +250,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                         <button
                                             type="button"
                                             onClick={() => perguntarExclusao(projeto.id)}
-                                            title="Excluir do histórico"
-                                            className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-800/40 text-zinc-600 hover:text-rose-500 hover:bg-rose-500/10 transition-all active:scale-90"
+                                            className="w-9 h-9 flex items-center justify-center rounded-lg bg-zinc-800/40 text-zinc-600 hover:text-rose-500 transition-all active:scale-90"
                                         >
                                             <Trash2 size={14} />
                                         </button>
@@ -256,26 +266,26 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                     )}
                 </div>
 
-                {/* Botão de Purgar (Só aparece se houver projetos) */}
+                {/* Footer Purgar Banco */}
                 {projetos.length > 0 && (
                     <div className="p-4 border-t border-white/5 bg-zinc-900/10">
                         <button
                             type="button"
                             onClick={perguntarLimparTudo}
-                            className="w-full h-10 rounded-xl border border-rose-500/10 text-rose-500/40 hover:text-rose-400 hover:border-rose-500/30 text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all group"
+                            className="w-full h-10 rounded-xl border border-rose-500/10 text-rose-500/40 hover:text-rose-400 text-[9px] font-black uppercase tracking-[0.2em] flex items-center justify-center gap-2 transition-all group"
                         >
-                            <Trash2 size={14} className="group-hover:animate-pulse" /> Purgar Banco de Dados
+                            <Trash2 size={14} className="group-hover:animate-pulse" /> Purgar Histórico
                         </button>
                     </div>
                 )}
             </aside>
 
-            {/* Popup de Confirmação Unificado */}
+            {/* Popup de Validação */}
             <Popup
                 isOpen={confirmacao.open}
                 onClose={fecharConfirmacao}
                 title={confirmacao.title}
-                subtitle="Ação de Sistema"
+                subtitle="Validação de Sistema"
                 icon={confirmacao.icon}
                 footer={
                     <div className="flex gap-2 w-full">
@@ -288,7 +298,7 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                         <button
                             onClick={confirmacao.onConfirm}
                             className={`flex-[2] h-12 rounded-xl text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-xl active:scale-95 ${
-                                confirmacao.variant === 'danger' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-sky-600 hover:bg-sky-500'
+                                confirmacao.variant === 'danger' ? 'bg-red-600 hover:bg-red-500' : 'bg-sky-600 hover:bg-sky-500'
                             }`}
                         >
                             Confirmar
@@ -308,7 +318,6 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                 .custom-scrollbar::-webkit-scrollbar { width: 3px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
-                .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(14,165,233,0.2); }
             `}} />
         </>
     );
