@@ -138,12 +138,17 @@ export default function FilamentosPage() {
         style={{ marginLeft: `${larguraSidebar}px` }}
       >
         {/* FUNDO DECORATIVO */}
-        <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none opacity-[0.1]" style={{
-          backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
-          backgroundSize: '50px 50px',
-          maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
-        }}
-        />
+        <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
+          <div className="absolute inset-0 opacity-[0.1]" style={{
+            backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
+            backgroundSize: '50px 50px',
+            maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
+          }} />
+
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1600px] h-full">
+            <div className="absolute top-0 left-0 h-full w-px bg-gradient-to-b from-sky-500/30 via-transparent to-transparent" />
+          </div>
+        </div>
 
         <FilamentHeader
           busca={busca}
