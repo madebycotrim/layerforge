@@ -1,5 +1,5 @@
-import { useState, useEffect, useMemo, useDeferredValue } from "react";
-import { Printer, ChevronDown, Scan } from "lucide-react";
+import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from "react";
+import { Printer, ChevronDown, Scan, AlertTriangle, Trash2, X } from "lucide-react";
 
 // --- LAYOUT E INTERFACE GLOBAL ---
 import MainSidebar from "../layouts/mainSidebar";
@@ -86,6 +86,10 @@ export default function ImpressorasPage() {
     const [itemParaEdicao, setItemParaEdicao] = useState(null);
     const [impressoraEmDiagnostico, setImpressoraEmDiagnostico] = useState(null);
     const [checklists, setChecklists] = useState({});
+    
+    // Estados para o Modal de Exclusão
+    const [confirmacaoExclusao, setConfirmacaoExclusao] = useState({ aberta: false, item: null });
+
     const [toast, setToast] = useState({ visible: false, message: '', type: 'success' });
 
     useEffect(() => {
@@ -142,8 +146,28 @@ export default function ImpressorasPage() {
             setModalAberto(false);
             setToast({ visible: true, message: "Impressora salva com sucesso!", type: 'success' });
         } catch (erro) {
-            console.error(erro);
             setToast({ visible: true, message: "Ops! Não conseguimos salvar a impressora.", type: 'error' });
+        }
+    };
+
+    // Handler para abrir o modal de exclusão
+    const handleOpenDeleteModal = (id) => {
+        const item = printers.find(p => p.id === id);
+        if (item) setConfirmacaoExclusao({ aberta: true, item });
+    };
+
+    // Execução real da exclusão
+    const aoConfirmarExclusao = async () => {
+        const { item } = confirmacaoExclusao;
+        if (!item) return;
+
+        try {
+            await removePrinter(item.id);
+            setToast({ visible: true, message: "Impressora removida com sucesso.", type: 'success' });
+        } catch (e) {
+            setToast({ visible: true, message: "Erro ao remover a impressora.", type: 'error' });
+        } finally {
+            setConfirmacaoExclusao({ aberta: false, item: null });
         }
     };
 
@@ -161,9 +185,9 @@ export default function ImpressorasPage() {
                     delete novo[id];
                     return novo;
                 });
-                setToast({ visible: true, message: "Manutenção finalizada e contador de horas zerado!", type: 'success' });
+                setToast({ visible: true, message: "Manutenção finalizada!", type: 'success' });
             } catch (erro) {
-                setToast({ visible: true, message: "Tivemos um problema ao finalizar a manutenção.", type: 'error' });
+                setToast({ visible: true, message: "Erro ao finalizar manutenção.", type: 'error' });
             }
         }
         setImpressoraEmDiagnostico(null);
@@ -178,29 +202,20 @@ export default function ImpressorasPage() {
             )}
 
             <main className="flex-1 flex flex-col relative transition-all duration-300 ease-in-out" style={{ marginLeft: `${larguraSidebar}px` }}>
-                {/* FUNDO DECORATIVO */}
                 <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
                     <div className="absolute inset-0 opacity-[0.1]" style={{
                         backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
                         backgroundSize: '50px 50px',
                         maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
                     }} />
-                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1600px] h-full">
-                        <div className="absolute top-0 left-0 h-full w-px bg-gradient-to-b from-emerald-500/30 via-transparent to-transparent" />
-                    </div>
                 </div>
 
                 <HeaderImpressoras busca={busca} setBusca={setBusca} onAddClick={() => { setItemParaEdicao(null); setModalAberto(true); }} />
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar p-8 xl:p-12 relative z-10 scroll-smooth">
                     <div className="max-w-[1600px] mx-auto space-y-16">
-
                         <div className="animate-in fade-in slide-in-from-top-4 duration-700">
-                            <StatusImpressoras
-                                totalCount={printers.length}
-                                criticalCount={contagemCritica}
-                                stats={estatisticas}
-                            />
+                            <StatusImpressoras totalCount={printers.length} criticalCount={contagemCritica} stats={estatisticas} />
                         </div>
 
                         {Object.entries(gruposMapeados).length > 0 ? (
@@ -212,7 +227,7 @@ export default function ImpressorasPage() {
                                         items={lista}
                                         acoes={{
                                             onEdit: (p) => { setItemParaEdicao(p); setModalAberto(true); },
-                                            onDelete: (id) => removePrinter(id),
+                                            onDelete: handleOpenDeleteModal, // Integrado com o modal
                                             onResetMaint: (p) => setImpressoraEmDiagnostico(p),
                                             onToggleStatus: updatePrinterStatus
                                         }}
@@ -221,30 +236,22 @@ export default function ImpressorasPage() {
                             </div>
                         ) : (
                             !loading && (
-                                <div className="py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-[2rem] bg-zinc-900/10 transition-all hover:bg-zinc-900/20 animate-in fade-in slide-in-from-top-4 duration-700">
-                                    <div className="relative mb-6">
-                                        <div className="absolute inset-0 bg-emerald-500/10 blur-2xl rounded-full" />
-                                        <Scan size={48} strokeWidth={1.2} className="text-emerald-500/40 relative z-10" />
-                                    </div>
-
-                                    <div className="text-center">
-                                        <h3 className="text-zinc-300 text-xs font-bold uppercase tracking-[0.2em]">
-                                            Nenhuma impressora encontrada
-                                        </h3>
-                                        <p className="text-zinc-600 text-[10px] uppercase mt-2 tracking-widest">
-                                            Adicione uma impressora para começar a monitorar sua produção
-                                        </p>
-                                    </div>
+                                <div className="py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-[2rem] bg-zinc-900/10">
+                                    <Scan size={48} strokeWidth={1.2} className="text-emerald-500/40" />
                                 </div>
                             )
                         )}
                     </div>
                 </div>
 
+                {/* MODAIS EXISTENTES */}
                 <PrinterModal aberto={modalAberto} aoFechar={() => { setModalAberto(false); setItemParaEdicao(null); }} aoSalvar={aoSalvar} dadosIniciais={itemParaEdicao} />
 
                 {impressoraEmDiagnostico && (
-                    <DiagnosticsModal printer={impressoraEmDiagnostico} completedTasks={new Set(checklists[impressoraEmDiagnostico.id] || [])} onToggleTask={(label) => {
+                    <DiagnosticsModal 
+                        printer={impressoraEmDiagnostico} 
+                        completedTasks={new Set(checklists[impressoraEmDiagnostico.id] || [])} 
+                        onToggleTask={(label) => {
                             setChecklists(prev => {
                                 const atual = new Set(prev[impressoraEmDiagnostico.id] || []);
                                 if (atual.has(label)) atual.delete(label); else atual.add(label);
@@ -254,6 +261,44 @@ export default function ImpressorasPage() {
                         onClose={() => setImpressoraEmDiagnostico(null)}
                         onResolve={finalizarReparo}
                     />
+                )}
+
+                {/* NOVO: Modal de Confirmação de Exclusão */}
+                {confirmacaoExclusao.aberta && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/80 backdrop-blur-sm animate-in fade-in duration-200">
+                        <div className="w-full max-w-md bg-zinc-900 border border-zinc-800 rounded-[2.5rem] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+                            <div className="p-8">
+                                <div className="flex items-center justify-center w-16 h-16 mb-6 rounded-full bg-red-500/10 mx-auto">
+                                    <AlertTriangle className="text-red-500" size={32} />
+                                </div>
+                                
+                                <h3 className="text-xl font-bold text-center text-zinc-100 mb-2">
+                                    Remover Impressora?
+                                </h3>
+                                
+                                <p className="text-center text-zinc-400 text-sm leading-relaxed">
+                                    Você está prestes a remover <span className="text-zinc-200 font-semibold">"{confirmacaoExclusao.item?.name || confirmacaoExclusao.item?.nome}"</span>. 
+                                    Isso apagará o histórico de impressões e horas desta máquina.
+                                </p>
+                            </div>
+
+                            <div className="flex gap-3 p-6 bg-zinc-900/50 border-t border-zinc-800">
+                                <button
+                                    onClick={() => setConfirmacaoExclusao({ aberta: false, item: null })}
+                                    className="flex-1 px-6 py-4 rounded-2xl bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-xs font-bold uppercase tracking-widest transition-all"
+                                >
+                                    Manter
+                                </button>
+                                <button
+                                    onClick={aoConfirmarExclusao}
+                                    className="flex-1 px-6 py-4 rounded-2xl bg-red-600 hover:bg-red-500 text-white text-xs font-bold uppercase tracking-widest transition-all shadow-lg shadow-red-900/20 flex items-center justify-center gap-2"
+                                >
+                                    <Trash2 size={16} />
+                                    Remover
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </main>
         </div>
