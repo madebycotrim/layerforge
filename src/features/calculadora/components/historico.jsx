@@ -159,19 +159,19 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                     key={projeto.id}
                                     className="group relative bg-zinc-900/40 border border-white/5 rounded-[2rem] p-5 transition-all duration-300 hover:bg-zinc-900/60 hover:border-white/10"
                                 >
-                                    {/* Indicador Lateral de Status */}
-                                    <div className={`absolute left-0 top-8 bottom-8 w-1 rounded-r-full transition-all duration-500 ${isAprovado ? 'bg-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.5)]' :
+                                    {/* Indicador Lateral Refinado */}
+                                    <div className={`absolute left-0 top-6 bottom-6 w-1 rounded-r-full transition-all duration-500 ${isAprovado ? 'bg-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.4)]' :
                                         margemEfetiva > 20 ? 'bg-emerald-500' : 'bg-amber-500'
                                         }`} />
 
                                     <div className="flex justify-between items-start mb-6">
                                         <div className="min-w-0 pl-2">
                                             <h3 className="text-sm font-bold text-white uppercase tracking-tight truncate mb-1">
-                                                {projeto.label || "Projeto sem nome"}
+                                                {projeto.label || "Sem nome"}
                                             </h3>
                                             <div className="flex items-center gap-2 text-zinc-500">
                                                 <Calendar size={12} />
-                                                <span className="text-[10px] font-bold uppercase tracking-widest">
+                                                <span className="text-[10px] font-medium tracking-wider">
                                                     {formatarDataLocal(projeto.timestamp || projeto.created_at)}
                                                 </span>
                                             </div>
@@ -188,48 +188,54 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                         </div>
                                     </div>
 
-                                    {/* Info Técnica em Grid */}
+                                    {/* Grid de Specs Técnicas */}
                                     <div className="grid grid-cols-2 gap-4 mb-6 px-2">
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center text-zinc-500 group-hover:text-sky-500 transition-colors">
+                                            <div className="w-8 h-8 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center text-zinc-500">
                                                 <Package size={14} />
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-zinc-300 font-mono leading-tight">{pesoTotalPedido}g</span>
-                                                <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Massa Total</span>
+                                                <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Insumo Total</span>
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center text-zinc-500 group-hover:text-sky-500 transition-colors">
+                                            <div className="w-8 h-8 rounded-xl bg-zinc-950 border border-white/5 flex items-center justify-center text-zinc-500">
                                                 <Clock size={14} />
                                             </div>
                                             <div className="flex flex-col">
                                                 <span className="text-[10px] font-bold text-zinc-300 font-mono leading-tight">{horas}h{minutos > 0 ? `${minutos}m` : '00'}</span>
-                                                <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Tempo Total</span>
+                                                <span className="text-[8px] font-black text-zinc-600 uppercase tracking-widest">Tempo Peça</span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Ações (Botão combinando com a Sidebar/Cloud) */}
+                                    {/* Ações do Card */}
                                     <div className="flex gap-2">
                                         {!isAprovado ? (
                                             <button
                                                 type="button"
                                                 onClick={() => perguntarAprovacao(projeto)}
-                                                className={`flex-1 h-10 rounded-xl text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 ${margemEfetiva > 20 ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20' : 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20'}`}
+                                                className={`flex-1 h-10 rounded-xl text-white text-[10px] font-black uppercase tracking-widest 
+        flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95
+        ${margemEfetiva > 20
+                                                        ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-900/20'
+                                                        : 'bg-amber-600 hover:bg-amber-500 shadow-amber-900/20'
+                                                    }`}
                                             >
                                                 <Check size={14} strokeWidth={3} /> Aprovar Projeto
                                             </button>
                                         ) : (
-                                            <div className="flex-1 h-10 rounded-xl bg-zinc-950 border border-white/5 text-zinc-600 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
-                                                <CheckCircle2 size={14} className="text-sky-500" /> Orçamento Aprovado
+                                            <div className="flex-1 h-10 rounded-xl bg-zinc-950/50 border border-white/5 text-zinc-500 text-[10px] font-black uppercase tracking-widest flex items-center justify-center gap-2">
+                                                <CheckCircle2 size={14} className="text-sky-500" /> Sincronizado
                                             </div>
                                         )}
 
                                         <button
                                             type="button"
                                             onClick={() => { onRestore(projeto); onClose(); }}
-                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all"
+                                            title="Restaurar"
+                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-500 hover:text-white hover:bg-zinc-800 transition-all active:scale-90"
                                         >
                                             <RotateCcw size={16} />
                                         </button>
@@ -237,7 +243,8 @@ export default function GavetaHistorico({ open, onClose, onRestore }) {
                                         <button
                                             type="button"
                                             onClick={() => perguntarExclusao(projeto.id)}
-                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-600 hover:text-rose-500 hover:border-rose-500/30 transition-all"
+                                            title="Excluir"
+                                            className="w-10 h-10 flex items-center justify-center rounded-xl bg-zinc-900 border border-white/5 text-zinc-600 hover:text-rose-500 hover:border-rose-500/20 transition-all active:scale-90"
                                         >
                                             <Trash2 size={16} />
                                         </button>
