@@ -32,12 +32,15 @@ const TooltipPortal = ({ texto, referenciaAlvo, visivel }) => {
     );
 };
 
-/* ---------- SUB-COMPONENTE: MODAL ESTILO CARD ---------- */
+/* ---------- SUB-COMPONENTE: MODAL QUE BORRA TUDO ---------- */
 const ModalEstiloResumo = ({ isOpen, onClose, title, children, actions }) => {
     if (!isOpen) return null;
+
     return (
-        <div className="absolute inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl w-full max-w-[360px] overflow-hidden shadow-2xl flex flex-col max-h-[90%]">
+        <div className="fixed inset-0 z-[999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+            
+            <div className="bg-[#0c0c0e] border border-white/10 rounded-3xl w-full max-w-[360px] overflow-hidden shadow-2xl flex flex-col max-h-[90%] animate-in zoom-in-95 duration-300">
+                
                 <div className="px-6 py-4 border-b border-white/[0.03] flex justify-between items-center shrink-0">
                     <span className="text-[10px] font-black uppercase tracking-[0.2em] text-zinc-400">{title}</span>
                     <button onClick={onClose} className="text-zinc-600 hover:text-white transition-colors">
@@ -288,15 +291,6 @@ export default function PainelConfiguracoesCalculo({
                 title="Personalizar Mensagem"
                 actions={
                     <div className="flex flex-col gap-3">
-                        <div className="grid grid-cols-2 gap-2 h-11">
-                            <button onClick={copiarExemplo} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-400 hover:text-white flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all active:scale-95">
-                                {copiado ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
-                                {copiado ? "Copiado" : "Copiar"}
-                            </button>
-                            <button disabled className="rounded-xl bg-[#10b981]/10 border border-[#10b981]/20 text-[#10b981]/50 flex items-center justify-center gap-2 text-[10px] font-black uppercase cursor-not-allowed">
-                                <Send size={14} /> Enviar Agora
-                            </button>
-                        </div>
                         <button
                             onClick={lidarSalvarWhatsApp}
                             className="w-full h-11 rounded-xl bg-zinc-800/50 border border-white/10 text-zinc-300 hover:text-white hover:bg-zinc-800 flex items-center justify-center gap-2 text-[10px] font-black uppercase transition-all shadow-lg active:scale-95"

@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { formatCurrency } from "../../../utils/numbers";
 import {
-    Save, Calculator, FileText, Loader2, Wand2, X, 
-    MessageCircle, Target, Package, Zap, Clock, Wrench, 
+    Save, Calculator, FileText, Loader2, Wand2, X,
+    MessageCircle, Target, Package, Zap, Clock, Wrench,
     Landmark, RotateCcw, Send, Copy, Check, Settings2,
     Truck, ShoppingBag, Tag, ShieldAlert, Box
 } from "lucide-react";
@@ -53,7 +53,7 @@ const Modal = ({ isOpen, onClose, title, children, actions }) => {
 };
 
 /* ---------- COMPONENTE PRINCIPAL ---------- */
-export default function Resumo({ resultados = {}, entradas = {}, salvar = () => { }, onOpenSettings }) {
+export default function Resumo({ resultados = {}, entradas = {}, salvar = () => { }, onGoToSettings }) {
     const {
         lucroBrutoUnitario = 0, precoSugerido = 0, precoComDesconto = 0, tempoTotalHoras = 0,
         custoMaterial = 0, custoEnergia = 0, custoMaquina = 0, custoMaoDeObra = 0,
@@ -70,7 +70,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
     const [precoArredondado, setPrecoArredondado] = useState(null);
     const [copiado, setCopiado] = useState(false);
     const [copiadoPreco, setCopiadoPreco] = useState(false);
-    
+
     const [whatsappModal, setWhatsappModal] = useState(false);
     const [mensagemEditavel, setMensagemEditavel] = useState("");
 
@@ -101,7 +101,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
         const current = precoArredondado || precoBase;
         const valorInteiro = Math.floor(current);
         const centavos = Number((current % 1).toFixed(2));
-        
+
         let next;
         if (centavos < 0.90) {
             next = valorInteiro + 0.90;
@@ -292,7 +292,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                         {estaGravando ? <Loader2 className="animate-spin" size={16} /> : <Save size={18} />}
                         {estaSalvo ? "PROJETO SALVO" : "GERAR E SALVAR"}
                     </button>
-                    <button 
+                    <button
                         onClick={abrirModalWhatsapp}
                         disabled={!temDados}
                         className="w-14 h-14 rounded-2xl bg-[#10b981] hover:bg-[#0da472] text-white flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-emerald-500/10 disabled:opacity-20"
@@ -340,8 +340,8 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                         <p className="text-[8px] text-zinc-600 uppercase font-bold leading-tight">
                             Dica: Você pode editar o texto acima livremente antes de enviar para o cliente.
                         </p>
-                        <button 
-                            onClick={() => { setWhatsappModal(false); onOpenSettings(); }}
+                        <button
+                            onClick={() => { setWhatsappModal(false); onGoToSettings(); }}
                             className="flex items-center gap-2 text-[8px] font-black text-zinc-500 hover:text-sky-400 uppercase tracking-widest transition-colors w-fit"
                         >
                             <Settings2 size={12} /> Alterar modelo padrão nas configurações
