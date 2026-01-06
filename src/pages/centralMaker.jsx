@@ -1,11 +1,23 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
-    Search, ChevronRight, Mail, Copy, CheckCircle2, X, ShieldCheck, Terminal, Activity, Cpu, Clock, Factory, AlertTriangle, Users, CheckCircle, Coins, Truck, HeartPulse, Hash, Gauge, Settings, Code, Send, MessageSquare, Globe
+    Search, ChevronRight, Mail, X, Terminal, Activity, AlertTriangle, 
+    Coins, Code, Send, Globe, Info, ClipboardCheck, Factory, CheckCircle2
 } from 'lucide-react';
 
+import { WIKI_DATA } from '../utils/wikiData';
 import MainSidebar from "../layouts/mainSidebar";
 
-// --- MÁQUINA DE ESCREVER (HERO) REFINADA ---
+// --- COMPONENTES VISUAIS (ESTILO HUD) ---
+
+const HUDOverlay = () => (
+    <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.02]"
+        style={{
+            backgroundImage: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))',
+            backgroundSize: '100% 4px, 3px 100%'
+        }}
+    />
+);
+
 const TypewriterHero = ({ phrases, speed = 100, delay = 2500 }) => {
     const [phraseIndex, setPhraseIndex] = useState(0);
     const [subIndex, setSubIndex] = useState(0);
@@ -43,303 +55,6 @@ const TypewriterHero = ({ phrases, speed = 100, delay = 2500 }) => {
     );
 };
 
-const HUDOverlay = () => (
-    <div className="absolute inset-0 pointer-events-none z-20 opacity-[0.02]"
-        style={{
-            backgroundImage: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))',
-            backgroundSize: '100% 4px, 3px 100%'
-        }}
-    />
-);
-
-// --- DATA: CONHECIMENTO AVANÇADO PARA MAKERS BR (ADAPTADO PARA SISTEMA HUD) ---
-const WIKI_DATA = [
-    // =====================================================
-    // PRODUÇÃO & CONFIABILIDADE -> CATEGORIA: SETUP
-    // =====================================================
-    {
-        id: 'MOD-10',
-        title: "Produção em Escala",
-        category: "Produção",
-        type: 'setup',
-        icon: Factory,
-        color: "sky",
-        topics: [
-            {
-                id: 'pr1',
-                title: "Batch inteligente",
-                content: "Agrupe peças por material, cor e perfil. Cada troca de filamento consome tempo, gera risco de erro e quebra o fluxo produtivo.",
-                level: "Produção",
-                updated: "MAR/2026",
-                gcode: "M117 Iniciando_Batch"
-            },
-            {
-                id: 'pr2',
-                title: "Print longo = risco",
-                content: "Impressões acima de 12h devem ter margem maior. Tempo longo aumenta risco elétrico, mecânico e de falha humana.",
-                level: "Gestão de Risco",
-                updated: "MAR/2026"
-            },
-            {
-                id: 'pr3',
-                title: "Redundância mínima",
-                content: "Tenha bico, PTFE, correia e sensor reserva. Parada por peça barata custa mais que o estoque.",
-                level: "Confiabilidade",
-                updated: "FEV/2026"
-            },
-            {
-                id: 'pr4',
-                title: "Produção noturna",
-                content: "Imprima à noite apenas com máquina revisada, filamento seco e monitoramento remoto. Segurança contra incêndio é prioridade.",
-                level: "Segurança",
-                updated: "JAN/2026",
-                gcode: "M104 S0 ; Desligar Hotend"
-            }
-        ]
-    },
-
-    // =====================================================
-    // FALHAS CLÁSSICAS -> CATEGORIA: CRÍTICO
-    // =====================================================
-    {
-        id: 'MOD-11',
-        title: "Falhas e Prejuízos",
-        category: "Erros Comuns",
-        type: 'critico',
-        icon: AlertTriangle,
-        color: "rose",
-        topics: [
-            {
-                id: 'e1',
-                title: "Bico Entupido",
-                content: "A impressão começa boa e piora com o tempo. Limpe ou troque o bico antes de produções longas.",
-                level: "Crítico",
-                updated: "JAN/2026",
-                gcode: "M109 S240 ; Heat for Cold Pull"
-            },
-            {
-                id: 'e2',
-                title: "Extrusor patinando",
-                content: "Clique metálico indica tensão errada, engrenagem suja ou filamento ruim. Ignorar gera peça fraca.",
-                level: "Alerta",
-                updated: "FEV/2026"
-            },
-            {
-                id: 'e3',
-                title: "Warping silencioso",
-                content: "Peça solta levemente da mesa e só falha horas depois. Brim correto e mesa limpa evitam prejuízo oculto.",
-                level: "Prevenção",
-                updated: "MAR/2026",
-                gcode: "M140 S65 ; Boost Bed Temp"
-            },
-            {
-                id: 'e4',
-                title: "Perfil errado",
-                content: "Perfil bom para PLA não serve para PETG ou ABS. Copiar perfil sem ajuste gera falha imprevisível.",
-                level: "Erro Comum",
-                updated: "MAR/2026"
-            }
-        ]
-    },
-
-    // =====================================================
-    // RELAÇÃO COM CLIENTE -> CATEGORIA: RENTABILIDADE (LUCRO)
-    // =====================================================
-    {
-        id: 'MOD-12',
-        title: "Clientes e Expectativas",
-        category: "Comercial",
-        type: 'lucro',
-        icon: Users,
-        color: "emerald",
-        topics: [
-            {
-                id: 'c1',
-                title: "Alinhe expectativa",
-                content: "Explique linhas de camada, tolerâncias e acabamento antes de imprimir. Educação evita retrabalho.",
-                level: "Essencial",
-                updated: "JAN/2026"
-            },
-            {
-                id: 'c2',
-                title: "Amostra de Validação",
-                content: "Miniatura ou trecho crítico validado evita prejuízo em peças grandes e caras.",
-                level: "Estratégia",
-                updated: "FEV/2026"
-            },
-            {
-                id: 'c3',
-                title: "Escopo fechado",
-                content: "Defina claramente o que está incluso. Alteração de STL após orçamento é novo serviço.",
-                level: "Proteção",
-                updated: "MAR/2026"
-            },
-            {
-                id: 'c4',
-                title: "Prazos Realistas",
-                content: "Clientes que pressionam prazo irreal costumam reclamar mais. Cuidado ao aceitar.",
-                level: "Experiência",
-                updated: "MAR/2026"
-            }
-        ]
-    },
-
-    // =====================================================
-    // PADRÕES DE QUALIDADE -> CATEGORIA: SETUP
-    // =====================================================
-    {
-        id: 'MOD-13',
-        title: "Qualidade Profissional",
-        category: "Padrão",
-        type: 'setup',
-        icon: CheckCircle,
-        color: "sky",
-        topics: [
-            {
-                id: 'q1',
-                title: "Checklist pré-print",
-                content: "Mesa limpa, bico ok, perfil correto, filamento seco. Dois minutos evitam horas de prejuízo.",
-                level: "Rotina",
-                updated: "JAN/2026",
-                gcode: "G28 ; Home & Check"
-            },
-            {
-                id: 'q2',
-                title: "Consistência Vende",
-                content: "O cliente aceita linhas de impressão, mas não aceita variação entre peças do mesmo pedido.",
-                level: "Qualidade",
-                updated: "FEV/2026"
-            },
-            {
-                id: 'q3',
-                title: "Teste de Produção",
-                content: "Primeira peça é piloto. Só produza em lote após validar peso, tempo e acabamento.",
-                level: "Controle",
-                updated: "MAR/2026"
-            },
-            {
-                id: 'q4',
-                title: "Registro de Parâmetros",
-                content: "Anote perfil, material e ajustes de cada projeto. Repetibilidade é lucro.",
-                level: "Profissional",
-                updated: "MAR/2026"
-            }
-        ]
-    },
-
-    // =====================================================
-    // CUSTOS INVISÍVEIS -> CATEGORIA: RENTABILIDADE (LUCRO)
-    // =====================================================
-    {
-        id: 'MOD-14',
-        title: "Saúde Financeira",
-        category: "Financeiro",
-        type: 'lucro',
-        icon: Coins,
-        color: "amber",
-        topics: [
-            {
-                id: 'ci1',
-                title: "Taxa de Falha Real",
-                content: "Toda oficina perde peça. Taxa de falha não é pessimismo, é realismo financeiro.",
-                level: "Essencial",
-                updated: "JAN/2026"
-            },
-            {
-                id: 'ci2',
-                title: "Tempo de Atendimento",
-                content: "Mensagens, ajustes e orçamentos são horas de trabalho não visíveis no fatiador.",
-                level: "Gestão",
-                updated: "MAR/2026"
-            },
-            {
-                id: 'ci3',
-                title: "Desgaste da Máquina",
-                content: "Correias, bicos e rolamentos se desgastam. Ignorar isso gera custos surpresa.",
-                level: "Planejamento",
-                updated: "MAR/2026"
-            },
-            {
-                id: 'ci4',
-                title: "Energia Elétrica",
-                content: "Bandeira tarifária, pico de consumo e fontes ineficientes aumentam seu custo real.",
-                level: "Financeiro",
-                updated: "FEV/2026"
-            }
-        ]
-    },
-
-    // =====================================================
-    // LOGÍSTICA & ENTREGA -> CATEGORIA: RENTABILIDADE (LUCRO)
-    // =====================================================
-    {
-        id: 'MOD-15',
-        title: "Envio e Logística",
-        category: "Logística",
-        type: 'lucro',
-        icon: Truck,
-        color: "emerald",
-        topics: [
-            {
-                id: 'l1',
-                title: "Embalagem Blindada",
-                content: "Peça quebrada no envio é prejuízo duplo: custo do material e perda da reputação.",
-                level: "Importante",
-                updated: "FEV/2026"
-            },
-            {
-                id: 'l2',
-                title: "Promessa vs Entrega",
-                content: "Prometer menos e entregar antes fideliza mais que o inverso.",
-                level: "Estratégia",
-                updated: "MAR/2026"
-            },
-            {
-                id: 'l3',
-                title: "Teste de Queda",
-                content: "Se a embalagem não aguenta 1 metro de queda, ela não está pronta para o transporte.",
-                level: "Qualidade",
-                updated: "MAR/2026"
-            }
-        ]
-    },
-
-    // =====================================================
-    // SAÚDE DO MAKER -> CATEGORIA: SETUP
-    // =====================================================
-    {
-        id: 'MOD-16',
-        title: "Saúde e Sustentabilidade",
-        category: "Pessoal",
-        type: 'setup',
-        icon: HeartPulse,
-        color: "sky",
-        topics: [
-            {
-                id: 'sau1',
-                title: "Vapores e Ruído",
-                content: "Ruído, calor e vapores acumulam fadiga. Ventilação e pausas aumentam seu rendimento.",
-                level: "Bem-estar",
-                updated: "JAN/2026"
-            },
-            {
-                id: 'sau2',
-                title: "Fadiga Humana",
-                content: "Maker exausto erra. Erro humano na farm custa filamento e tempo de bico.",
-                level: "Consciência",
-                updated: "FEV/2026"
-            },
-            {
-                id: 'sau4',
-                title: "Lucro Sustentável",
-                content: "Produzir no limite gera burnout. Uma farm equilibrada gera renda contínua.",
-                level: "Mentalidade",
-                updated: "MAR/2026"
-            }
-        ]
-    }
-];
-
 const WikiModuleCard = ({ category, onSelectTopic }) => {
     const colorMap = {
         sky: "group-hover:border-sky-500/30 border-l-sky-500/50",
@@ -354,21 +69,17 @@ const WikiModuleCard = ({ category, onSelectTopic }) => {
     return (
         <div className={`group relative bg-zinc-900/40 border border-zinc-800/50 border-l-4 ${colorMap[category.color]} rounded-2xl p-6 transition-all duration-300 hover:bg-zinc-900/60 hover:translate-y-[-2px] shadow-sm overflow-hidden backdrop-blur-sm`}>
             <HUDOverlay />
-
             <div className="flex justify-between items-start mb-6 relative z-10">
                 <div className="flex items-center gap-4">
                     <div className={`p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700 transition-all ${textColorMap[category.color]}`}>
                         <category.icon size={20} strokeWidth={2} />
                     </div>
                     <div>
-                        <div className="flex items-center gap-2 mb-1">
-                            <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{category.category}</span>
-                        </div>
+                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{category.category}</span>
                         <h3 className="text-sm font-bold uppercase text-zinc-100 tracking-tight">{category.title}</h3>
                     </div>
                 </div>
             </div>
-
             <div className="space-y-2 relative z-10">
                 {category.topics.map(topic => (
                     <button key={topic.id} onClick={() => onSelectTopic(topic)} className="w-full group/item flex items-center justify-between p-3 rounded-xl bg-zinc-950/50 border border-zinc-800/50 hover:border-zinc-700 transition-all hover:bg-zinc-900/50 text-left">
@@ -387,6 +98,8 @@ const WikiModuleCard = ({ category, onSelectTopic }) => {
     );
 };
 
+// --- PÁGINA PRINCIPAL ---
+
 export default function WikiPage() {
     const [larguraSidebar, setLarguraSidebar] = useState(68);
     const [busca, setBusca] = useState("");
@@ -394,16 +107,16 @@ export default function WikiPage() {
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [copiado, setCopiado] = useState(false);
 
-    const phrases = [
+    const phrases = useMemo(() => [
         { line1: "TRANSFORME", line2: "IDEIAS EM ATIVOS." },
         { line1: "EFICIÊNCIA", line2: "MÁXIMA NA FARM." },
         { line1: "SISTEMA", line2: "DE APOIO MAKER." }
-    ];
+    ], []);
 
-    // Lógica de filtro preservada conforme solicitado
     const filteredData = useMemo(() => {
         return WIKI_DATA.filter(cat => {
-            const matchBusca = cat.title.toLowerCase().includes(busca.toLowerCase()) || cat.topics.some(t => t.title.toLowerCase().includes(busca.toLowerCase()));
+            const matchBusca = cat.title.toLowerCase().includes(busca.toLowerCase()) || 
+                               cat.topics.some(t => t.title.toLowerCase().includes(busca.toLowerCase()));
             const matchFiltro = filtroAtivo === 'all' || cat.type === filtroAtivo;
             return matchBusca && matchFiltro;
         });
@@ -414,8 +127,8 @@ export default function WikiPage() {
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 68 : 256)} />
 
             <main className="flex-1 flex flex-col relative transition-all duration-300 ease-out overflow-hidden" style={{ marginLeft: `${larguraSidebar}px` }}>
-
-                {/* Background Decorativo Refinado */}
+                
+                {/* Background Decorativo */}
                 <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none opacity-[0.05]"
                     style={{
                         backgroundImage: 'linear-gradient(to right, #3f3f46 1px, transparent 1px), linear-gradient(to bottom, #3f3f46 1px, transparent 1px)',
@@ -425,44 +138,30 @@ export default function WikiPage() {
                 />
 
                 <header className="h-20 px-10 flex items-center justify-between z-40 relative border-b border-white/5 bg-zinc-950/50 backdrop-blur-xl">
-
-                    {/* 1. ASSINATURA VISUAL (LINHA SUPERIOR) */}
                     <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-cyan-700 via-sky-500 to-indigo-400 opacity-60" />
-
-                    {/* TÍTULO ESTILO FILAMENTO */}
                     <div className="flex flex-col relative select-none">
-                        <div className="flex items-center gap-2 mb-0.5">
-                            <h1 className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500">
-                                IDEIAS, DICAS E SOLUÇÕES
-                            </h1>
-                        </div>
+                        <h1 className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-0.5">IDEIAS, TUTORIAIS E SOLUÇÕES</h1>
                         <span className="text-xl font-black uppercase tracking-tighter text-white">
                             Central <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">Maker</span>
                         </span>
                     </div>
 
-                    {/* BUSCA (OPCIONAL - MANTIVE O ESTILO TÉCNICO) */}
                     <div className="relative group">
-                        <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${busca ? 'text-sky-400' : 'text-zinc-600'}`}>
-                            <Search size={14} strokeWidth={3} />
-                        </div>
+                        <Search size={14} strokeWidth={3} className={`absolute left-4 top-1/2 -translate-y-1/2 ${busca ? 'text-sky-400' : 'text-zinc-600'}`} />
                         <input
-                            className="w-80 bg-zinc-900/40 border border-white/5 rounded-xl py-2.5 pl-11 pr-10 text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest focus:border-sky-500/30 focus:bg-zinc-900/80 focus:ring-4 focus:ring-sky-500/5 placeholder:text-zinc-700 placeholder:text-[9px]"
+                            className="w-80 bg-zinc-900/40 border border-white/5 rounded-xl py-2.5 pl-11 pr-10 text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest focus:border-sky-500/30 focus:bg-zinc-900/80"
                             placeholder="BUSCAR COMANDO..."
                             value={busca}
                             onChange={e => setBusca(e.target.value)}
                         />
                     </div>
-
-                    {/* EFEITO DE LUZ NO FUNDO */}
-                    <div className="absolute -bottom-10 right-20 w-40 h-20 bg-sky-500/5 blur-[50px] pointer-events-none" />
                 </header>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 relative z-10 scroll-smooth">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 relative z-10">
                     <div className="max-w-[1600px] mx-auto space-y-12">
-
-                        {/* HERO REFINADO */}
-                        <section className="relative overflow-hidden rounded-[2rem] bg-zinc-900/40 border border-zinc-800/50 p-12 min-h-[320px] flex flex-col justify-center shadow-sm backdrop-blur-sm group transition-all duration-500">
+                        
+                        {/* HERO */}
+                        <section className="relative overflow-hidden rounded-[2rem] bg-zinc-900/40 border border-zinc-800/50 p-12 min-h-[320px] flex flex-col justify-center shadow-sm backdrop-blur-sm">
                             <HUDOverlay />
                             <div className="relative z-10 space-y-6">
                                 <div className="flex items-center gap-3 text-sky-400">
@@ -470,11 +169,11 @@ export default function WikiPage() {
                                     <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Central de Inteligência Operacional</span>
                                 </div>
                                 <TypewriterHero phrases={phrases} />
-                                <p className="text-sm text-zinc-400 max-w-xl font-medium leading-relaxed uppercase tracking-wide">Diretrizes e protocolos de otimização industrial para sua farm de impressão.</p>
+                                <p className="text-sm text-zinc-400 max-w-xl font-medium leading-relaxed uppercase tracking-wide">Diretrizes e protocolos de otimização industrial para sua farm.</p>
                             </div>
                         </section>
 
-                        {/* FILTROS REFINADOS */}
+                        {/* FILTROS */}
                         <div className="flex flex-wrap gap-3 relative z-10">
                             {[
                                 { id: 'all', label: 'Todos os Módulos', icon: Activity },
@@ -482,37 +181,35 @@ export default function WikiPage() {
                                 { id: 'lucro', label: 'Rentabilidade [$]', icon: Coins, color: 'text-emerald-400' },
                                 { id: 'setup', label: 'Hardware', icon: Code, color: 'text-sky-400' },
                             ].map((f) => (
-                                <button key={f.id} onClick={() => setFiltroAtivo(f.id)} className={`flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all text-[10px] font-bold uppercase tracking-widest ${filtroAtivo === f.id ? 'bg-zinc-100 text-zinc-950 border-zinc-100' : 'bg-zinc-900/50 text-zinc-500 border-zinc-800/80 hover:border-zinc-600 hover:text-zinc-300'}`}>
+                                <button key={f.id} onClick={() => setFiltroAtivo(f.id)} className={`flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all text-[10px] font-bold uppercase tracking-widest ${filtroAtivo === f.id ? 'bg-zinc-100 text-zinc-950 border-zinc-100' : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-600'}`}>
                                     <f.icon size={14} className={filtroAtivo === f.id ? 'text-zinc-950' : f.color} />
                                     {f.label}
                                 </button>
                             ))}
                         </div>
 
-                        {/* GRID DE CARDS REFINADO */}
+                        {/* GRID DE CARDS */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                             {filteredData.map((category) => (
                                 <WikiModuleCard key={category.id} category={category} onSelectTopic={setSelectedArticle} />
                             ))}
                         </div>
 
-                        {/* CALL TO ACTION REFINADO */}
+                        {/* CALL TO ACTION */}
                         <section className="relative overflow-hidden rounded-[2rem] bg-zinc-900/40 border border-zinc-800/50 p-10 shadow-sm group backdrop-blur-sm">
                             <HUDOverlay />
                             <div className="relative z-30 flex flex-col lg:flex-row items-center justify-between gap-10">
                                 <div className="flex items-center gap-8">
                                     <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-sky-400 shadow-inner">
-                                        <Globe size={28} strokeWidth={2} />
+                                        <Globe size={28} />
                                     </div>
                                     <div className="space-y-1">
                                         <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-widest">Suporte Técnico & Contribuições</h3>
                                         <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide leading-relaxed max-w-lg">
-                                            Tem sugestões de melhoria para os protocolos? <br />
-                                            Nossa central de comando está aberta para novos relatórios.
+                                            Tem sugestões de melhoria para os protocolos? Nossa central está aberta.
                                         </p>
                                     </div>
                                 </div>
-
                                 <div className="flex flex-wrap gap-4 w-full lg:w-auto">
                                     <button
                                         onClick={() => { navigator.clipboard.writeText("suporte@printlog.com.br"); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}
@@ -521,7 +218,6 @@ export default function WikiPage() {
                                         <Mail size={16} className={copiado ? "text-emerald-400" : ""} />
                                         {copiado ? "E-mail Copiado" : "E-mail Suporte"}
                                     </button>
-
                                     <a href="https://forms.gle/NHYqNAcvApJwZM2w6" className="flex-1 lg:flex-none px-8 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm">
                                         Mandar Sugestão <Send size={16} />
                                     </a>
@@ -531,20 +227,20 @@ export default function WikiPage() {
                     </div>
                 </div>
 
-                {/* MODAL REFINADO */}
+                {/* MODAL DETALHADO */}
                 {selectedArticle && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 backdrop-blur-md">
                         <div className="absolute inset-0 bg-zinc-950/80" onClick={() => setSelectedArticle(null)} />
                         <div className="bg-zinc-900 border border-zinc-800 w-full max-w-2xl rounded-[2rem] relative z-10 shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95">
                             <div className="p-10 border-b border-zinc-800/50 flex justify-between items-start bg-zinc-950/30">
                                 <div className="space-y-4">
                                     <span className="px-3 py-1 rounded-lg bg-sky-500/10 border border-sky-500/20 text-[10px] font-bold text-sky-400 uppercase tracking-widest">Protocolo: {selectedArticle.id}</span>
                                     <h2 className="text-2xl font-bold text-zinc-100 uppercase tracking-tight">{selectedArticle.title}</h2>
-                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Prioridade: {selectedArticle.level}</p>
+                                    <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Prioridade: {selectedArticle.level} | Atualizado: {selectedArticle.updated}</p>
                                 </div>
                                 <button onClick={() => setSelectedArticle(null)} className="p-2 rounded-lg hover:bg-zinc-800 text-zinc-500 transition-all"><X size={20} /></button>
                             </div>
-                            <div className="p-10 flex-1 overflow-y-auto custom-scrollbar space-y-8">
+                            <div className="p-10 flex-1 space-y-8">
                                 <p className="text-zinc-400 text-sm font-medium leading-relaxed border-l-2 border-sky-500/30 pl-6 uppercase tracking-wide">{selectedArticle.content}</p>
                                 {selectedArticle.gcode && (
                                     <div className="space-y-3">

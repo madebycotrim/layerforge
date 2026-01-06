@@ -145,7 +145,7 @@ export default function Precificacao({
           onChange={(e) => setImposto(e.target.value)}
         />
         <UnifiedInput
-          label="Limite de Desconto"
+          label="Desconto"
           icon={Tag}
           suffix="%"
           type="number"
