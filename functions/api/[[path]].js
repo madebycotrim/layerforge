@@ -220,74 +220,79 @@ export async function onRequest(context) {
                 break;
 
             case 'users':
-                // O userId já foi extraído do token do Clerk no início da função onRequest
+                // O userId já foi extraído do token do Clerk no início da função onRequest (substitua pela sua constante se for diferente)
+                // Exemplo de URL esperada: /users/[id]/backup ou /users/backup
+
+                // Determinamos a ação verificando se 'backup' está na posição 2 ou 3 do path
+                const action = pathArray.includes('backup') ? 'backup' : null;
 
                 // --- PROTOCOLO DE EXPORTAÇÃO / MANIFESTO (BACKUP) ---
-                if (method === 'GET') {
-                    const action = pathArray[2]; // /users/[id]/backup
+                if (method === 'GET' && action === 'backup') {
+                    try {
+                        // Coleta de dados em lote (Atomicidade e Performance)
+                        // Extraímos apenas os dados técnicos necessários para o Manifesto
+                        const results = await db.batch([
+                            db.prepare("SELECT id, name, color, type, current_weight FROM filaments WHERE user_id = ?").bind(userId),
+                            db.prepare("SELECT id, name, model, nozzle_diameter FROM printers WHERE user_id = ?").bind(userId),
+                            db.prepare("SELECT * FROM calculator_settings WHERE user_id = ?").bind(userId),
+                            db.prepare("SELECT id, name, data, created_at FROM projects WHERE user_id = ?").bind(userId)
+                        ]);
 
-                    if (action === 'backup') {
-                        try {
-                            // Coleta de dados em lote para o Manifesto Técnico
-                            // Removido qualquer referência a campos de 'designação' ou 'lastName' que pudessem existir
-                            const results = await db.batch([
-                                db.prepare("SELECT id, name, color, type, current_weight FROM filaments WHERE user_id = ?").bind(userId),
-                                db.prepare("SELECT id, name, model, nozzle_diameter FROM printers WHERE user_id = ?").bind(userId),
-                                db.prepare("SELECT * FROM calculator_settings WHERE user_id = ?").bind(userId),
-                                db.prepare("SELECT id, name, data, created_at FROM projects WHERE user_id = ?").bind(userId)
-                            ]);
-
-                            return sendJSON({
-                                success: true,
-                                metadata: {
-                                    operator_id: userId,
-                                    generated_at: new Date().toISOString(),
-                                    system_version: "Maker_Core_4.2",
-                                    status: "MANIFESTO_GERADO"
-                                },
-                                data: {
-                                    filaments: results[0].results || [],
-                                    printers: results[1].results || [],
-                                    // As configurações do sistema (Removido designação técnica se estivesse aqui)
-                                    settings: results[2].results[0] || {},
-                                    projects: (results[3].results || []).map(p => ({
-                                        ...p,
-                                        data: JSON.parse(p.data || "{}")
-                                    }))
-                                }
-                            });
-                        } catch (err) {
-                            return sendJSON({
-                                error: "Falha na extração do Manifesto",
-                                details: err.message,
-                                code: "ERR_BACKUP_FAILURE"
-                            }, 500);
-                        }
+                        return sendJSON({
+                            success: true,
+                            metadata: {
+                                operator_id: userId,
+                                generated_at: new Date().toISOString(),
+                                system_version: "Maker_Core_4.2",
+                                status: "NOMINAL",
+                                protocol: "MANIFESTO_TECNICO_GERADO"
+                            },
+                            data: {
+                                filaments: results[0].results || [],
+                                printers: results[1].results || [],
+                                // Configurações globais (sem campos de designação técnica/lastName)
+                                settings: results[2].results[0] || {},
+                                projects: (results[3].results || []).map(p => {
+                                    try {
+                                        return { ...p, data: JSON.parse(p.data || "{}") };
+                                    } catch (e) {
+                                        return { ...p, data: {} }; // Fallback para JSON corrompido
+                                    }
+                                })
+                            }
+                        });
+                    } catch (err) {
+                        return sendJSON({
+                            success: false,
+                            error: "Falha na extração do Manifesto",
+                            details: err.message,
+                            code: "ERR_BACKUP_FAILURE"
+                        }, 500);
                     }
-
-                    return sendJSON({ error: "Ação não identificada no terminal" }, 404);
                 }
 
                 // --- PROTOCOLO DE RESCISÃO (EXPURGO DE DADOS) ---
                 if (method === 'DELETE') {
                     try {
-                        // Executa a limpeza total de todos os filamentos, impressoras, 
-                        // configurações e projetos vinculados ao UID do operador.
+                        // Invocação de expurgo em todas as tabelas vinculadas ao UID
+                        // O uso do batch garante que ou apaga TUDO ou nada é apagado (integridade)
                         await db.batch([
                             db.prepare("DELETE FROM filaments WHERE user_id = ?").bind(userId),
                             db.prepare("DELETE FROM printers WHERE user_id = ?").bind(userId),
                             db.prepare("DELETE FROM calculator_settings WHERE user_id = ?").bind(userId),
                             db.prepare("DELETE FROM projects WHERE user_id = ?").bind(userId)
-                            // Se você tiver uma tabela de 'users' local, adicione o DELETE dela aqui também.
+                            // Se houver uma tabela de metadados local de usuários:
+                            // db.prepare("DELETE FROM users WHERE id = ?").bind(userId)
                         ]);
 
                         return sendJSON({
                             success: true,
                             protocol: "EXPURGO_COMPLETE",
-                            message: "Protocolo de rescisão executado com sucesso. O núcleo foi limpo."
+                            message: "Protocolo de rescisão executado: Todos os ativos do D1 foram removidos."
                         });
                     } catch (dbErr) {
                         return sendJSON({
+                            success: false,
                             error: "Falha crítica no protocolo de exclusão",
                             details: dbErr.message,
                             code: "ERR_PURGE_FAILED"
@@ -295,7 +300,11 @@ export async function onRequest(context) {
                     }
                 }
 
-                return sendJSON({ error: "Método não autorizado para este módulo" }, 405);
+                // Fallback para métodos não suportados ou ações inválidas
+                return sendJSON({
+                    error: "Comando não reconhecido pelo núcleo",
+                    code: "ERR_INVALID_COMMAND"
+                }, 405);
                 break;
 
             default:
