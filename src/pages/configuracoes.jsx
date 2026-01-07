@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import {
     User, Lock, Save, RefreshCw, Camera,
     Database, Cloud, AlertTriangle, Trash2, Search,
-    Info, LogOut, ShieldAlert, Monitor, Smartphone, 
+    Info, LogOut, ShieldAlert, Monitor, Smartphone,
     ShieldCheck, Download, ChevronRight, Mail, Fingerprint,
     Cpu, Activity, Globe, HardDrive, FileJson, FileText, Printer,
-    Table, KeyRound // Novos ícones
+    Table, KeyRound
 } from 'lucide-react';
 import { useClerk, useUser } from "@clerk/clerk-react";
 
@@ -15,6 +15,7 @@ import MainSidebar from "../layouts/mainSidebar";
 import Toast from "../components/Toast";
 import Popup from "../components/Popup";
 
+// --- COMPONENTE: INPUT ESTILIZADO (HUD) ---
 const HUDInput = ({ label, value, onChange, placeholder, type = "text", info, disabled, icon: Icon }) => (
     <div className="space-y-2 group w-full">
         <div className="flex justify-between items-center px-1">
@@ -43,6 +44,7 @@ const HUDInput = ({ label, value, onChange, placeholder, type = "text", info, di
     </div>
 );
 
+// --- COMPONENTE: SEÇÃO DE CONFIGURAÇÃO ---
 const ConfigSection = ({ title, icon: Icon, badge, description, children, visible = true }) => {
     if (!visible) return null;
     return (
@@ -72,6 +74,7 @@ const ConfigSection = ({ title, icon: Icon, badge, description, children, visibl
 };
 
 export default function ConfigPage() {
+    // --- ESTADOS ---
     const [larguraSidebar, setLarguraSidebar] = useState(68);
     const [activeTab, setActiveTab] = useState('PERFIL');
     const [isSaving, setIsSaving] = useState(false);
@@ -89,6 +92,7 @@ export default function ConfigPage() {
     const [firstName, setFirstName] = useState("");
     const [originalData, setOriginalData] = useState({ firstName: "" });
 
+    // --- CARREGAMENTO INICIAL ---
     useEffect(() => {
         if (isLoaded && user) {
             setFirstName(user.firstName || "");
@@ -98,26 +102,9 @@ export default function ConfigPage() {
     }, [isLoaded, user]);
 
     const isDirty = firstName !== originalData.firstName;
-
-    const handleTabChange = (newTab) => {
-        if (isDirty && activeTab === 'PERFIL') {
-            setModalConfig({
-                open: true,
-                title: "Divergência de Dados",
-                message: "Existem parâmetros de identidade alterados e não sincronizados. Deseja descartar as mudanças?",
-                type: "warning",
-                icon: AlertTriangle,
-                onConfirm: () => {
-                    setFirstName(originalData.firstName);
-                    setActiveTab(newTab);
-                    setModalConfig(prev => ({ ...prev, open: false }));
-                }
-            });
-        } else { setActiveTab(newTab); }
-    };
-
     const isVisible = (tag) => !busca || tag.toLowerCase().includes(busca.toLowerCase());
 
+    // --- AÇÃO: SALVAR PERFIL ---
     const handleGlobalSave = async () => {
         if (!isLoaded || !user) return;
         setIsSaving(true);
@@ -140,77 +127,82 @@ export default function ConfigPage() {
         finally { setIsSaving(false); }
     };
 
-    // --- NOVA LÓGICA: REDEFINIR SENHA (CLERK) ---
+    // --- AÇÃO: REDEFINIR SENHA (CLERK) ---
     const handlePasswordReset = async () => {
         try {
             setIsSaving(true);
-            // Envia e-mail de redefinição para o endereço primário
-            await user.createPasswordReset(); 
-            setToast({ 
-                show: true, 
-                message: "Protocolo enviado para seu e-mail de acesso.", 
-                type: 'success' 
-            });
+            if (!user.passwordEnabled) {
+                setToast({ show: true, message: "Login via Social. Não há senha para redefinir.", type: 'error' });
+                return;
+            }
+            await user.preparePasswordReset({ strategy: "reset_password_email_code" });
+            setToast({ show: true, message: "Protocolo enviado para seu e-mail.", type: 'success' });
         } catch (error) {
-            setToast({ show: true, message: "Erro ao solicitar redefinição.", type: 'error' });
-        } finally {
-            setIsSaving(false);
-        }
+            const msg = error.errors?.[0]?.longMessage || "Erro ao solicitar redefinição.";
+            setToast({ show: true, message: msg, type: 'error' });
+        } finally { setIsSaving(false); }
     };
 
+    // --- AÇÃO: REVOGAR SESSÃO ---
     const revokeSession = async (sess) => {
         try {
             await sess.revoke();
-            setSessions(prev => prev.filter(s => s.id !== sess.id));
+            setSessions((prev) => prev.filter((s) => s.id !== sess.id));
             setToast({ show: true, message: "Terminal desconectado.", type: 'success' });
         } catch { setToast({ show: true, message: "Erro ao encerrar sessão.", type: 'error' }); }
     };
 
-    // --- LÓGICA ATUALIZADA: EXPORTAÇÃO CSV ---
+    // --- AÇÃO: EXPORTAR MANIFESTO (INTEGRADO COM BACKEND API) ---
     const exportFormattedData = async (format) => {
         try {
             setIsSaving(true);
+            
+            // BUSCA DADOS REAIS DO BACKEND D1
+            const response = await api.get(`/users/${user.id}/backup`);
+            if (!response.success) throw new Error("Falha na API");
+
+            const { data, metadata } = response;
             const timestamp = new Date().getTime();
             let blob, filename;
 
             if (format === 'json') {
-                const exportData = {
-                    metadata: { generated_at: new Date().toISOString(), operator_id: user.id },
-                    profile: { firstName, email: user.primaryEmailAddress?.emailAddress },
-                    security: { active_sessions: sessions.length }
-                };
-                blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
-                filename = `maker_manifesto_${timestamp}.json`;
+                blob = new Blob([JSON.stringify(response, null, 2)], { type: "application/json" });
+                filename = `maker_core_manifesto_${timestamp}.json`;
             } else if (format === 'csv') {
-                // Formatação para Planilha (CSV)
-                const rows = [
-                    ["CHAVE", "VALOR"],
+                // Montagem da Planilha Técnica
+                let rows = [
+                    ["MAKER CORE - MANIFESTO TECNICO"],
                     ["Operador", firstName],
-                    ["ID do Nucleo", user.id],
-                    ["Email Primario", user.primaryEmailAddress?.emailAddress],
-                    ["Sessoes Ativas", sessions.length],
-                    ["Data de Geracao", new Date().toLocaleString()]
+                    ["UID", user.id],
+                    ["Gerado em", metadata.generated_at],
+                    [""],
+                    ["TABELA: FILAMENTOS"],
+                    ["ID", "NOME", "TIPO", "PESO_ATUAL"]
                 ];
+                data.filaments.forEach(f => rows.push([f.id, f.name, f.type, f.current_weight]));
+                rows.push([""], ["TABELA: IMPRESSORAS"], ["ID", "NOME", "MODELO", "BICO"]);
+                data.printers.forEach(p => rows.push([p.id, p.name, p.model, p.nozzle_diameter]));
+
                 const csvContent = rows.map(e => e.join(",")).join("\n");
                 blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
                 filename = `maker_planilha_${timestamp}.csv`;
             } else if (format === 'pdf') {
                 const printWindow = window.open('', '_blank');
                 printWindow.document.write(`
-                    <html><head><title>Manifesto Maker</title><style>
-                        body{font-family:monospace;padding:50px;color:#111}
-                        h1{border-bottom:4px solid #000;text-transform:uppercase}
-                        .label{font-weight:bold;color:#666;font-size:12px;margin-top:20px}
-                        .value{font-size:18px;border-left:4px solid #0ea5e9;padding-left:15px}
+                    <html><head><title>Manifesto Maker Core</title><style>
+                        body{font-family:monospace;padding:40px;background:#fff;color:#000}
+                        h1{border-bottom:2px solid #000;padding-bottom:10px}
+                        .sec{margin-top:20px;font-weight:bold;text-transform:uppercase;color:#666}
+                        .val{font-size:16px;margin-bottom:10px;border-left:3px solid #0ea5e9;padding-left:10px}
                     </style></head><body>
-                    <h1>Manifesto de Identidade</h1>
-                    <div class="label">Operador</div><div class="value">${firstName}</div>
-                    <div class="label">UID</div><div class="value">${user.id}</div>
-                    <div class="label">E-mail</div><div class="value">${user.primaryEmailAddress?.emailAddress}</div>
+                    <h1>MANIFESTO DE IDENTIDADE OPERACIONAL</h1>
+                    <div class="sec">Operador</div><div class="val">${firstName}</div>
+                    <div class="sec">Identificação (UID)</div><div class="val">${user.id}</div>
+                    <div class="sec">Email</div><div class="val">${user.primaryEmailAddress.emailAddress}</div>
+                    <div class="sec">Total de Filamentos</div><div class="val">${data.filaments.length}</div>
                     <script>window.onload = function(){ window.print(); window.close(); }</script></body></html>
                 `);
-                setIsSaving(false);
-                return;
+                setIsSaving(false); return;
             }
 
             const url = URL.createObjectURL(blob);
@@ -219,8 +211,27 @@ export default function ConfigPage() {
             link.download = filename;
             link.click();
             setToast({ show: true, message: `Manifesto .${format.toUpperCase()} gerado.`, type: 'success' });
-        } catch { setToast({ show: true, message: "Erro na exportação.", type: 'error' }); }
-        finally { setIsSaving(false); }
+        } catch (err) {
+            console.error(err);
+            setToast({ show: true, message: "Erro ao extrair manifesto do banco.", type: 'error' });
+        } finally { setIsSaving(false); }
+    };
+
+    // --- AÇÃO: PROTOCOLO DE RESCISÃO (API DELETE) ---
+    const handleRescisaoCompleta = async () => {
+        try {
+            setIsSaving(true);
+            const response = await api.delete('/users');
+            if (response.success) {
+                setToast({ show: true, message: "Expurgo concluído. Encerrando...", type: 'success' });
+                setTimeout(() => signOut(), 2000);
+            }
+        } catch {
+            setToast({ show: true, message: "Falha ao limpar banco de dados.", type: 'error' });
+        } finally {
+            setIsSaving(false);
+            setModalConfig(prev => ({ ...prev, open: false }));
+        }
     };
 
     const clearLocalCache = () => {
@@ -282,7 +293,7 @@ export default function ConfigPage() {
                             ].map((tab) => (
                                 <button
                                     key={tab.id}
-                                    onClick={() => handleTabChange(tab.id)}
+                                    onClick={() => setActiveTab(tab.id)}
                                     className={`w-full flex items-center justify-between gap-4 px-5 py-4 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all group ${activeTab === tab.id ? 'bg-zinc-100 text-zinc-950 shadow-xl' : 'text-zinc-500 hover:text-zinc-200 hover:bg-zinc-900/50'}`}
                                 >
                                     <div className="flex items-center gap-4">
@@ -323,7 +334,7 @@ export default function ConfigPage() {
                                                     <Activity size={12} className="text-emerald-500" />
                                                     <p className="text-[10px] font-black text-sky-500 uppercase tracking-[0.3em]">Operador Autenticado</p>
                                                 </div>
-                                                <h3 className="text-4xl font-black text-white tracking-tighter uppercase">{firstName || "Aguardando"}</h3>
+                                                <h3 className="text-4xl font-black text-white tracking-tighter uppercase">{firstName || "Operador"}</h3>
                                                 <div className="flex gap-3 mt-6">
                                                     <span className="px-4 py-1.5 bg-zinc-950 border border-zinc-800 text-zinc-500 rounded-xl text-[10px] font-bold uppercase tracking-wider">UID: {user?.id.slice(-8)}</span>
                                                     <span className="px-4 py-1.5 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-[10px] font-black uppercase flex items-center gap-2 shadow-sm shadow-emerald-500/5">
@@ -334,15 +345,14 @@ export default function ConfigPage() {
                                         </div>
                                     </div>
 
-                                    <ConfigSection 
-                                        title="Parâmetros de Identidade" 
-                                        icon={User} 
-                                        badge="Módulo 01" 
-                                        description="Defina sua assinatura técnica. Esses dados identificam suas alterações em projetos e logs de telemetria."
+                                    <ConfigSection
+                                        title="Parâmetros de Identidade"
+                                        icon={User}
+                                        badge="Módulo 01"
+                                        description="Defina sua assinatura técnica. Esses dados identificam sua autoria no ecossistema."
                                         visible={isVisible("perfil nome email")}
                                     >
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-zinc-900/20 p-10 rounded-[2.5rem] border border-zinc-800/40">
-                                            {/* Designação Técnica Removida */}
                                             <HUDInput label="Nome Civil ou Maker" value={firstName} onChange={setFirstName} placeholder="Ex: Alex" />
                                             <HUDInput label="E-mail de Acesso" value={user?.primaryEmailAddress?.emailAddress || ""} disabled info="Canal Primário" icon={Mail} />
                                             <div className="p-5 rounded-2xl bg-zinc-950/50 border border-zinc-800/50 flex items-center gap-4">
@@ -359,9 +369,9 @@ export default function ConfigPage() {
 
                             {activeTab === 'SEGURANÇA' && (
                                 <div className="space-y-16">
-                                    <ConfigSection 
-                                        title="Protocolos de Acesso" 
-                                        icon={KeyRound} 
+                                    <ConfigSection
+                                        title="Protocolos de Acesso"
+                                        icon={KeyRound}
                                         badge="Segurança"
                                         description="Gerencie suas credenciais e chaves de acesso ao terminal."
                                     >
@@ -371,21 +381,21 @@ export default function ConfigPage() {
                                                     <p className="text-[11px] text-zinc-200 font-black uppercase tracking-widest">Redefinição de Credenciais</p>
                                                     <p className="text-[10px] text-zinc-500 uppercase font-medium">Um link de segurança será enviado ao seu e-mail cadastrado.</p>
                                                 </div>
-                                                <button 
+                                                <button
                                                     onClick={handlePasswordReset}
-                                                    disabled={isSaving}
-                                                    className="w-full md:w-auto px-8 py-4 bg-sky-500/10 hover:bg-sky-500 text-sky-500 hover:text-white border border-sky-500/20 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3"
+                                                    disabled={isSaving || !user.passwordEnabled}
+                                                    className="w-full md:w-auto px-8 py-4 bg-sky-500/10 hover:bg-sky-500 text-sky-500 hover:text-white border border-sky-500/20 rounded-xl transition-all font-black uppercase text-[10px] tracking-widest flex items-center justify-center gap-3 disabled:opacity-30 disabled:cursor-not-allowed"
                                                 >
                                                     {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Lock size={14} />}
-                                                    Redefinir Senha
+                                                    {user.passwordEnabled ? "Redefinir Senha" : "Login via Social"}
                                                 </button>
                                             </div>
                                         </div>
                                     </ConfigSection>
 
-                                    <ConfigSection 
-                                        title="Monitoramento de Terminais" 
-                                        icon={Monitor} 
+                                    <ConfigSection
+                                        title="Monitoramento de Terminais"
+                                        icon={Monitor}
                                         badge="Acessos"
                                         description="Relação de todos os dispositivos autenticados."
                                     >
@@ -411,11 +421,21 @@ export default function ConfigPage() {
                                         </div>
                                     </ConfigSection>
 
-                                    <ConfigSection title="Zona de Exclusão" icon={AlertTriangle} badge="Nível Crítico" description="A rescisão apaga todos os registros permanentemente. Esta ação não pode ser desfeita.">
+                                    <ConfigSection title="Zona de Exclusão" icon={AlertTriangle} badge="Nível Crítico" description="A rescisão apaga todos os registros permanentemente do D1. Esta ação não pode ser desfeita.">
                                         <div className="bg-rose-500/5 p-12 rounded-[2.5rem] border border-rose-500/20 space-y-8 relative overflow-hidden group">
                                             <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-rose-500/10 blur-[80px] pointer-events-none" />
                                             <h2 className="text-2xl font-black uppercase text-white tracking-tighter">Rescisão de <span className="text-rose-500">Identidade</span></h2>
-                                            <button onClick={() => {}} className="group flex items-center gap-4 px-8 py-5 bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 rounded-2xl transition-all duration-500">
+                                            <button 
+                                                onClick={() => setModalConfig({
+                                                    open: true, 
+                                                    title: "Confirmar Expurgo?", 
+                                                    message: "Invocando DELETE em todas as tabelas vinculadas ao seu UID.", 
+                                                    type: "danger", 
+                                                    icon: AlertTriangle, 
+                                                    onConfirm: handleRescisaoCompleta 
+                                                })} 
+                                                className="group flex items-center gap-4 px-8 py-5 bg-rose-500/10 hover:bg-rose-600 border border-rose-500/20 rounded-2xl transition-all duration-500"
+                                            >
                                                 <Trash2 size={20} className="text-rose-500 group-hover:text-white" />
                                                 <span className="text-[11px] font-black uppercase tracking-[0.25em] text-rose-500 group-hover:text-white">Confirmar Protocolo de Expurgo</span>
                                             </button>
@@ -426,18 +446,18 @@ export default function ConfigPage() {
 
                             {activeTab === 'SISTEMA' && (
                                 <div className="space-y-16">
-                                    <ConfigSection 
-                                        title="Gestão de Ativos e Portabilidade" 
-                                        icon={Download} 
+                                    <ConfigSection
+                                        title="Gestão de Ativos e Portabilidade"
+                                        icon={Download}
                                         badge="Módulo 03"
-                                        description="Extraia seu Manifesto de Dados Operacional para backup ou auditoria."
+                                        description="Extraia seu Manifesto de Dados diretamente do banco D1."
                                     >
                                         <div className="bg-zinc-900/20 p-10 rounded-[2.5rem] border border-zinc-800/40 space-y-8">
                                             <div className="flex items-start gap-4 p-5 bg-zinc-950/50 rounded-2xl border border-zinc-800/50">
                                                 <HardDrive className="text-sky-500 mt-1" size={18} />
                                                 <div className="space-y-1">
                                                     <p className="text-[11px] text-zinc-200 font-black uppercase tracking-widest">Manifesto do Núcleo</p>
-                                                    <p className="text-[10px] text-zinc-500 uppercase leading-relaxed font-medium">Selecione o formato de saída:</p>
+                                                    <p className="text-[10px] text-zinc-500 uppercase leading-relaxed font-medium">Extração de dados via API:</p>
                                                 </div>
                                             </div>
                                             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -477,9 +497,9 @@ export default function ConfigPage() {
                 footer={
                     <div className="flex w-full gap-3 p-6 bg-zinc-900/50">
                         <button disabled={isSaving} onClick={() => setModalConfig({ ...modalConfig, open: false })} className="flex-1 text-[11px] font-black text-zinc-500 hover:text-zinc-300 uppercase h-14">Abortar</button>
-                        <button 
-                            disabled={isSaving} 
-                            onClick={modalConfig.onConfirm} 
+                        <button
+                            disabled={isSaving}
+                            onClick={modalConfig.onConfirm}
                             className={`flex-[1.5] ${modalConfig.type === 'danger' ? 'bg-rose-600 hover:bg-rose-500' : 'bg-sky-600 hover:bg-sky-500'} text-white text-[11px] font-black uppercase h-14 rounded-2xl flex items-center justify-center gap-3 transition-all`}
                         >
                             {isSaving ? <RefreshCw size={16} className="animate-spin" /> : "Confirmar Protocolo"}
