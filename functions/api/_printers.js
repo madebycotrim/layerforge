@@ -1,5 +1,4 @@
-import { sendJSON, corsHeaders } from './[[path]]';
-const toNum = (val, fallback = 0) => isNaN(Number(val)) ? fallback : Number(val);
+import { sendJSON, toNum, corsHeaders } from './[[path]]';
 
 export async function handlePrinters({ request, db, userId, pathArray, url }) {
     const method = request.method;

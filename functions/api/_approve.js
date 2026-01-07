@@ -1,9 +1,8 @@
-import { sendJSON } from './[[path]]';
-const toNum = (val, fallback = 0) => isNaN(Number(val)) ? fallback : Number(val);
+import { sendJSON, toNum } from './[[path]]';
 
 export async function handleApprove({ request, db, userId }) {
     if (request.method !== 'POST') return sendJSON({ error: "Método não permitido" }, 405);
-    
+
     const p = await request.json();
     const projectId = String(p.projectId || "");
     const printerId = String(p.printerId || "");

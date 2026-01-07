@@ -1,21 +1,24 @@
 import { sendJSON } from './[[path]]';
 
-export async function handleProjects({ request, db, userId, url }) {
+export async function handleProjects({ request, db, userId, url, params }) {
     const method = request.method;
+    const pathArray = params.path || [];
+    const idFromPath = pathArray[1];
 
     if (method === 'GET') {
         const { results } = await db.prepare("SELECT * FROM projects WHERE user_id = ? ORDER BY created_at DESC").bind(userId).all();
-        return sendJSON((results || []).map(r => ({
+        const formatted = (results || []).map(r => ({
             id: r.id,
             label: r.label || "Sem Nome",
             data: JSON.parse(r.data || "{}"),
             created_at: r.created_at
-        })));
+        }));
+        return sendJSON(formatted);
     }
 
     if (['POST', 'PUT'].includes(method)) {
         const p = await request.json();
-        const id = String(p.id || crypto.randomUUID());
+        const id = String(p.id || idFromPath || crypto.randomUUID());
         const label = String(p.label || p.entradas?.nomeProjeto || "Novo Orçamento");
         const dataStr = JSON.stringify({
             entradas: p.entradas || p.data?.entradas || {},
