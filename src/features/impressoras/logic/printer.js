@@ -19,24 +19,21 @@ const limparNumero = (valor) => {
 };
 
 /**
- * Mapeia do Frontend (Inglês/CamelCase) para o Backend (Português/Snake_Case)
- * Garante que os dados estejam no formato esperado pelo banco de dados D1 (SQLite).
+ * Mapeia do Frontend (CamelCase) para o Backend (Snake_Case)
  */
 export const prepararParaD1 = (dados = {}) => {
-    // Garante que o histórico seja uma string JSON válida para o SQLite
+    // Garante que o histórico seja uma string JSON para o SQLite
     let historicoFormatado = "[]";
-    try {
-        const h = dados.history || dados.historico || [];
+    if (dados.history || dados.historico) {
+        const h = dados.history || dados.historico;
         historicoFormatado = typeof h === 'string' ? h : JSON.stringify(h);
-    } catch (erro) {
-        console.error("Erro ao serializar histórico:", erro);
     }
 
     return {
         id: dados.id || crypto.randomUUID(),
         nome: (dados.name || dados.nome || "Nova Unidade").trim(),
-        marca: (dados.brand || dados.marca || "Genérica").trim(),
-        modelo: (dados.model || dados.modelo || "FDM").trim(),
+        marca: (dados.brand || dados.marca || "").trim(),
+        modelo: (dados.model || dados.modelo || "").trim(),
         status: dados.status || "idle",
         potencia: limparNumero(dados.power || dados.potencia),
         preco: limparNumero(dados.price || dados.preco),
@@ -53,49 +50,38 @@ export const usePrinterStore = create((set, get) => ({
     printerModels: [],    
     loading: false,
 
-    // Busca o catálogo estático de modelos
     fetchPrinterModels: async () => {
         if (get().printerModels.length > 0) return;
         try {
             const resposta = await axios.get('/printers.json');
             set({ printerModels: Array.isArray(resposta.data) ? resposta.data : [] });
         } catch (erro) {
-            console.error("Falha ao carregar catálogo de modelos:", erro);
+            console.error("Erro ao carregar catálogo:", erro);
         }
     },
 
-    // Busca as impressoras cadastradas no banco
     fetchPrinters: async () => {
         set({ loading: true });
         try {
+            // Rota bate com o 'case impressoras' do seu backend
             const resposta = await api.get('/impressoras');
             const dadosBrutos = resposta.data || [];
 
-            const impressorasMapeadas = dadosBrutos.map(item => {
-                let historicoTratado = [];
-                try {
-                    historicoTratado = typeof item.historico === 'string' 
-                        ? JSON.parse(item.historico) 
-                        : (item.historico || []);
-                } catch (erro) {
-                    console.warn(`Erro no parse do histórico da impressora ${item.id}`);
-                }
-
-                return {
-                    id: item.id,
-                    name: item.nome,
-                    brand: item.marca,
-                    model: item.modelo,
-                    status: item.status,
-                    power: item.potencia,
-                    price: item.preco,
-                    yieldTotal: item.rendimento_total,
-                    totalHours: item.horas_totais,
-                    lastMaintenanceHour: item.ultima_manutencao_hora,
-                    maintenanceInterval: item.intervalo_manutencao,
-                    history: historicoTratado
-                };
-            });
+            const impressorasMapeadas = dadosBrutos.map(item => ({
+                id: item.id,
+                name: item.nome,
+                brand: item.marca,
+                model: item.modelo,
+                status: item.status,
+                power: item.potencia,
+                price: item.preco,
+                yieldTotal: item.rendimento_total,
+                totalHours: item.horas_totais,
+                lastMaintenanceHour: item.ultima_manutencao_hora,
+                maintenanceInterval: item.intervalo_manutencao,
+                // Parse do JSON que vem do SQLite
+                history: typeof item.historico === 'string' ? JSON.parse(item.historico || "[]") : (item.historico || [])
+            }));
 
             set({ printers: impressorasMapeadas, loading: false });
         } catch (erro) {
@@ -104,54 +90,28 @@ export const usePrinterStore = create((set, get) => ({
         }
     },
 
-    // Salva ou atualiza uma impressora
     upsertPrinter: async (dados) => {
         try {
             const payload = prepararParaD1(dados);
             await api.post('/impressoras', payload);
-            
-            // Recarrega a lista para garantir sincronia com o banco
-            await get().fetchPrinters();
+            await get().fetchPrinters(); // Sincroniza
             return true;
         } catch (erro) {
-            console.error("Erro ao salvar impressora:", erro);
+            console.error("Erro ao salvar:", erro);
             throw erro;
         }
     },
 
-    // Remove do banco e atualiza estado local
     removePrinter: async (id) => {
         try {
+            // Usa o parâmetro ?id= conforme esperado pelo seu backend
             await api.delete(`/impressoras?id=${id}`);
             set(estado => ({
                 printers: estado.printers.filter(p => p.id !== id)
             }));
         } catch (erro) {
-            console.error("Erro ao remover impressora:", erro);
+            console.error("Erro ao remover:", erro);
             throw erro;
-        }
-    },
-
-    // Atualiza apenas o status (ex: idle -> printing)
-    updatePrinterStatus: async (id, novoStatus) => {
-        const listaAtual = get().printers;
-        const impressora = listaAtual.find(p => p.id === id);
-        
-        if (impressora) {
-            try {
-                // Prepara o payload mantendo os dados e alterando apenas o status
-                const payload = prepararParaD1({ ...impressora, status: novoStatus });
-                await api.post('/impressoras', payload);
-                
-                // Atualização otimista no estado local
-                set({
-                    printers: listaAtual.map(p => 
-                        p.id === id ? { ...p, status: novoStatus } : p
-                    )
-                });
-            } catch (erro) {
-                console.error("Erro ao atualizar status:", erro);
-            }
         }
     }
 }));

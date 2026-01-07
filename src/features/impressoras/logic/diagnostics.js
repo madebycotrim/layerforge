@@ -1,35 +1,30 @@
 /**
  * DIAGNÓSTICOS E CÁLCULOS AVANÇADOS - PRINTLOG
- * Transforma dados do D1 em insights de negócio e manutenção.
  */
 
-// --- CONFIGURAÇÕES DE PADRÃO (Caso o usuário não tenha configurado a oficina) ---
 const TARIFA_KWH_PADRAO = 0.85; 
-const VIDA_UTIL_MAQUINA_HORAS = 5000; // Vida útil estimada para depreciação total
+const VIDA_UTIL_MAQUINA_HORAS = 5000; 
 
 /**
  * Realiza cálculos financeiros de ROI e custo operacional.
- * @param {Object} impressora - Objeto da impressora (já mapeado pela store)
- * @param {Object} configuracoes - Configurações da oficina vindas da useSettingsStore
  */
 export const calcularFinanceiroAvancado = (impressora, configuracoes = null) => {
-    // Validação inicial para evitar quebra de fluxo
     if (!impressora) return { roiPct: "0", pago: false, custoOperacional: "0.00", lucroLiquido: "0.00" };
     
-    // Prioriza o valor do kWh salvo nas configurações, senão usa o padrão
-    const tarifaKwh = configuracoes?.custoKwh ? Number(configuracoes.custoKwh) : TARIFA_KWH_PADRAO;
+    // AJUSTE DE COMPATIBILIDADE: 
+    // O backend envia 'custo_kwh', o Store pode mapear para 'custoKwh'. Verificamos ambos.
+    const tarifaKwh = Number(configuracoes?.custoKwh || configuracoes?.custo_kwh || TARIFA_KWH_PADRAO);
 
-    // Sanitização de dados numéricos para evitar NaN
-    const precoCompra = Math.max(0, Number(impressora.price) || 0);
-    const rendimentoTotal = Number(impressora.yieldTotal) || 0;
-    const horasTotais = Math.max(0, Number(impressora.totalHours) || 0);
-    const potenciaKw = (Number(impressora.power) || 0) / 1000;
+    // Sanitização rigorosa (usa os nomes mapeados no seu usePrinterStore)
+    const precoCompra = Math.max(0, Number(impressora.price || impressora.preco) || 0);
+    const rendimentoTotal = Number(impressora.yieldTotal || impressora.rendimento_total) || 0;
+    const horasTotais = Math.max(0, Number(impressora.totalHours || impressora.horas_totais) || 0);
+    const potenciaKw = (Number(impressora.power || impressora.potencia) || 0) / 1000;
     
-    // 1. Custo de Energia Real (Horas Totais * Consumo em kW * Tarifa)
+    // 1. Custo de Energia
     const custoEnergia = horasTotais * potenciaKw * tarifaKwh; 
     
-    // 2. Depreciação (Custo de desgaste da máquina)
-    // A depreciação acumulada é limitada ao preço de compra da máquina
+    // 2. Depreciação
     const depreciacaoAcumulada = precoCompra > 0 
         ? Math.min(precoCompra, (precoCompra / VIDA_UTIL_MAQUINA_HORAS) * horasTotais) 
         : 0;
@@ -38,7 +33,6 @@ export const calcularFinanceiroAvancado = (impressora, configuracoes = null) => 
     const custoOperacionalTotal = custoEnergia + depreciacaoAcumulada;
     const lucroLiquido = rendimentoTotal - custoOperacionalTotal;
 
-    // O ROI é calculado sobre o lucro líquido em relação ao investimento inicial (preço da máquina)
     const roiCalculado = precoCompra > 0 ? ((lucroLiquido / precoCompra) * 100).toFixed(1) : "0";
 
     return {
@@ -53,13 +47,13 @@ export const calcularFinanceiroAvancado = (impressora, configuracoes = null) => 
 
 /**
  * Analisa o horímetro e gera alertas de manutenção preventiva.
- * @param {Object} impressora - Objeto da impressora (já mapeado pela store)
  */
 export const analisarSaudeImpressora = (impressora) => {
     if (!impressora) return [];
 
-    const horasTotais = Number(impressora.totalHours) || 0;
-    const ultimaManutencao = Number(impressora.lastMaintenanceHour) || 0;
+    // Garante compatibilidade com nomes vindos do D1 ou do Store mapeado
+    const horasTotais = Number(impressora.totalHours || impressora.horas_totais) || 0;
+    const ultimaManutencao = Number(impressora.lastMaintenanceHour || impressora.ultima_manutencao_hora) || 0;
     const horasDesdeUltima = Math.max(0, horasTotais - ultimaManutencao);
     
     const regrasManutencao = [
@@ -67,12 +61,17 @@ export const analisarSaudeImpressora = (impressora) => {
         { id: 'm2', rotulo: 'Correias', acao: 'Check de tensão X/Y', intervalo: 150, severidade: 'medium' },
         { id: 'm3', rotulo: 'Lubrificação', acao: 'Eixos lineares e fusos', intervalo: 300, severidade: 'medium' },
         { id: 'm4', rotulo: 'Nozzle', acao: 'Troca preventiva de bico', intervalo: 600, severidade: 'medium' },
-        { id: 'm5', rotulo: 'Revisão Elétrica', acao: 'Aperto de bornes (Risco de Incêndio)', intervalo: 1000, severidade: 'critical' },
+        { id: 'm5', rotulo: 'Revisão Elétrica', acao: 'Aperto de bornes', intervalo: 1000, severidade: 'critical' },
         { id: 'm6', rotulo: 'Tubo PTFE', acao: 'Substituição interna', intervalo: 800, severidade: 'medium' }
     ];
     
     return regrasManutencao
-        .filter(regra => horasDesdeUltima >= regra.intervalo * 0.9) // O alerta surge quando atinge 90% do intervalo
+        .filter(regra => horasDesdeUltima >= (regra.intervalo * 0.9)) // Alerta aos 90% do tempo
+        .map(regra => ({
+            ...regra,
+            progresso: Math.min(100, (horasDesdeUltima / regra.intervalo) * 100).toFixed(0),
+            horasRestantes: Math.max(0, regra.intervalo - horasDesdeUltima).toFixed(1)
+        }))
         .sort((a, b) => {
             const prioridade = { critical: 1, medium: 2, low: 3 };
             return prioridade[a.severidade] - prioridade[b.severidade];
