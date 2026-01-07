@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect } from "react";
-import { 
-  DollarSign, Landmark, ShieldAlert, Tag, 
-  TrendingUp, HelpCircle, AlertTriangle, Activity 
+import {
+  DollarSign, Landmark, ShieldAlert, Tag,
+  TrendingUp, HelpCircle, AlertTriangle, Activity
 } from "lucide-react";
 import { UnifiedInput } from "../../../../components/UnifiedInput";
 
@@ -36,7 +36,7 @@ export default function Precificacao({
   const lidarMudancaMarkup = (e) => {
     const valor = e.target.value;
     setMarkupLocal(valor);
-    
+
     const multiplicador = parseFloat(valor);
     if (!isNaN(multiplicador) && multiplicador >= 1) {
       // Margem = (1 - 1 / Markup) * 100
@@ -69,29 +69,29 @@ export default function Precificacao({
 
   return (
     <div className="flex flex-col gap-4 animate-in fade-in duration-500">
-      
+
       {/* CABEÇALHO DE ESTRATÉGIA */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
           <TrendingUp size={14} className="text-emerald-500" />
           <span className="text-[10px] font-black uppercase tracking-widest text-zinc-400">Estratégia de Lucro</span>
         </div>
-        
+
         {/* DICA COM ESTADO DO REACT */}
         <div className="relative flex items-center h-fit">
-          <HelpCircle 
-            size={14} 
+          <HelpCircle
+            size={14}
             className={`transition-colors cursor-help ${exibirDica ? 'text-sky-400' : 'text-zinc-600'}`}
             onMouseEnter={() => setExibirDica(true)}
             onMouseLeave={() => setExibirDica(false)}
           />
-          
+
           {exibirDica && (
             <div className="absolute right-0 top-6 w-56 p-3 bg-zinc-950 border border-zinc-800 rounded-xl shadow-2xl 
                           animate-in fade-in zoom-in-95 duration-200 z-[100] origin-top-right pointer-events-none">
               <p className="text-[8px] text-zinc-400 leading-relaxed uppercase font-bold">
-                <span className="text-sky-400 font-black">Método do Divisor:</span> O lucro é calculado sobre o preço final de venda. 
-                <br/><br/>
+                <span className="text-sky-400 font-black">Método do Divisor:</span> O lucro é calculado sobre o preço final de venda.
+                <br /><br />
                 Ex: Uma margem de 50% quer dizer que metade do valor pago pelo cliente fica com você.
               </p>
             </div>
@@ -113,7 +113,7 @@ export default function Precificacao({
             onChange={(e) => {
               const val = e.target.value;
               // Evita que a margem seja 100% ou mais (para não zerar ou negativar o divisor)
-              if (parseFloat(val) < 100 || val === "") setMargemLucro(val);
+              if (parseFloat(val) < 101 || val === "") setMargemLucro(val);
             }}
           />
           <span className="absolute -bottom-3 left-1 text-[7px] font-black text-zinc-600 uppercase tracking-tighter">Margem Real</span>
@@ -184,12 +184,11 @@ export default function Precificacao({
           </div>
 
           <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden p-[1px]">
-            <div 
-              style={{ width: `${Math.min(cargaTotalEncargos, 100)}%` }} 
-              className={`h-full transition-all duration-700 rounded-full ${
-                cargaTotalEncargos >= 90 ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' : 
+            <div
+              style={{ width: `${Math.min(cargaTotalEncargos, 100)}%` }}
+              className={`h-full transition-all duration-700 rounded-full ${cargaTotalEncargos >= 90 ? 'bg-rose-500 shadow-[0_0_8px_rgba(244,63,94,0.4)]' :
                 cargaTotalEncargos >= 70 ? 'bg-amber-500' : 'bg-emerald-500'
-              }`}
+                }`}
             />
           </div>
 

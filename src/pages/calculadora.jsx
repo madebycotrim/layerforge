@@ -207,7 +207,7 @@ export default function CalculadoraPage() {
         });
         return false;
     }, [dadosFormulario, resultados, hardwareSelecionado, salvarNoBanco, idProjetoAtual]);
-    
+
     const lidarRestauracao = useCallback((registro) => {
         const payload = registro.data || registro.payload;
         if (payload?.entradas) {
@@ -271,7 +271,7 @@ export default function CalculadoraPage() {
                     />
 
                     <div className="flex-1 overflow-y-auto p-4 xl:p-6 custom-scrollbar">
-                        <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 pb-10">
+                        <div className="max-w-[1600px] mx-auto grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
 
                             <div className="flex flex-col gap-4">
                                 <WrapperCard title="Matéria-Prima" step="01" zPriority="z-20">

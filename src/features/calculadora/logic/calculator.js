@@ -30,9 +30,7 @@ export function calcularTudo(dadosEntrada = {}) {
         taxaSetup: obterValor('config.taxaSetup', 'taxaSetup'),
         embalagem: obterValor('custosExtras.embalagem', 'custoEmbalagem'),
         frete: obterValor('custosExtras.frete', 'custoFrete'),
-        extras: Array.isArray(dadosEntrada.custosExtras?.lista)
-            ? dadosEntrada.custosExtras.lista.reduce((acc, item) => acc + (parseFloat(String(item?.valor || "0").replace(',', '.')) || 0), 0)
-            : 0,
+        extras: Array.isArray(dadosEntrada.custosExtras?.lista) ? dadosEntrada.custosExtras.lista.reduce((acc, item) => acc + (parseFloat(String(item?.valor || "0").replace(',', '.')) || 0), 0) : 0,
         margemLucro: obterValor('config.margemLucro', 'margemLucro') / 100,
         imposto: obterValor('config.imposto', 'imposto') / 100,
         taxaMkt: obterValor('vendas.taxaMarketplace', 'taxaMarketplace') / 100,

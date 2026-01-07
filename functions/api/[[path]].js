@@ -16,7 +16,7 @@ export async function onRequest(context) {
     };
 
     // Helper para respostas JSON padronizadas
-    const sendJSON = (data, status = 200) => 
+    const sendJSON = (data, status = 200) =>
         Response.json(data, { status, headers: corsHeaders });
 
     // Helper para converter valores para número seguro (evita NaN no SQLite)
@@ -54,7 +54,7 @@ export async function onRequest(context) {
 
         // 4. ROTEAMENTO PRINCIPAL (SWITCH CASE)
         switch (entity) {
-            
+
             case 'filaments':
             case 'filamentos':
                 if (method === 'GET') {
@@ -216,6 +216,70 @@ export async function onRequest(context) {
 
                     await db.batch(batch);
                     return sendJSON({ success: true });
+                }
+                break;
+
+            case 'users':
+                // O userId já foi extraído do token do Clerk no início da função onRequest
+
+                // --- PROTOCOLO DE EXPORTAÇÃO / BACKUP ---
+                if (method === 'GET') {
+                    // Verifica se a URL termina com /backup (pathArray[2])
+                    // Exemplo de path: /users/user_id/backup
+                    const action = pathArray[2];
+
+                    if (action === 'backup') {
+                        try {
+                            // Buscamos todos os dados do operador em batch para performance
+                            const results = await db.batch([
+                                db.prepare("SELECT * FROM filaments WHERE user_id = ?").bind(userId),
+                                db.prepare("SELECT * FROM printers WHERE user_id = ?").bind(userId),
+                                db.prepare("SELECT * FROM calculator_settings WHERE user_id = ?").bind(userId),
+                                db.prepare("SELECT * FROM projects WHERE user_id = ?").bind(userId)
+                            ]);
+
+                            return sendJSON({
+                                success: true,
+                                metadata: {
+                                    operator_id: userId,
+                                    export_date: new Date().toISOString(),
+                                    system: "Oficina Maker API"
+                                },
+                                data: {
+                                    filaments: results[0].results || [],
+                                    printers: results[1].results || [],
+                                    settings: results[2].results[0] || {}, // Configurações é linha única
+                                    projects: (results[3].results || []).map(p => ({
+                                        ...p,
+                                        data: JSON.parse(p.data || "{}") // Já enviamos o JSON do projeto parseado
+                                    }))
+                                }
+                            });
+                        } catch (err) {
+                            return sendJSON({ error: "Falha na extração de dados", details: err.message }, 500);
+                        }
+                    }
+
+                    return sendJSON({ error: "Ação não permitida" }, 405);
+                }
+
+                // --- PROTOCOLO DE RESCISÃO (O SEU DELETE ATUAL) ---
+                if (method === 'DELETE') {
+                    try {
+                        await db.batch([
+                            db.prepare("DELETE FROM filaments WHERE user_id = ?").bind(userId),
+                            db.prepare("DELETE FROM printers WHERE user_id = ?").bind(userId),
+                            db.prepare("DELETE FROM calculator_settings WHERE user_id = ?").bind(userId),
+                            db.prepare("DELETE FROM projects WHERE user_id = ?").bind(userId)
+                        ]);
+
+                        return sendJSON({
+                            success: true,
+                            message: "Protocolo de rescisão executado: Todos os dados foram apagados."
+                        });
+                    } catch (dbErr) {
+                        return sendJSON({ error: "Falha ao limpar banco de dados", details: dbErr.message }, 500);
+                    }
                 }
                 break;
 

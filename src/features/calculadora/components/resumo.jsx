@@ -122,7 +122,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
     };
 
     return (
-        <div className="h-full flex flex-col gap-3 select-none animate-in fade-in duration-500">
+        <div className="h-full flex flex-col gap-3 animate-in fade-in duration-500">
 
             {/* CARD 01: DESEMPENHO FINANCEIRO */}
             <div className="bg-[#0c0c0e] border border-white/[0.05] rounded-3xl p-5 relative overflow-hidden shrink-0">
@@ -164,11 +164,11 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
             {/* CARD 02: PREÇO FINAL DE VENDA */}
             <div className="bg-[#0c0c0e] border border-white/[0.05] rounded-3xl p-5 relative group shrink-0">
                 <div className="absolute top-4 right-4 flex gap-2">
-                    <button onClick={() => { navigator.clipboard.writeText(precoFinalVenda.toFixed(2)); setCopiadoPreco(true); setTimeout(() => setCopiadoPreco(false), 2000); }} disabled={!temMaterial} className="p-2.5 rounded-xl border border-white/5 bg-zinc-900/50 text-zinc-600 hover:text-sky-400 disabled:opacity-10 transition-all">
-                        {copiadoPreco ? <Check size={14} /> : <Copy size={14} />}
-                    </button>
                     <button onClick={() => { const current = precoFinalVenda; const val = Math.floor(current); const cents = Number((current % 1).toFixed(2)); setPrecoArredondado(cents < 0.90 ? val + 0.90 : val + 1.90); }} disabled={!temMaterial} className="p-2.5 rounded-xl border border-white/5 bg-zinc-900/50 text-zinc-600 hover:text-sky-400 disabled:opacity-10 transition-all">
                         <Wand2 size={14} />
+                    </button>
+                    <button onClick={() => { navigator.clipboard.writeText(precoFinalVenda.toFixed(2)); setCopiadoPreco(true); setTimeout(() => setCopiadoPreco(false), 2000); }} disabled={!temMaterial} className="p-2.5 rounded-xl border border-white/5 bg-zinc-900/50 text-zinc-600 hover:text-sky-400 disabled:opacity-10 transition-all">
+                        {copiadoPreco ? <Check size={14} /> : <Copy size={14} />}
                     </button>
                 </div>
 

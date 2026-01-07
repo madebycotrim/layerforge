@@ -1,18 +1,18 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import {
-    Search, ChevronRight, Mail, X, Terminal, Activity, AlertTriangle,
-    Coins, Code, Send, Globe, Info, Factory, CheckCircle2,
-    Copy, AlertCircle, FileText
+    Search, ChevronRight, Mail, Terminal, Activity, AlertTriangle,
+    Coins, Code, Send, Globe, Info, CheckCircle2,
+    Copy, AlertCircle, FileText, Cpu, Target, Zap
 } from 'lucide-react';
 
 import { WIKI_DATA } from '../utils/wikiData';
 import MainSidebar from "../layouts/mainSidebar";
-import Popup from "../components/Popup"; // Importando o componente universal
+import Popup from "../components/Popup";
 
 // --- COMPONENTES VISUAIS AUXILIARES ---
 
 const HUDOverlay = () => (
-    <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.02]"
+    <div className="absolute inset-0 pointer-events-none z-0 opacity-[0.03] overflow-hidden"
         style={{
             backgroundImage: 'linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03))',
             backgroundSize: '100% 4px, 3px 100%'
@@ -45,11 +45,11 @@ const TypewriterHero = ({ phrases, speed = 100, delay = 2500 }) => {
 
     return (
         <div className="flex flex-col leading-tight select-none">
-            <span className="text-zinc-100 font-bold text-4xl md:text-6xl tracking-tighter">
+            <span className="text-zinc-100 font-black text-4xl md:text-6xl tracking-tighter uppercase">
                 {currentPhrase.line1.substring(0, subIndex)}
                 {subIndex <= currentPhrase.line1.length && <span className="animate-pulse border-r-4 border-sky-500 ml-1"></span>}
             </span>
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-sky-400 to-emerald-400 font-bold text-4xl md:text-6xl tracking-tighter">
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-emerald-400 font-black text-4xl md:text-6xl tracking-tighter uppercase">
                 {subIndex > currentPhrase.line1.length ? currentPhrase.line2.substring(0, subIndex - currentPhrase.line1.length) : ""}
                 {subIndex > currentPhrase.line1.length && <span className="animate-pulse border-r-4 border-emerald-500 ml-1"></span>}
             </span>
@@ -69,30 +69,37 @@ const WikiModuleCard = ({ category, onSelectTopic }) => {
     };
 
     return (
-        <div className={`group relative bg-zinc-900/40 border border-zinc-800/50 border-l-4 ${colorMap[category.color]} rounded-2xl p-6 transition-all duration-300 hover:bg-zinc-900/60 hover:translate-y-[-2px] shadow-sm overflow-hidden backdrop-blur-sm`}>
-            <HUDOverlay />
-            <div className="flex justify-between items-start mb-6 relative z-10">
+        <div className={`group relative bg-zinc-900/30 border border-zinc-800/40 border-l-4 ${colorMap[category.color]} rounded-2xl p-6 transition-all duration-500 hover:bg-zinc-900/60 hover:translate-y-[-4px] shadow-2xl backdrop-blur-md`}>
+            <div className="flex justify-between items-start mb-8 relative z-10">
                 <div className="flex items-center gap-4">
-                    <div className={`p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700 transition-all ${textColorMap[category.color]}`}>
-                        <category.icon size={20} strokeWidth={2} />
+                    <div className={`p-3 rounded-xl bg-zinc-950 border border-zinc-800 group-hover:border-zinc-700 transition-all ${textColorMap[category.color]} shadow-inner`}>
+                        <category.icon size={20} strokeWidth={2.5} />
                     </div>
                     <div>
-                        <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{category.category}</span>
-                        <h3 className="text-sm font-bold uppercase text-zinc-100 tracking-tight">{category.title}</h3>
+                        <span className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.2em]">{category.category}</span>
+                        <h3 className="text-[13px] font-black uppercase text-zinc-100 tracking-wider mt-0.5">{category.title}</h3>
                     </div>
                 </div>
             </div>
-            <div className="space-y-2 relative z-10">
+            <div className="space-y-2.5 relative z-10">
                 {category.topics.map(topic => (
-                    <button key={topic.id} onClick={() => onSelectTopic(topic)} className="w-full group/item flex items-center justify-between p-3 rounded-xl bg-zinc-950/50 border border-zinc-800/50 hover:border-zinc-700 transition-all hover:bg-zinc-900/50 text-left">
+                    <button 
+                        key={topic.id} 
+                        onClick={() => onSelectTopic(topic)} 
+                        className="w-full group/item flex items-center justify-between p-3.5 rounded-xl bg-zinc-950/40 border border-zinc-800/50 hover:border-sky-500/30 transition-all hover:bg-zinc-900/80 text-left active:scale-[0.98]"
+                    >
                         <div className="flex items-center gap-3">
-                            <div className="w-1 h-3 rounded-full bg-zinc-800 group-hover/item:bg-sky-500 transition-all" />
+                            <div className="w-1.5 h-1.5 rounded-full bg-zinc-800 group-hover/item:bg-sky-500 group-hover/item:shadow-[0_0_8px_rgba(14,165,233,0.5)] transition-all" />
                             <div className="flex flex-col">
-                                <span className="text-xs font-semibold text-zinc-400 group-hover/item:text-zinc-100 transition-colors uppercase tracking-tight">{topic.title}</span>
-                                {topic.gcode && <span className="text-[9px] text-sky-500 font-mono mt-0.5 flex items-center gap-1 opacity-80"><Code size={10} /> SCRIPT_GCODE</span>}
+                                <span className="text-[11px] font-bold text-zinc-400 group-hover/item:text-zinc-100 transition-colors uppercase tracking-tight">{topic.title}</span>
+                                {topic.gcode && (
+                                    <span className="text-[8px] text-sky-500/70 font-mono mt-1 flex items-center gap-1.5">
+                                        <Code size={10} /> SCRIPT_EXECUTÁVEL
+                                    </span>
+                                )}
                             </div>
                         </div>
-                        <ChevronRight size={14} className="text-zinc-700 group-hover/item:text-sky-500 transition-all" />
+                        <ChevronRight size={14} className="text-zinc-700 group-hover/item:text-sky-500 transition-all translate-x-0 group-hover/item:translate-x-1" />
                     </button>
                 ))}
             </div>
@@ -109,15 +116,14 @@ export default function WikiPage() {
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [copiado, setCopiado] = useState(false);
 
-    // Estado para Popups de Notificação
     const [modalConfig, setModalConfig] = useState({
-        open: false, title: "", message: "", icon: AlertCircle, color: "text-sky-500"
+        open: false, title: "", message: "", icon: AlertCircle, color: "bg-sky-600"
     });
 
     const phrases = useMemo(() => [
-        { line1: "TRANSFORME", line2: "IDEIAS EM ATIVOS." },
-        { line1: "EFICIÊNCIA", line2: "MÁXIMA NA FARM." },
-        { line1: "SISTEMA", line2: "DE APOIO MAKER." }
+        { line1: "OTIMIZE", line2: "SEU FLUXO MAKER." },
+        { line1: "PROTOCOLOS", line2: "DE ALTA PERFORMANCE." },
+        { line1: "SISTEMAS", line2: "DE APOIO TÉCNICO." }
     ], []);
 
     const filteredData = useMemo(() => {
@@ -133,111 +139,122 @@ export default function WikiPage() {
         navigator.clipboard.writeText(code);
         setModalConfig({
             open: true,
-            title: "Terminal",
-            message: "Protocolo G-Code copiado para a área de transferência.",
+            title: "Terminal Buffer",
+            message: "Protocolo G-Code sincronizado com a área de transferência do sistema.",
             icon: CheckCircle2,
-            color: "text-emerald-500"
+            color: "bg-emerald-600"
         });
     };
 
     return (
-        <div className="flex h-screen w-full bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden">
+        <div className="flex h-screen w-full bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden selection:bg-sky-500/30">
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 68 : 256)} />
 
-            <main className="flex-1 flex flex-col relative transition-all duration-300 ease-out overflow-hidden" style={{ marginLeft: `${larguraSidebar}px` }}>
-
-                {/* Background Decorativo */}
-                <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none opacity-[0.05]"
+            <main className="flex-1 flex flex-col relative transition-all duration-500 ease-in-out" style={{ marginLeft: `${larguraSidebar}px` }}>
+                
+                {/* Background Decorativo com Grid */}
+                <div className="absolute inset-0 z-0 pointer-events-none opacity-[0.03]"
                     style={{
-                        backgroundImage: 'linear-gradient(to right, #3f3f46 1px, transparent 1px), linear-gradient(to bottom, #3f3f46 1px, transparent 1px)',
-                        backgroundSize: '48px 48px',
-                        maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
+                        backgroundImage: 'linear-gradient(#3f3f46 1px, transparent 1px), linear-gradient(90deg, #3f3f46 1px, transparent 1px)',
+                        backgroundSize: '40px 40px',
+                        maskImage: 'radial-gradient(ellipse 80% 50% at 50% 0%, black, transparent)'
                     }}
                 />
 
-                <header className="h-20 px-10 flex items-center justify-between z-40 relative border-b border-white/5 bg-zinc-950/50 backdrop-blur-xl">
-                    <div className="absolute top-0 left-0 w-full h-[1px] bg-gradient-to-r from-cyan-700 via-sky-500 to-indigo-400 opacity-60" />
-                    <div className="flex flex-col relative select-none">
-                        <h1 className="text-[9px] font-black uppercase tracking-[0.3em] text-zinc-500 mb-0.5">IDEIAS, TUTORIAIS E SOLUÇÕES</h1>
-                        <span className="text-xl font-black uppercase tracking-tighter text-white">
-                            Central <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-400">Maker</span>
+                <header className="h-24 px-10 flex items-center justify-between z-40 relative border-b border-white/5 bg-zinc-950/80 backdrop-blur-2xl">
+                    <div className="flex flex-col relative">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Zap size={12} className="text-sky-500 fill-sky-500 animate-pulse" />
+                            <h1 className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-500">Knowledge_Base_v2.0</h1>
+                        </div>
+                        <span className="text-2xl font-black uppercase tracking-tighter text-white">
+                            Diretrizes da <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-sky-500">Oficina</span>
                         </span>
                     </div>
 
                     <div className="relative group">
-                        <Search size={14} strokeWidth={3} className={`absolute left-4 top-1/2 -translate-y-1/2 ${busca ? 'text-sky-400' : 'text-zinc-600'}`} />
+                        <Search size={14} className={`absolute left-4 top-1/2 -translate-y-1/2 transition-colors ${busca ? 'text-sky-400' : 'text-zinc-600'}`} />
                         <input
-                            className="w-80 bg-zinc-900/40 border border-white/5 rounded-xl py-2.5 pl-11 pr-10 text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest focus:border-sky-500/30 focus:bg-zinc-900/80"
-                            placeholder="BUSCAR COMANDO..."
+                            className="w-96 bg-zinc-900/40 border border-white/10 rounded-2xl py-3 pl-11 pr-10 text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest focus:border-sky-500/40 focus:bg-zinc-900/80 placeholder:text-zinc-700"
+                            placeholder="PESQUISAR DIRETRIZ OU COMANDO..."
                             value={busca}
                             onChange={e => setBusca(e.target.value)}
                         />
                     </div>
                 </header>
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 relative z-10">
-                    <div className="max-w-[1600px] mx-auto space-y-12">
+                <div className="flex-1 overflow-y-auto custom-scrollbar p-10 relative z-10 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.02),transparent_40%)]">
+                    <div className="max-w-[1600px] mx-auto space-y-16">
 
-                        {/* HERO */}
-                        <section className="relative overflow-hidden rounded-[2rem] bg-zinc-900/40 border border-zinc-800/50 p-12 min-h-[320px] flex flex-col justify-center shadow-sm backdrop-blur-sm">
+                        {/* HERO SECTION */}
+                        <section className="relative overflow-hidden rounded-[3rem] bg-zinc-900/20 border border-white/5 p-16 min-h-[400px] flex flex-col justify-center shadow-2xl backdrop-blur-sm group">
                             <HUDOverlay />
-                            <div className="relative z-10 space-y-6">
-                                <div className="flex items-center gap-3 text-sky-400">
-                                    <Terminal size={14} className="animate-pulse" />
-                                    <span className="text-[10px] font-bold uppercase tracking-[0.3em]">Central de Inteligência Operacional</span>
+                            <div className="absolute top-0 right-0 p-12 opacity-10 group-hover:opacity-20 transition-opacity">
+                                <Cpu size={200} className="text-white" />
+                            </div>
+                            <div className="relative z-10 space-y-8">
+                                <div className="flex items-center gap-4 text-sky-400">
+                                    <div className="h-px w-12 bg-sky-500/50" />
+                                    <span className="text-[11px] font-black uppercase tracking-[0.4em]">Núcleo de Inteligência Maker</span>
                                 </div>
                                 <TypewriterHero phrases={phrases} />
-                                <p className="text-sm text-zinc-400 max-w-xl font-medium leading-relaxed uppercase tracking-wide">Diretrizes e protocolos de otimização industrial para sua farm.</p>
+                                <p className="text-sm text-zinc-500 max-w-2xl font-medium leading-relaxed uppercase tracking-widest italic">
+                                    Acesse protocolos validados para escala industrial e otimização de farm 3D.
+                                </p>
                             </div>
                         </section>
 
-                        {/* FILTROS */}
-                        <div className="flex flex-wrap gap-3 relative z-10">
+                        {/* FILTROS DE CATEGORIA */}
+                        <div className="flex flex-wrap gap-4 relative z-10">
                             {[
-                                { id: 'all', label: 'Todos os Módulos', icon: Activity },
-                                { id: 'critico', label: 'Crítico [!]', icon: AlertTriangle, color: 'text-rose-400' },
-                                { id: 'lucro', label: 'Rentabilidade [$]', icon: Coins, color: 'text-emerald-400' },
-                                { id: 'setup', label: 'Hardware', icon: Code, color: 'text-sky-400' },
+                                { id: 'all', label: 'Todos os Protocolos', icon: Activity },
+                                { id: 'critico', label: 'Sistemas Críticos', icon: AlertTriangle, color: 'text-rose-400' },
+                                { id: 'lucro', label: 'Otimização Financeira', icon: Coins, color: 'text-emerald-400' },
+                                { id: 'setup', label: 'Configuração Hardware', icon: Code, color: 'text-sky-400' },
                             ].map((f) => (
-                                <button key={f.id} onClick={() => setFiltroAtivo(f.id)} className={`flex items-center gap-3 px-5 py-2.5 rounded-xl border transition-all text-[10px] font-bold uppercase tracking-widest ${filtroAtivo === f.id ? 'bg-zinc-100 text-zinc-950 border-zinc-100' : 'bg-zinc-900/50 text-zinc-500 border-zinc-800 hover:border-zinc-600'}`}>
-                                    <f.icon size={14} className={filtroAtivo === f.id ? 'text-zinc-950' : f.color} />
+                                <button 
+                                    key={f.id} 
+                                    onClick={() => setFiltroAtivo(f.id)} 
+                                    className={`flex items-center gap-4 px-6 py-3 rounded-2xl border transition-all text-[11px] font-black uppercase tracking-[0.15em] active:scale-95 ${filtroAtivo === f.id ? 'bg-white text-zinc-950 border-white shadow-lg shadow-white/5' : 'bg-zinc-900/40 text-zinc-500 border-zinc-800 hover:border-zinc-600 hover:text-zinc-300'}`}
+                                >
+                                    <f.icon size={16} className={filtroAtivo === f.id ? 'text-zinc-950' : f.color} />
                                     {f.label}
                                 </button>
                             ))}
                         </div>
 
-                        {/* GRID DE CARDS */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        {/* GRID DE MÓDULOS */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
                             {filteredData.map((category) => (
                                 <WikiModuleCard key={category.id} category={category} onSelectTopic={setSelectedArticle} />
                             ))}
                         </div>
 
-                        {/* CALL TO ACTION */}
-                        <section className="relative overflow-hidden rounded-[2rem] bg-zinc-900/40 border border-zinc-800/50 p-10 shadow-sm group backdrop-blur-sm">
+                        {/* SEÇÃO DE SUPORTE (CTA) */}
+                        <section className="relative overflow-hidden rounded-[3rem] bg-zinc-900/20 border border-white/5 p-12 shadow-2xl backdrop-blur-md group">
                             <HUDOverlay />
-                            <div className="relative z-30 flex flex-col lg:flex-row items-center justify-between gap-10">
-                                <div className="flex items-center gap-8">
-                                    <div className="w-16 h-16 rounded-2xl bg-zinc-950 border border-zinc-800 flex items-center justify-center text-sky-400 shadow-inner">
-                                        <Globe size={28} />
+                            <div className="relative z-30 flex flex-col lg:flex-row items-center justify-between gap-12">
+                                <div className="flex items-center gap-10">
+                                    <div className="w-20 h-20 rounded-[1.5rem] bg-zinc-950 border border-zinc-800 flex items-center justify-center text-sky-400 shadow-2xl group-hover:border-sky-500/50 transition-all duration-500">
+                                        <Globe size={32} />
                                     </div>
-                                    <div className="space-y-1">
-                                        <h3 className="text-sm font-bold text-zinc-100 uppercase tracking-widest">Suporte Técnico & Contribuições</h3>
-                                        <p className="text-xs text-zinc-500 font-medium uppercase tracking-wide leading-relaxed max-w-lg">
-                                            Tem sugestões de melhoria para os protocolos? Nossa central está aberta.
+                                    <div className="space-y-2">
+                                        <h3 className="text-lg font-black text-zinc-100 uppercase tracking-widest">Colaboração & Dúvidas</h3>
+                                        <p className="text-[11px] text-zinc-500 font-bold uppercase tracking-[0.1em] leading-relaxed max-w-xl">
+                                            Sua experiência pode ajudar outros makers. Envie sugestões de novos protocolos ou solicite suporte técnico especializado.
                                         </p>
                                     </div>
                                 </div>
                                 <div className="flex flex-wrap gap-4 w-full lg:w-auto">
                                     <button
                                         onClick={() => { navigator.clipboard.writeText("suporte@printlog.com.br"); setCopiado(true); setTimeout(() => setCopiado(false), 2000); }}
-                                        className="flex-1 lg:flex-none px-6 py-3 bg-zinc-900/50 hover:bg-zinc-800 text-[10px] font-bold uppercase rounded-xl border border-zinc-800 flex items-center justify-center gap-3 transition-all"
+                                        className="flex-1 lg:flex-none px-8 py-4 bg-zinc-900/50 hover:bg-zinc-800 text-[10px] font-black uppercase tracking-widest rounded-2xl border border-zinc-800 flex items-center justify-center gap-3 transition-all"
                                     >
-                                        <Mail size={16} className={copiado ? "text-emerald-400" : ""} />
-                                        {copiado ? "E-mail Copiado" : "E-mail Suporte"}
+                                        <Mail size={18} className={copiado ? "text-emerald-400" : "text-zinc-500"} />
+                                        {copiado ? "ID Copiada" : "Copiar E-mail"}
                                     </button>
-                                    <a href="https://forms.gle/NHYqNAcvApJwZM2w6" className="flex-1 lg:flex-none px-8 py-3 bg-zinc-100 hover:bg-zinc-200 text-zinc-950 text-[10px] font-bold uppercase rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm">
-                                        Mandar Sugestão <Send size={16} />
+                                    <a href="#" className="flex-1 lg:flex-none px-10 py-4 bg-zinc-100 hover:bg-white text-zinc-950 text-[10px] font-black uppercase tracking-widest rounded-2xl transition-all flex items-center justify-center gap-3 shadow-xl">
+                                        Abrir Ticket <Send size={18} />
                                     </a>
                                 </div>
                             </div>
@@ -245,46 +262,59 @@ export default function WikiPage() {
                     </div>
                 </div>
 
-                {/* POPUP DE DETALHES DO ARTIGO (Substituído) */}
+                {/* MODAL: DOSSIÊ TÉCNICO DO ARTIGO */}
                 <Popup
                     isOpen={!!selectedArticle}
                     onClose={() => setSelectedArticle(null)}
-                    title={selectedArticle?.title || "Detalhes do Artigo"}
-                    subtitle={`Protocolo: ${selectedArticle?.id || '000'}`}
+                    title={selectedArticle?.title || "Dossiê Técnico"}
+                    subtitle={`Diretriz: #${selectedArticle?.id || '000'}`}
                     icon={selectedArticle?.gcode ? Code : FileText}
                     footer={
                         selectedArticle?.gcode && (
                             <button
                                 onClick={() => handleCopyGCode(selectedArticle.gcode)}
-                                className="w-full h-12 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-[10px] font-black uppercase flex items-center justify-center gap-2 transition-all shadow-lg shadow-sky-900/20"
+                                className="w-full h-14 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white text-[11px] font-black uppercase tracking-widest flex items-center justify-center gap-3 transition-all shadow-lg shadow-sky-900/40 active:scale-95"
                             >
-                                <Copy size={16} /> Copiar Script G-Code
+                                <Copy size={18} /> Sincronizar Buffer G-Code
                             </button>
                         )
                     }
                 >
-                    <div className="p-8 space-y-6">
-                        <div className="flex items-center gap-3">
-                            <span className="text-[9px] font-black bg-zinc-900 text-zinc-500 px-3 py-1 rounded border border-white/5 uppercase tracking-widest">Prioridade: {selectedArticle?.level}</span>
-                            <span className="text-[9px] font-black bg-zinc-900 text-zinc-500 px-3 py-1 rounded border border-white/5 uppercase tracking-widest">Atualizado: {selectedArticle?.updated}</span>
+                    <div className="p-10 space-y-8">
+                        <div className="flex items-center gap-4">
+                            <span className="text-[10px] font-black bg-zinc-900 text-sky-500 px-4 py-1.5 rounded-lg border border-sky-500/20 uppercase tracking-widest flex items-center gap-2">
+                                <Target size={12} /> Nível: {selectedArticle?.level}
+                            </span>
+                            <span className="text-[10px] font-black bg-zinc-900 text-zinc-500 px-4 py-1.5 rounded-lg border border-white/5 uppercase tracking-widest">
+                                Revisão: {selectedArticle?.updated}
+                            </span>
                         </div>
 
-                        <p className="text-zinc-400 text-sm font-medium leading-relaxed border-l-2 border-sky-500/30 pl-6 uppercase tracking-wide">
-                            {selectedArticle?.content}
-                        </p>
+                        <div className="relative">
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-sky-500 to-transparent opacity-30" />
+                            <p className="text-zinc-400 text-sm font-medium leading-relaxed pl-8 uppercase tracking-widest">
+                                {selectedArticle?.content}
+                            </p>
+                        </div>
 
                         {selectedArticle?.gcode && (
-                            <div className="space-y-3 pt-4">
-                                <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest ml-1">Protocolo de Terminal:</p>
-                                <div className="bg-zinc-950 p-5 rounded-2xl border border-zinc-800 flex justify-between items-center">
-                                    <code className="text-sky-400 text-xs font-mono">{selectedArticle.gcode}</code>
+                            <div className="space-y-4 pt-6">
+                                <div className="flex items-center gap-3 ml-1">
+                                    <Terminal size={14} className="text-zinc-600" />
+                                    <p className="text-[10px] font-black text-zinc-600 uppercase tracking-[0.2em]">Terminal Protocol:</p>
+                                </div>
+                                <div className="bg-zinc-950/80 p-6 rounded-2xl border border-zinc-800 flex justify-between items-center group/code shadow-inner">
+                                    <code className="text-sky-400 text-sm font-mono tracking-wider">{selectedArticle.gcode}</code>
+                                    <button onClick={() => handleCopyGCode(selectedArticle.gcode)} className="p-2 text-zinc-700 hover:text-sky-500 transition-colors">
+                                        <Copy size={16} />
+                                    </button>
                                 </div>
                             </div>
                         )}
                     </div>
                 </Popup>
 
-                {/* POPUP GLOBAL DE NOTIFICAÇÕES (Substituído) */}
+                {/* MODAL: NOTIFICAÇÃO GLOBAL */}
                 <Popup
                     isOpen={modalConfig.open}
                     onClose={() => setModalConfig({ ...modalConfig, open: false })}
@@ -293,15 +323,14 @@ export default function WikiPage() {
                     footer={
                         <button
                             onClick={() => setModalConfig({ ...modalConfig, open: false })}
-                            className={`w-full h-12 rounded-xl text-[10px] font-black uppercase transition-all shadow-lg text-white ${modalConfig.color === 'text-emerald-500' ? 'bg-emerald-600 shadow-emerald-900/20' : 'bg-sky-600 shadow-sky-900/20'
-                                }`}
+                            className={`w-full h-14 rounded-2xl text-[11px] font-black uppercase tracking-widest transition-all shadow-xl text-white ${modalConfig.color}`}
                         >
-                            Entendi
+                            Confirmar Protocolo
                         </button>
                     }
                 >
-                    <div className="p-8 flex flex-col items-center text-center gap-4">
-                        <p className="text-sm text-zinc-400 font-medium leading-relaxed">
+                    <div className="p-10 flex flex-col items-center text-center gap-6 border-t border-white/5">
+                        <p className="text-sm text-zinc-400 font-bold uppercase tracking-widest leading-relaxed">
                             {modalConfig.message}
                         </p>
                     </div>
