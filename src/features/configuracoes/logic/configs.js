@@ -20,7 +20,7 @@ export const useConfigLogic = () => {
     // Estados de Dados
     const [firstName, setFirstName] = useState("");
     const [originalData, setOriginalData] = useState({ firstName: "" });
-    const [totalPrintingHours, setTotalPrintingHours] = useState(0); 
+    const [totalPrintingHours, setTotalPrintingHours] = useState(0);
     const [showPasswordModal, setShowPasswordModal] = useState(false);
     const [passwordForm, setPasswordForm] = useState({
         currentPassword: "",
@@ -32,7 +32,7 @@ export const useConfigLogic = () => {
         if (isLoaded && user) {
             setFirstName(user.firstName || "");
             setOriginalData({ firstName: user.firstName || "" });
-            
+
             const fetchAndSumHours = async () => {
                 try {
                     const printers = await api.get('/printers');
@@ -84,10 +84,10 @@ export const useConfigLogic = () => {
             setIsSaving(true);
             // Solicita ao Clerk para enviar um código/link de redefinição para o e-mail do usuário
             await user.preparePasswordReset({ strategy: "email_code" });
-            setToast({ 
-                show: true, 
-                message: "Protocolo enviado! Verifique seu e-mail para redefinir a chave.", 
-                type: 'success' 
+            setToast({
+                show: true,
+                message: "Protocolo enviado! Verifique seu e-mail para redefinir a chave.",
+                type: 'success'
             });
         } catch (err) {
             console.error(err);
@@ -109,9 +109,9 @@ export const useConfigLogic = () => {
         setIsSaving(true);
         try {
             if (user.passwordEnabled) {
-                await user.update({ 
-                    password: passwordForm.newPassword, 
-                    currentPassword: passwordForm.currentPassword 
+                await user.update({
+                    password: passwordForm.newPassword,
+                    currentPassword: passwordForm.currentPassword
                 });
             } else {
                 // Se for usuário social sem senha, o Clerk cria a primeira aqui
@@ -133,7 +133,7 @@ export const useConfigLogic = () => {
         try {
             // O backend limpa o D1 e deleta o usuário no Clerk via Secret Key
             const response = await api.delete('/users');
-            
+
             if (response.success) {
                 setToast({ show: true, message: "Expurgo concluído. Encerrando sessão...", type: 'success' });
                 // Desloga e limpa o estado local após 2 segundos
@@ -150,32 +150,64 @@ export const useConfigLogic = () => {
         try {
             setIsSaving(true);
             const response = await api.get(`/users/backup`);
-            if (!response.success) throw new Error();
 
+            // O JSON que você me mostrou está dentro de 'response'
+            if (!response.success) throw new Error("Erro no manifesto");
+
+            const data = response.data; // Aqui pegamos filaments, printers, settings, etc.
             const timestamp = new Date().toISOString().split('T')[0];
 
-            if (format === 'pdf') {
-                // Protocolo de Impressão do Navegador (Formatado pelo seu CSS)
-                window.print();
-            } else if (format === 'xlsx' || format === 'csv') {
-                // Gera um CSV básico com os dados recebidos
-                const data = response.data;
-                let csv = "ID;NOME;MATERIAL;COR;PESO_ATUAL\n";
-                data.filaments.forEach(f => {
-                    csv += `${f.id};${f.nome};${f.material};${f.cor_hex};${f.peso_atual}\n`;
-                });
-                
-                const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement("a");
-                link.href = URL.createObjectURL(blob);
-                link.download = `printlog_manifesto_${timestamp}.csv`;
+            if (format === 'json') {
+                const blob = new Blob([JSON.stringify(response, null, 2)], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `printlog_backup_${timestamp}.json`;
                 link.click();
             }
 
-            setToast({ show: true, message: `Manifesto ${format.toUpperCase()} gerado com sucesso.`, type: 'success' });
+            else if (format === 'xlsx' || format === 'csv') {
+                // Criando um CSV organizado por seções
+                let csv = "MANIFESTO MAKER - PRINTLOG\n";
+                csv += `Operador:;${firstName}\n`;
+                csv += `Data:;${timestamp}\n\n`;
+
+                // Seção de Filamentos
+                csv += "--- FILAMENTOS ---\n";
+                csv += "ID;NOME;MATERIAL;COR;PESO ATUAL (g)\n";
+                data.filaments.forEach(f => {
+                    csv += `${f.id};${f.nome};${f.material};${f.cor_hex};${f.peso_atual}\n`;
+                });
+
+                // Seção de Impressoras
+                csv += "\n--- IMPRESSORAS ---\n";
+                csv += "ID;NOME;MODELO;HORAS TOTAIS\n";
+                data.printers.forEach(p => {
+                    csv += `${p.id};${p.nome};${p.modelo};${p.horas_totais || 0}\n`;
+                });
+
+                // Download do arquivo
+                const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement("a");
+                link.href = URL.createObjectURL(blob);
+                link.download = `printlog_planilha_${timestamp}.csv`;
+                link.click();
+            }
+
+            else if (format === 'pdf') {
+                // O PDF via window.print() imprime o que está na tela.
+                // Para um PDF técnico de dados, o ideal é formatar uma página oculta 
+                // ou usar jspdf. Por enquanto, usamos o print do sistema:
+                window.print();
+            }
+
+            setToast({ show: true, message: `Manifesto ${format.toUpperCase()} exportado.`, type: 'success' });
         } catch (err) {
-            setToast({ show: true, message: "Erro ao gerar arquivo de exportação.", type: 'error' });
-        } finally { setIsSaving(false); }
+            console.error(err);
+            setToast({ show: true, message: "Erro ao processar manifesto de dados.", type: 'error' });
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     return {
@@ -191,7 +223,7 @@ export const useConfigLogic = () => {
         handleGlobalSave, handleImageUpload,
         showPasswordModal, setShowPasswordModal,
         passwordForm, setPasswordForm,
-        handleUpdatePassword, 
+        handleUpdatePassword,
         handleResetPasswordEmail,
         exportFormattedData,
         handleDeleteAccount
