@@ -40,15 +40,49 @@ export async function handleUsers({ request, db, userId, pathArray }) {
 
     if (method === 'DELETE') {
         try {
+            // 1. PROTOCOLO DE EXPURGO NO BANCO DE DADOS
+            // Deletamos tudo relacionado ao usuário primeiro
             await db.batch([
                 db.prepare("DELETE FROM filaments WHERE user_id = ?").bind(userId),
                 db.prepare("DELETE FROM printers WHERE user_id = ?").bind(userId),
                 db.prepare("DELETE FROM calculator_settings WHERE user_id = ?").bind(userId),
                 db.prepare("DELETE FROM projects WHERE user_id = ?").bind(userId)
             ]);
-            return sendJSON({ success: true, protocol: "EXPURGO_COMPLETE" });
-        } catch (dbErr) {
-            return sendJSON({ error: "Falha crítica no protocolo de exclusão", details: dbErr.message }, 500);
+
+            // 2. EXCLUSÃO DA CONTA NO CLERK (AUTENTICAÇÃO)
+            // Você precisa da sua CLERK_SECRET_KEY configurada no seu ambiente (env)
+            const clerkSecretKey = env.CLERK_SECRET_KEY;
+
+            if (!clerkSecretKey) {
+                throw new Error("Chave de segurança do sistema não configurada");
+            }
+
+            const clerkResponse = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${clerkSecretKey}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!clerkResponse.ok) {
+                const errorData = await clerkResponse.json();
+                throw new Error(errorData.errors?.[0]?.message || "Falha ao remover conta do provedor de autenticação");
+            }
+
+            // 3. RETORNO DE SUCESSO
+            return sendJSON({
+                success: true,
+                protocol: "EXPURGO_TOTAL_COMPLETE",
+                message: "Dados e conta removidos permanentemente."
+            });
+
+        } catch (err) {
+            console.error("ERRO CRÍTICO NO EXPURGO:", err);
+            return sendJSON({
+                error: "Falha crítica no protocolo de exclusão",
+                details: err.message
+            }, 500);
         }
     }
 
