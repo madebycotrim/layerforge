@@ -1,54 +1,51 @@
 import { sendJSON } from './[[path]]';
-import axios from 'axios';
 
 export async function handleUsers({ request, db, userId, pathArray, env }) {
     const method = request.method;
 
-    // --- LÓGICA DE GET (BACKUP) ---
-    if (method === 'GET') {
-        // Verifica se a palavra 'backup' existe em qualquer lugar do caminho da URL
-        const isBackupAction = pathArray.some(p => p.toLowerCase() === 'backup');
+    if (method === 'GET' && pathArray.includes('backup')) {
+        try {
+            const [filaments, printers, settings, projects] = await db.batch([
+                db.prepare("SELECT * FROM filaments WHERE user_id = ?").bind(userId),
+                db.prepare("SELECT * FROM printers WHERE user_id = ?").bind(userId),
+                db.prepare("SELECT * FROM calculator_settings WHERE user_id = ?").bind(userId),
+                db.prepare("SELECT * FROM projects WHERE user_id = ?").bind(userId)
+            ]);
 
-        if (isBackupAction) {
-            try {
-                // Coleta todos os dados do maker em paralelo
-                const results = await db.batch([
-                    db.prepare("SELECT id, nome, material, cor_hex, peso_atual FROM filaments WHERE user_id = ?").bind(userId),
-                    db.prepare("SELECT id, nome, modelo, horas_totais FROM printers WHERE user_id = ?").bind(userId),
-                    db.prepare("SELECT * FROM calculator_settings WHERE user_id = ?").bind(userId),
-                    db.prepare("SELECT id, label, data, created_at FROM projects WHERE user_id = ?").bind(userId)
-                ]);
-
-                return sendJSON({
-                    success: true,
+            return sendJSON({
+                success: true,
+                data: {
                     metadata: {
-                        operator_id: userId,
+                        export_version: "2.0",
+                        user_id: userId,
                         generated_at: new Date().toISOString(),
-                        protocol: "MANIFESTO_GERADO"
+                        system: "PrintLog .SYS"
                     },
-                    data: {
-                        filaments: results[0].results || [],
-                        printers: results[1].results || [],
-                        settings: results[2].results[0] || {},
-                        projects: (results[3].results || []).map(p => ({
-                            ...p,
-                            data: JSON.parse(p.data || "{}")
-                        }))
-                    }
-                });
-            } catch (err) {
-                return sendJSON({ error: "Falha na extração dos logs", details: err.message }, 500);
-            }
+                    filaments: filaments.results,
+                    printers: printers.results,
+                    settings: settings.results[0] || {},
+                    // Garantimos que o campo 'data' do projeto seja um objeto real antes de enviar
+                    projects: projects.results.map(p => ({
+                        ...p,
+                        data: typeof p.data === 'string' ? JSON.parse(p.data) : p.data
+                    }))
+                }
+            });
+        } catch (err) {
+            return sendJSON({ error: "Erro na extração", details: err.message }, 500);
         }
-        
-        // Se cair aqui, a rota não era backup
-        return sendJSON({ error: "Rota de leitura não encontrada", path: pathArray }, 404);
     }
 
-    // --- LÓGICA DE DELETE (EXPURGO TOTAL) ---
     if (method === 'DELETE') {
         try {
-            // 1. Limpeza do Banco de Dados Local (D1)
+            // Protocolo de Expurgo (Clerk + D1)
+            const clerkRes = await fetch(`https://api.clerk.com/v1/users/${userId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${env.CLERK_SECRET_KEY}` }
+            });
+
+            if (!clerkRes.ok) throw new Error("Falha ao invalidar credenciais no Clerk");
+
             await db.batch([
                 db.prepare("DELETE FROM filaments WHERE user_id = ?").bind(userId),
                 db.prepare("DELETE FROM printers WHERE user_id = ?").bind(userId),
@@ -56,31 +53,11 @@ export async function handleUsers({ request, db, userId, pathArray, env }) {
                 db.prepare("DELETE FROM projects WHERE user_id = ?").bind(userId)
             ]);
 
-            // 2. Exclusão da conta no Clerk via API Secret Key
-            const CLERK_SECRET_KEY = env.CLERK_SECRET_KEY;
-            if (!CLERK_SECRET_KEY) {
-                throw new Error("Chave CLERK_SECRET_KEY não configurada no servidor.");
-            }
-
-            // Usando Axios para deletar o usuário no Clerk
-            await axios.delete(`https://api.clerk.com/v1/users/${userId}`, {
-                headers: {
-                    'Authorization': `Bearer ${CLERK_SECRET_KEY}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            return sendJSON({ 
-                success: true, 
-                protocol: "EXPURGO_TOTAL_SUCESSO",
-                message: "Dados removidos do banco e conta de acesso deletada." 
-            });
-
+            return sendJSON({ success: true, message: "Unidade de dados purgada." });
         } catch (err) {
-            const errorMsg = err.response?.data?.errors?.[0]?.message || err.message;
-            return sendJSON({ error: "Erro crítico no protocolo de expurgo", details: errorMsg }, 500);
+            return sendJSON({ error: "Erro no expurgo", details: err.message }, 500);
         }
     }
 
-    return sendJSON({ error: "Método HTTP não permitido" }, 405);
+    return sendJSON({ error: "Método não permitido" }, 405);
 }
