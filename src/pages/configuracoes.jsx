@@ -20,7 +20,7 @@ const InfoCard = ({ title, subtitle, icon: Icon, colorClass, children, badge }) 
 
         <div className="p-6 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
             <div className="flex items-center gap-3">
-                <div className={`p-2.5 rounded-xl bg-${colorClass}-500/10 text-${colorClass}-400 ring-1 ring-${colorClass}-500/20`}>
+                <div className={`p-2.5 rounded-xl bg-${colorClass}-500/10 text-${colorClass}-400`}>
                     <Icon size={20} />
                 </div>
                 <div>
@@ -126,14 +126,7 @@ export default function ConfigPage() {
                                     <div className="flex items-center gap-4">
                                         {/* Ajuste dinâmico de cores baseado no status da nuvem */}
                                         <div className={`p-3 rounded-xl bg-${stat.color}-500/10 text-${stat.color}-500 ring-1 ring-${stat.color}-500/20 shadow-[0_0_15px_rgba(var(--color-rgb),0.1)]`}>
-                                            <stat.icon
-                                                size={20}
-                                                className={`
-            ${stat.value === 'Sincronizando' ? 'animate-spin' : ''} 
-            ${stat.value === 'Instável' ? 'animate-pulse' : ''}
-            transition-all duration-500
-        `}
-                                            />
+                                            <stat.icon size={20} className={`${stat.value === 'Sincronizando' ? 'animate-spin' : ''} ${stat.value === 'Instável' ? 'animate-pulse' : ''} transition-all duration-500`} />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{stat.label}</p>
@@ -162,11 +155,7 @@ export default function ConfigPage() {
                                                     </div>
                                                 )}
                                             </div>
-                                            <button
-                                                onClick={() => logic.fileInputRef.current?.click()}
-                                                className="absolute -bottom-2 -right-2 p-3 bg-sky-500 text-zinc-950 rounded-2xl shadow-xl hover:bg-sky-400 transition-all border-4 border-[#050505] hover:scale-110"
-                                                title="Mudar Imagem"
-                                            >
+                                            <button onClick={() => logic.fileInputRef.current?.click()} className="absolute -bottom-2 -right-2 p-3 bg-sky-500 text-zinc-950 rounded-2xl shadow-xl hover:bg-sky-400 transition-all border-4 border-[#050505] hover:scale-110" title="Mudar Imagem">
                                                 <Camera size={18} />
                                             </button>
                                         </div>
