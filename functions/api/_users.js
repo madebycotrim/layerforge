@@ -36,6 +36,23 @@ export async function handleUsers({ request, db, userId, pathArray, env }) {
         }
     }
 
+    if (method === 'GET' && pathArray.includes('health')) {
+        try {
+            const start = Date.now();
+            // Uma consulta ultra leve apenas para testar a comunicação com o D1
+            await db.prepare("SELECT 1").first();
+            const latency = Date.now() - start;
+
+            return sendJSON({
+                success: true,
+                status: 'online',
+                latency: latency
+            });
+        } catch (err) {
+            return sendJSON({ success: false, status: 'offline' }, 500);
+        }
+    }
+
     if (method === 'DELETE') {
         try {
             // Protocolo de Expurgo (Clerk + D1)

@@ -1,11 +1,9 @@
-import React from 'react';
 import {
-    User, Lock, Cpu, RefreshCw, Save, ShieldCheck,
-    KeyRound, Fingerprint, ShieldAlert, Database, FileText,
-    Table, Trash2, Shield, X, Loader2, Camera, Mail,
-    Clock, Chrome, Github, AlertTriangle, Activity, Terminal,
-    Download, CheckCircle2, Globe, Server, Box, Radiation,
-    Wrench, HardDrive, Info
+    User, Lock, RefreshCw, Save, ShieldCheck,
+    KeyRound, Fingerprint, ShieldAlert, FileText,
+    Table, Trash2, X, Loader2, Camera, Mail,
+    Download, Box, Radiation,
+    Wrench, HardDrive, Info,
 } from 'lucide-react';
 
 import { useConfigLogic } from '../utils/configLogic';
@@ -62,6 +60,14 @@ export default function ConfigPage() {
             <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808008_1px,transparent_1px),linear-gradient(to_bottom,#80808008_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none" />
             <div className="absolute inset-0 bg-radial-at-t from-sky-500/5 via-transparent to-transparent pointer-events-none" />
 
+            <input
+                type="file"
+                ref={logic.fileInputRef}
+                onChange={logic.handleImageUpload}
+                accept="image/*"
+                className="hidden"
+            />
+
             {logic.toast.show && <Toast {...logic.toast} onClose={() => logic.setToast({ ...logic.toast, show: false })} />}
             <MainSidebar onCollapseChange={(collapsed) => logic.setLarguraSidebar(collapsed ? 68 : 256)} />
 
@@ -93,14 +99,41 @@ export default function ConfigPage() {
                         {/* 1. RESUMO RÁPIDO */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             {[
-                                { icon: Fingerprint, label: 'Assinatura Maker', value: logic.user?.id?.slice(-8).toUpperCase(), color: 'sky', info: 'Seu ID único no sistema' },
-                                { icon: ShieldCheck, label: 'Proteção da Oficina', value: hasPassword ? 'Segura' : 'Sem Senha', color: hasPassword ? 'emerald' : 'amber', info: 'Status da sua chave mestra' },
-                                { icon: Activity, label: 'Nuvem Maker', value: 'Conectada', color: 'sky', info: 'Sincronização em tempo real' },
+                                {
+                                    icon: Fingerprint,
+                                    label: 'Assinatura Maker',
+                                    value: logic.user?.id?.slice(-8).toUpperCase(),
+                                    color: 'sky',
+                                    info: 'Seu ID único no sistema'
+                                },
+                                {
+                                    icon: ShieldCheck,
+                                    label: 'Proteção da Oficina',
+                                    value: hasPassword ? 'Segura' : 'Sem Senha',
+                                    color: hasPassword ? 'emerald' : 'amber',
+                                    info: 'Status da sua chave mestra'
+                                },
+                                {
+                                    icon: logic.cloudStatus.icon, // Ícone que vem do estado
+                                    label: 'Nuvem Maker',
+                                    value: logic.cloudStatus.label,
+                                    color: logic.cloudStatus.color,
+                                    info: logic.cloudStatus.info,
+                                    isCloud: true // Flag para identificarmos este card no loop
+                                },
                             ].map((stat, i) => (
                                 <div key={i} className="bg-zinc-900/40 border border-white/5 rounded-2xl p-6 flex items-center justify-between group hover:bg-zinc-900/60 transition-all">
                                     <div className="flex items-center gap-4">
-                                        <div className={`p-3 rounded-xl bg-${stat.color}-500/10 text-${stat.color}-500 ring-1 ring-${stat.color}-500/20`}>
-                                            <stat.icon size={20} />
+                                        {/* Ajuste dinâmico de cores baseado no status da nuvem */}
+                                        <div className={`p-3 rounded-xl bg-${stat.color}-500/10 text-${stat.color}-500 ring-1 ring-${stat.color}-500/20 shadow-[0_0_15px_rgba(var(--color-rgb),0.1)]`}>
+                                            <stat.icon
+                                                size={20}
+                                                className={`
+            ${stat.value === 'Sincronizando' ? 'animate-spin' : ''} 
+            ${stat.value === 'Instável' ? 'animate-pulse' : ''}
+            transition-all duration-500
+        `}
+                                            />
                                         </div>
                                         <div>
                                             <p className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">{stat.label}</p>
