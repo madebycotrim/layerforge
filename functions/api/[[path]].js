@@ -37,7 +37,7 @@ export async function onRequest(context) {
 
         const authRequest = await clerk.authenticateRequest(request);
         if (!authRequest.isSignedIn) {
-            return sendJSON({ error: "Não autorizado" }, 401);
+            return sendJSON({ error: "Acesso negado. Por favor, faça login novamente." }, 401);
         }
 
         const userId = authRequest.toAuth().userId;
