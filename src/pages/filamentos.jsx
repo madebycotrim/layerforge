@@ -103,7 +103,7 @@ export default function FilamentosPage() {
       await saveFilament(dados);
       fecharModais();
       showToast(isEdicao ? "Alterações salvas!" : "Novo material adicionado!");
-    } catch (e) {
+    } catch (_e) {
       showToast("Tivemos um problema ao salvar.", "error");
     }
   };
@@ -114,7 +114,7 @@ export default function FilamentosPage() {
     try {
       await deleteFilament(item.id);
       showToast("Material removido com sucesso.");
-    } catch (e) {
+    } catch (_e) {
       showToast("Erro ao excluir o material.", "error");
     } finally {
       fecharModais();
@@ -134,7 +134,7 @@ export default function FilamentosPage() {
       )}
 
       <main
-        className="flex-1 flex flex-col relative transition-all duration-300 ease-in-out"
+        className="flex-1 flex flex-col relative"
         style={{ marginLeft: `${larguraSidebar}px` }}
       >
         {/* FUNDO DECORATIVO */}
@@ -160,7 +160,7 @@ export default function FilamentosPage() {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar p-8 xl:p-12 relative z-10">
           <div className="max-w-[1600px] mx-auto space-y-16">
-            <div className="animate-in fade-in slide-in-from-top-4 duration-700">
+            <div>
               <StatusFilamentos
                 totalWeight={stats.pesoKg}
                 lowStockCount={lowStockCount}
@@ -170,7 +170,7 @@ export default function FilamentosPage() {
             </div>
 
             {Object.entries(grupos).length > 0 ? (
-              <div className="space-y-24 pb-40 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+              <div className="space-y-24 pb-40">
                 {Object.entries(grupos).map(([tipo, items]) => (
                   <SessaoFilamentos
                     key={tipo}
@@ -224,13 +224,13 @@ export default function FilamentosPage() {
             <div className="flex gap-3 w-full">
               <button
                 onClick={fecharModais}
-                className="flex-1 h-12 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-white transition-all"
+                className="flex-1 h-12 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 text-[10px] font-black uppercase tracking-widest hover:text-white"
               >
                 Cancelar
               </button>
               <button
                 onClick={aoConfirmarExclusao}
-                className="flex-1 h-12 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest transition-all shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2"
+                className="flex-1 h-12 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest shadow-lg shadow-rose-900/20 flex items-center justify-center gap-2"
               >
                 <Trash2 size={16} /> Confirmar Exclusão
               </button>

@@ -26,22 +26,22 @@ export default function SSOCallback() {
 
                 {/* LOADER ANIMADO */}
                 <div className="relative mb-8 sm:mb-10">
-                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-t-2 border-sky-500 animate-spin" />
+                    <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-t-2 border-sky-500" />
                     <div className="absolute inset-0 flex items-center justify-center">
-                        <ShieldCheck size={20} className="text-sky-500 animate-pulse sm:w-6 sm:h-6" />
+                        <ShieldCheck size={20} className="text-sky-500 sm:w-6 sm:h-6" />
                     </div>
                 </div>
 
                 {/* TEXTOS TÉCNICOS */}
                 <div className="text-center space-y-3 mb-10 sm:mb-12">
                     <div className="flex items-center justify-center gap-2 mb-2">
-                        <Cpu size={12} className="text-sky-500 animate-pulse" />
+                        <Cpu size={12} className="text-sky-500" />
                         <span className="text-[8px] font-black text-sky-500 uppercase tracking-[0.3em]">Protocolo_Auth</span>
                     </div>
                     <h2 className="text-white font-black uppercase tracking-[0.2em] sm:tracking-[0.4em] text-[10px] sm:text-xs italic">
                         Sincronizando Identidade
                     </h2>
-                    <p className="text-zinc-600 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest animate-pulse">
+                    <p className="text-zinc-600 text-[9px] sm:text-[10px] font-bold uppercase tracking-widest">
                         Validando credenciais do núcleo...
                     </p>
                 </div>
@@ -49,7 +49,7 @@ export default function SSOCallback() {
                 {/* BOTÃO DE CANCELAR */}
                 <button
                     onClick={() => setLocation("/login")}
-                    className="flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 text-zinc-500 hover:text-white hover:bg-white/10 transition-all text-[10px] font-black uppercase tracking-widest active:scale-95"
+                    className="flex items-center justify-center gap-2 w-full sm:w-auto px-8 py-3.5 rounded-xl bg-white/5 border border-white/10 text-zinc-500 hover:text-white hover:bg-white/10 text-[10px] font-black uppercase tracking-widest"
                 >
                     <ArrowLeft size={14} />
                     Abortar Processo

@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { useEffect, useMemo, useState } from "react";
 import { Inbox, Loader2, SearchX } from "lucide-react";
 
@@ -104,7 +105,7 @@ export default function OrcamentosPage() {
 
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 68 : 256)} />
 
-            <main className="flex-1 flex flex-col relative transition-[margin] duration-300 ease-in-out ml-[var(--sidebar-w)]">
+            <main className="flex-1 flex flex-col relative ml-[var(--sidebar-w)]">
 
                 {/* BACKGROUND DECORATIVO */}
                 <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
@@ -125,7 +126,7 @@ export default function OrcamentosPage() {
                     <div className="max-w-[1600px] mx-auto space-y-12">
 
                         {/* 1. DASHBOARD STATS */}
-                        <div className="animate-in fade-in slide-in-from-top-4 duration-700">
+                        <div>
                             <StatusOrcamentos
                                 totalBruto={stats.bruto}
                                 totalLucro={stats.lucro}
@@ -141,12 +142,12 @@ export default function OrcamentosPage() {
                                     <button
                                         key={s}
                                         onClick={() => setFiltroStatus(s)}
-                                        className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all relative ${filtroStatus === s ? "text-amber-500" : "text-zinc-500 hover:text-zinc-300"
+                                        className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest relative ${filtroStatus === s ? "text-amber-500" : "text-zinc-500 hover:text-zinc-300"
                                             }`}
                                     >
                                         {s === "todos" ? "Geral" : CONFIG_STATUS[s]?.label || s}
                                         {filtroStatus === s && (
-                                            <div className="absolute -bottom-1 left-2 right-2 h-[2px] bg-gradient-to-r from-amber-600 to-orange-500 animate-in fade-in duration-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                                            <div className="absolute -bottom-1 left-2 right-2 h-[2px] bg-gradient-to-r from-amber-600 to-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                                         )}
                                     </button>
                                 ))}
@@ -155,9 +156,9 @@ export default function OrcamentosPage() {
 
                         {/* 3. CONTEÚDO PRINCIPAL (GRID FIXO) */}
                         {loading ? (
-                            <div className="w-full h-96 flex flex-col items-center justify-center gap-6 animate-in fade-in slide-in-from-top-10 duration-500 border border-white/5 bg-white/[0.02] rounded-[3rem]">
+                            <div className="w-full h-96 flex flex-col items-center justify-center gap-6 border border-white/5 bg-white/[0.02] rounded-[3rem]">
                                 <div className="relative">
-                                    <Loader2 className="animate-spin text-amber-500" size={40} strokeWidth={1} />
+                                    <Loader2 className="text-amber-500" size={40} strokeWidth={1} />
                                     <div className="absolute inset-0 bg-amber-500/10 blur-3xl opacity-20" />
                                 </div>
                                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">
@@ -165,13 +166,13 @@ export default function OrcamentosPage() {
                                 </span>
                             </div>
                         ) : filtrados.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-6 animate-in fade-in slide-in-from-top-6 duration-700">
+                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-6">
                                 {filtrados.map(item => (
                                     <CardOrcamento key={item.id} item={item} onClick={() => setProjetoSelecionado(item)} />
                                 ))}
                             </div>
                         ) : (
-                            <div className="w-full py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800/60 rounded-[3rem] bg-zinc-900/5 backdrop-blur-sm animate-in fade-in slide-in-from-top-8 duration-700">
+                            <div className="w-full py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800/60 rounded-[3rem] bg-zinc-900/5 backdrop-blur-sm">
                                 {termoBusca ? (
                                     <div className="flex flex-col items-center text-center">
                                         <div className="relative mb-6">
@@ -182,7 +183,7 @@ export default function OrcamentosPage() {
                                         <p className="text-zinc-600 text-[10px] uppercase mt-3 tracking-widest italic">Critério: "{termoBusca}"</p>
                                         <button
                                             onClick={() => setTermoBusca("")}
-                                            className="mt-8 px-8 py-2.5 bg-zinc-800/50 hover:bg-zinc-800 border border-white/5 rounded-full text-[9px] font-black text-amber-500 uppercase tracking-[0.2em] transition-all"
+                                            className="mt-8 px-8 py-2.5 bg-zinc-800/50 hover:bg-zinc-800 border border-white/5 rounded-full text-[9px] font-black text-amber-500 uppercase tracking-[0.2em]"
                                         >
                                             Limpar Busca
                                         </button>

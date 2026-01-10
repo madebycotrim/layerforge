@@ -215,7 +215,7 @@ export default function CalculadoraPreview() {
     const [pesoPeca, setPesoPeca] = useState("");
     const [tempoHoras, setTempoHoras] = useState("");
     const [tempoMinutos, setTempoMinutos] = useState("");
-    const [consumoWatts, setConsumoWatts] = useState("300");
+    const [consumoWatts] = useState("300");
     const [valorKwh, setValorKwh] = useState("0.95");
     const [maoDeObraHora, setMaoDeObraHora] = useState("");
     const [horasTrabalhadas, setHorasTrabalhadas] = useState("");
@@ -254,7 +254,7 @@ export default function CalculadoraPreview() {
 
             {/* CONTEÚDO CENTRAL DA CALCULADORA */}
             <div className="flex-1 flex flex-col max-w-6xl w-full px-4 py-8 relative z-10 mx-auto">
-                
+
                 {/* GRID DE FUNDO */}
                 <div className="fixed inset-x-0 top-0 h-[600px] z-0 pointer-events-none opacity-[0.03]"
                     style={{

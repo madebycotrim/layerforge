@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import api from '../../../utils/api'; 
-import axios from 'axios'; 
+import api from '../../../utils/api';
+import axios from 'axios';
 
 /**
  * Converte valores para número de forma segura, tratando padrões brasileiros.
@@ -8,7 +8,7 @@ import axios from 'axios';
 const limparNumero = (valor) => {
     if (valor === undefined || valor === null || valor === '') return 0;
     if (typeof valor === 'number') return valor;
-    
+
     let texto = String(valor).trim();
     // Tratamento de padrão brasileiro: 1.200,50 -> 1200.50
     if (texto.includes(',')) {
@@ -49,8 +49,8 @@ export const prepararParaD1 = (dados = {}) => {
 };
 
 export const usePrinterStore = create((set, get) => ({
-    printers: [],         
-    printerModels: [],    
+    printers: [],
+    printerModels: [],
     loading: false,
 
     // Busca o catálogo estático de modelos
@@ -74,10 +74,10 @@ export const usePrinterStore = create((set, get) => ({
             const impressorasMapeadas = dadosBrutos.map(item => {
                 let historicoTratado = [];
                 try {
-                    historicoTratado = typeof item.historico === 'string' 
-                        ? JSON.parse(item.historico) 
+                    historicoTratado = typeof item.historico === 'string'
+                        ? JSON.parse(item.historico)
                         : (item.historico || []);
-                } catch (erro) {
+                } catch (_erro) {
                     console.warn(`Erro no parse do histórico da impressora ${item.id}`);
                 }
 
@@ -109,7 +109,7 @@ export const usePrinterStore = create((set, get) => ({
         try {
             const payload = prepararParaD1(dados);
             await api.post('/impressoras', payload);
-            
+
             // Recarrega a lista para garantir sincronia com o banco
             await get().fetchPrinters();
             return true;
@@ -136,16 +136,16 @@ export const usePrinterStore = create((set, get) => ({
     updatePrinterStatus: async (id, novoStatus) => {
         const listaAtual = get().printers;
         const impressora = listaAtual.find(p => p.id === id);
-        
+
         if (impressora) {
             try {
                 // Prepara o payload mantendo os dados e alterando apenas o status
                 const payload = prepararParaD1({ ...impressora, status: novoStatus });
                 await api.post('/impressoras', payload);
-                
+
                 // Atualização otimista no estado local
                 set({
-                    printers: listaAtual.map(p => 
+                    printers: listaAtual.map(p =>
                         p.id === id ? { ...p, status: novoStatus } : p
                     )
                 });

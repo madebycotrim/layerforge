@@ -36,7 +36,7 @@ const COLOR_MAP = {
 const SidebarItem = memo(({ href, icon: Icon, label, collapsed, badge, color = "sky" }) => {
     const [location] = useLocation();
     const isActive = location === href || (href !== "/" && location.startsWith(href));
-    
+
     // Seleciona as classes baseado na prop color
     const theme = COLOR_MAP[color] || COLOR_MAP.sky;
 
@@ -59,7 +59,7 @@ const SidebarItem = memo(({ href, icon: Icon, label, collapsed, badge, color = "
 
                 <div className={`relative flex items-center h-12 transition-all duration-200 ${collapsed ? "justify-center w-full" : "px-3 w-full"}`}>
                     <div className="relative flex items-center justify-center">
-                        <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`transition-colors duration-300 ${isActive ? theme.text : "text-zinc-500 group-hover:text-zinc-300"}`} />
+                        <Icon size={20} strokeWidth={isActive ? 2.5 : 2} className={`transition-all duration-300 group-hover:scale-110 ${isActive ? theme.text : "text-zinc-500 group-hover:text-zinc-300"}`} />
                         {badge && (
                             <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75"></span>

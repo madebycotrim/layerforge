@@ -34,7 +34,7 @@ const TooltipPortal = ({ texto, referenciaAlvo, visivel }) => {
 };
 
 /* ---------- INPUT DE CONFIGURAÇÃO ---------- */
-const EntradaConfiguracao = ({ rotulo, sufixo, valor, aoAlterar, icone: Icone, textoAjuda, cor = "text-zinc-600" }) => {
+const EntradaConfiguracao = ({ rotulo, sufixo, valor, aoAlterar, icone: IconeConfig, textoAjuda, cor = "text-zinc-600" }) => {
     const [estaSendoFocado, setEstaSendoFocado] = useState(false);
     const referenciaIcone = useRef(null);
 
@@ -42,7 +42,7 @@ const EntradaConfiguracao = ({ rotulo, sufixo, valor, aoAlterar, icone: Icone, t
         <div className="group flex items-center justify-between p-2.5 rounded-xl bg-zinc-900/40 border border-zinc-800/50 hover:border-zinc-700/80 transition-all duration-200">
             <div className="flex items-center gap-3">
                 <div className={`w-8 h-8 rounded-lg bg-zinc-950 border border-zinc-800/80 flex items-center justify-center ${cor} shadow-inner group-hover:scale-105 transition-transform`}>
-                    <Icone size={14} strokeWidth={2.5} />
+                    <IconeConfig size={14} strokeWidth={2.5} />
                 </div>
                 <div className="flex flex-col cursor-help" onMouseEnter={() => setEstaSendoFocado(true)} onMouseLeave={() => setEstaSendoFocado(false)} ref={referenciaIcone}>
                     <span className="text-[10px] font-bold text-zinc-400 uppercase tracking-tight">{rotulo}</span>
@@ -90,7 +90,7 @@ export default function PainelConfiguracoesCalculo({
             if (settings.consumoKw) setConsumoImpressoraKw(String(settings.consumoKw));
             if (settings.custoHoraMaquina) setCustoHoraMaquina(String(settings.custoHoraMaquina));
             if (settings.taxaSetup) setTaxaSetup(String(settings.taxaSetup));
-            
+
             const template = settings.whatsappTemplate || settings.whatsapp_template;
             if (template) setTempTemplate(template);
 
@@ -134,7 +134,7 @@ export default function PainelConfiguracoesCalculo({
     return (
         <div className="relative h-full flex flex-col">
             <div className="flex flex-col gap-6 animate-in fade-in slide-in-from-right-4 duration-500 pb-10">
-                
+
                 {/* CABEÇALHO DE AÇÕES */}
                 <div className="flex items-center justify-between pb-4 border-b border-zinc-800/50">
                     <div className="flex flex-col">
@@ -148,8 +148,8 @@ export default function PainelConfiguracoesCalculo({
                     </div>
 
                     <div className="flex items-center gap-2">
-                        <button 
-                            onClick={lidarSincronizacaoManual} 
+                        <button
+                            onClick={lidarSincronizacaoManual}
                             className="p-2 rounded-lg bg-zinc-900 border border-zinc-800 text-zinc-500 hover:text-sky-400 transition-all"
                         >
                             <RefreshCw size={14} className={estaSincronizando ? "animate-spin text-sky-400" : ""} />
@@ -158,11 +158,10 @@ export default function PainelConfiguracoesCalculo({
                         <button
                             onClick={lidarSalvarConfiguracoes}
                             disabled={configuracaoSincronizada || estaGravando}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${
-                                configuracaoSincronizada 
-                                ? "bg-zinc-900 text-zinc-600" 
+                            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-[10px] font-bold uppercase transition-all ${configuracaoSincronizada
+                                ? "bg-zinc-900 text-zinc-600"
                                 : "bg-sky-600 text-white hover:bg-sky-500 shadow-lg active:scale-95"
-                            }`}
+                                }`}
                         >
                             {estaGravando ? <Loader2 size={12} className="animate-spin" /> : <Save size={12} />}
                             {estaGravando ? "..." : (configuracaoSincronizada ? "Salvo" : "Salvar")}
@@ -179,16 +178,16 @@ export default function PainelConfiguracoesCalculo({
                             <div className="h-px flex-1 bg-zinc-900" />
                         </div>
                         <div className="space-y-2">
-                            <EntradaConfiguracao 
-                                rotulo="Potência" sufixo="Watts" icone={Monitor} cor="text-indigo-400" 
-                                valor={consumoImpressoraKw ? (Number(consumoImpressoraKw) < 2 ? Math.round(Number(consumoImpressoraKw) * 1000) : consumoImpressoraKw) : ""} 
-                                aoAlterar={lidarMudancaInput((v) => setConsumoImpressoraKw(v === "" ? "" : (Number(v) >= 2 ? String(Number(v) / 1000) : v)))} 
-                                textoAjuda="Consumo médio da impressora em Watts." 
+                            <EntradaConfiguracao
+                                rotulo="Potência" sufixo="Watts" icone={Monitor} cor="text-indigo-400"
+                                valor={consumoImpressoraKw ? (Number(consumoImpressoraKw) < 2 ? Math.round(Number(consumoImpressoraKw) * 1000) : consumoImpressoraKw) : ""}
+                                aoAlterar={lidarMudancaInput((v) => setConsumoImpressoraKw(v === "" ? "" : (Number(v) >= 2 ? String(Number(v) / 1000) : v)))}
+                                textoAjuda="Consumo médio da impressora em Watts."
                             />
-                            <EntradaConfiguracao 
-                                rotulo="Preço kWh" sufixo="R$/kWh" icone={Zap} cor="text-amber-400" 
-                                valor={custoKwh} aoAlterar={lidarMudancaInput(setCustoKwh)} 
-                                textoAjuda="Custo do kWh na sua fatura de luz." 
+                            <EntradaConfiguracao
+                                rotulo="Preço kWh" sufixo="R$/kWh" icone={Zap} cor="text-amber-400"
+                                valor={custoKwh} aoAlterar={lidarMudancaInput(setCustoKwh)}
+                                textoAjuda="Custo do kWh na sua fatura de luz."
                             />
                         </div>
                     </div>
@@ -200,15 +199,15 @@ export default function PainelConfiguracoesCalculo({
                             <div className="h-px flex-1 bg-zinc-900" />
                         </div>
                         <div className="space-y-2">
-                            <EntradaConfiguracao 
-                                rotulo="Manutenção/h" sufixo="R$/h" icone={Cpu} cor="text-blue-400" 
-                                valor={custoHoraMaquina} aoAlterar={lidarMudancaInput(setCustoHoraMaquina)} 
-                                textoAjuda="Custo de depreciação e peças por hora." 
+                            <EntradaConfiguracao
+                                rotulo="Manutenção/h" sufixo="R$/h" icone={Cpu} cor="text-blue-400"
+                                valor={custoHoraMaquina} aoAlterar={lidarMudancaInput(setCustoHoraMaquina)}
+                                textoAjuda="Custo de depreciação e peças por hora."
                             />
-                            <EntradaConfiguracao 
-                                rotulo="Taxa Setup" sufixo="R$" icone={Settings2} cor="text-zinc-400" 
-                                valor={taxaSetup} aoAlterar={lidarMudancaInput(setTaxaSetup)} 
-                                textoAjuda="Custo inicial fixo de fatiamento e preparo." 
+                            <EntradaConfiguracao
+                                rotulo="Taxa Setup" sufixo="R$" icone={Settings2} cor="text-zinc-400"
+                                valor={taxaSetup} aoAlterar={lidarMudancaInput(setTaxaSetup)}
+                                textoAjuda="Custo inicial fixo de fatiamento e preparo."
                             />
                         </div>
                     </div>
@@ -219,10 +218,10 @@ export default function PainelConfiguracoesCalculo({
                             <h4 className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest">Mão de Obra</h4>
                             <div className="h-px flex-1 bg-zinc-900" />
                         </div>
-                        <EntradaConfiguracao 
-                            rotulo="Sua Hora" sufixo="R$/h" icone={User} cor="text-emerald-400" 
-                            valor={valorHoraHumana} aoAlterar={lidarMudancaInput(setValorHoraHumana)} 
-                            textoAjuda="Quanto você quer ganhar por hora de trabalho manual." 
+                        <EntradaConfiguracao
+                            rotulo="Sua Hora" sufixo="R$/h" icone={User} cor="text-emerald-400"
+                            valor={valorHoraHumana} aoAlterar={lidarMudancaInput(setValorHoraHumana)}
+                            textoAjuda="Quanto você quer ganhar por hora de trabalho manual."
                         />
                     </div>
 
@@ -276,9 +275,9 @@ export default function PainelConfiguracoesCalculo({
                     />
                     <div className="flex flex-wrap gap-2">
                         {['{projeto}', '{valor}', '{tempo}'].map(tag => (
-                            <button 
-                                key={tag} 
-                                onClick={() => setTempTemplate(prev => prev + tag)} 
+                            <button
+                                key={tag}
+                                onClick={() => setTempTemplate(prev => prev + tag)}
                                 className="text-[9px] font-black bg-zinc-900 text-zinc-500 px-3 py-1.5 rounded-lg border border-white/5 hover:text-sky-400 hover:border-sky-500/30 transition-all"
                             >
                                 {tag}

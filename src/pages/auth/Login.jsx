@@ -33,11 +33,11 @@ const PrimaryButton = ({ children, onClick, icon: Icon, variant = "sky", classNa
             type={type}
             disabled={disabled || isLoading}
             onClick={onClick}
-            className={`h-14 px-8 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 ${styles[variant]} ${className}`}
+            className={`h-14 px-8 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 ${styles[variant]} ${className}`}
         >
             {isLoading ? (
                 <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
                     <span>Entrando na oficina...</span>
                 </div>
             ) : (
@@ -80,7 +80,7 @@ const FarmStatusWidget = () => (
 );
 
 const ProductionWidget = () => (
-    <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-sky-500/20 rounded-[2rem] p-6 shadow-2xl animate-float-slow ml-auto -mt-12 mr-[-30px] relative z-20 w-72">
+    <div className="bg-[#0c0c0e]/90 backdrop-blur-xl border border-sky-500/20 rounded-[2rem] p-6 shadow-2xl ml-auto -mt-12 mr-[-30px] relative z-20 w-72">
         <div className="flex items-center gap-3 mb-4">
             <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center text-sky-500 border border-sky-500/20">
                 <Layers size={20} />
@@ -118,7 +118,7 @@ export default function LoginPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
-    const [location, setLocation] = useLocation();
+    const [, setLocation] = useLocation();
 
     // Captura a rota de destino caso venha de um ProtectedRoute
     const queryParams = new URLSearchParams(window.location.search);
@@ -199,7 +199,7 @@ export default function LoginPage() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-sky-500/5 blur-[120px] pointer-events-none" />
 
                 <div className="absolute top-10 left-10">
-                    <button onClick={() => setLocation('/')} className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white transition-all">
+                    <button onClick={() => setLocation('/')} className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white">
                         <ArrowLeft size={16} />
                         Voltar ao site
                     </button>
@@ -238,7 +238,7 @@ export default function LoginPage() {
                                     <input
                                         type="email" required value={email}
                                         onChange={(e) => setEmail(e.target.value)}
-                                        className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800"
+                                        className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 text-white placeholder:text-zinc-800"
                                         placeholder="seu@email.com"
                                     />
                                 </div>
@@ -255,7 +255,7 @@ export default function LoginPage() {
                                         <input
                                             type={showPassword ? "text" : "password"} required value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800"
+                                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-sky-500/50 text-white placeholder:text-zinc-800"
                                             placeholder="••••••••"
                                         />
                                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 hover:text-white">
@@ -275,7 +275,7 @@ export default function LoginPage() {
                                     <button
                                         type="button"
                                         onClick={() => { setLoginMode(loginMode === 'magic' ? 'password' : 'magic'); setError(""); }}
-                                        className="flex items-center gap-2 mx-auto text-xs font-bold text-zinc-500 hover:text-white transition-colors"
+                                        className="flex items-center gap-2 mx-auto text-xs font-bold text-zinc-500 hover:text-white"
                                     >
                                         <KeyRound size={14} className="text-sky-500" />
                                         {loginMode === 'magic' ? "Entrar com e-mail e senha" : "Entrar sem senha (Link Rápido)"}
@@ -295,7 +295,7 @@ export default function LoginPage() {
                                     <span className="text-sky-400 font-bold">{email}</span>
                                 </p>
                             </div>
-                            <button onClick={() => setIsSent(false)} className="text-zinc-500 text-xs font-bold uppercase hover:text-white transition-colors">
+                            <button onClick={() => setIsSent(false)} className="text-zinc-500 text-xs font-bold uppercase hover:text-white">
                                 ← Voltar para o login
                             </button>
                         </div>
@@ -310,10 +310,10 @@ export default function LoginPage() {
                         <button
                             onClick={signInWithGoogle}
                             disabled={isGoogleLoading || isLoading}
-                            className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all font-bold text-sm text-white disabled:opacity-50"
+                            className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 font-bold text-sm text-white disabled:opacity-50"
                         >
                             {isGoogleLoading ? (
-                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
                             ) : (
                                 <>
                                     <Chrome size={20} />

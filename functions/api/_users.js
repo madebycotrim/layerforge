@@ -48,7 +48,7 @@ export async function handleUsers({ request, db, userId, pathArray, env }) {
                 status: 'online',
                 latency: latency
             });
-        } catch (err) {
+        } catch (_err) {
             return sendJSON({ success: false, status: 'offline' }, 500);
         }
     }

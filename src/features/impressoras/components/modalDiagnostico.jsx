@@ -8,7 +8,7 @@ const MedidorManutencao = ({ rotulo, valor, maximo, unidade }) => {
     const divisor = Math.max(1, maximo);
     const porcentagem = Math.min(100, (valor / divisor) * 100);
     const ehCritico = porcentagem > 85;
-    
+
     // Calcula o valor restante para exibição
     const restante = Math.max(0, maximo - valor);
 
@@ -21,11 +21,10 @@ const MedidorManutencao = ({ rotulo, valor, maximo, unidade }) => {
                 </span>
             </div>
             <div className="h-1.5 w-full bg-zinc-900 rounded-full border border-zinc-800/50 p-[1px]">
-                <div 
-                    className={`h-full rounded-full transition-all duration-1000 ease-out ${
-                        ehCritico ? 'bg-rose-500' : 'bg-emerald-500'
-                    }`} 
-                    style={{ width: `${Math.max(0, 100 - porcentagem)}%` }} 
+                <div
+                    className={`h-full rounded-full transition-all duration-1000 ease-out ${ehCritico ? 'bg-rose-500' : 'bg-emerald-500'
+                        }`}
+                    style={{ width: `${Math.max(0, 100 - porcentagem)}%` }}
                 />
             </div>
         </div>
@@ -33,23 +32,26 @@ const MedidorManutencao = ({ rotulo, valor, maximo, unidade }) => {
 };
 
 export default function DiagnosticsModal({ printer, onClose, onResolve, completedTasks = new Set(), onToggleTask }) {
+    // Tarefas calculadas para evitar recálculos (deve vir antes do early return)
+    const tarefas = useMemo(() => {
+        if (!printer) return [];
+        return analisarSaudeImpressora(printer) || [];
+    }, [printer]);
+
     // Validação de segurança inicial
     if (!printer) return null;
-    
+
     // Organização de dados de entrada
     const horasTotais = Number(printer.totalHours || printer.horas_totais || 0);
     const ultimaManutencao = Number(printer.lastMaintenanceHour || printer.ultima_manutencao_hora || 0);
     const intervaloManutencao = Number(printer.maintenanceInterval || printer.intervalo_manutencao || 300);
-    
+
     // Cálculo de tempo decorrido
     const horasDesdeUltima = Math.max(0, horasTotais - ultimaManutencao);
-    
-    // Tarefas calculadas para evitar recálculos
-    const tarefas = useMemo(() => analisarSaudeImpressora(printer) || [], [printer]);
-    
+
     // Definição do visual com base na gravidade das tarefas
-    const temaVisual = tarefas.some(t => t.severidade === 'critical') 
-        ? 'rose' 
+    const temaVisual = tarefas.some(t => t.severidade === 'critical')
+        ? 'rose'
         : tarefas.length > 0 ? 'amber' : 'emerald';
 
     const mapaCores = {
@@ -64,7 +66,7 @@ export default function DiagnosticsModal({ printer, onClose, onResolve, complete
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-sm animate-in fade-in duration-300 font-sans">
             <div className={`relative bg-zinc-950 w-full max-w-5xl h-[85vh] rounded-3xl border border-zinc-800 shadow-2xl flex flex-col overflow-hidden`}>
-                
+
                 {/* CABEÇALHO TÉCNICO */}
                 <header className="px-8 py-5 border-b border-zinc-800/50 bg-zinc-900/20 flex justify-between items-center">
                     <div className="flex items-center gap-5">
@@ -96,7 +98,7 @@ export default function DiagnosticsModal({ printer, onClose, onResolve, complete
                                 <MedidorManutencao rotulo="Aquecimento e Mesa" valor={horasDesdeUltima} maximo={intervaloManutencao * 2} unidade="h" />
                             </div>
                         </div>
-                        
+
                         <div className="pt-8 border-t border-zinc-800/50">
                             <span className="text-[10px] font-bold text-zinc-600 uppercase block mb-3 tracking-widest">Tempo de Uso Total</span>
                             <div className="flex items-baseline gap-2">
@@ -126,20 +128,18 @@ export default function DiagnosticsModal({ printer, onClose, onResolve, complete
                                     tarefas.map((tarefa, idx) => {
                                         const concluida = completedTasks?.has?.(tarefa.rotulo);
                                         return (
-                                            <div 
-                                                key={idx} 
+                                            <div
+                                                key={idx}
                                                 onClick={() => onToggleTask?.(tarefa.rotulo)}
-                                                className={`group flex items-center gap-5 p-5 rounded-2xl border transition-all duration-200 cursor-pointer ${
-                                                    concluida 
-                                                    ? 'bg-zinc-900/20 border-zinc-800/40 opacity-50' 
-                                                    : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-600 hover:bg-zinc-900/60 shadow-sm'
-                                                }`}
+                                                className={`group flex items-center gap-5 p-5 rounded-2xl border transition-all duration-200 cursor-pointer ${concluida
+                                                        ? 'bg-zinc-900/20 border-zinc-800/40 opacity-50'
+                                                        : 'bg-zinc-900/40 border-zinc-800 hover:border-zinc-600 hover:bg-zinc-900/60 shadow-sm'
+                                                    }`}
                                             >
-                                                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${
-                                                    concluida 
-                                                    ? 'bg-emerald-500 border-emerald-400 text-zinc-950' 
-                                                    : 'border-zinc-700 bg-zinc-950 text-zinc-500 group-hover:border-zinc-500'
-                                                }`}>
+                                                <div className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-all ${concluida
+                                                        ? 'bg-emerald-500 border-emerald-400 text-zinc-950'
+                                                        : 'border-zinc-700 bg-zinc-950 text-zinc-500 group-hover:border-zinc-500'
+                                                    }`}>
                                                     {concluida ? <Check size={20} strokeWidth={3} /> : <span className="text-xs font-bold">{idx + 1}</span>}
                                                 </div>
                                                 <div className="flex-1">
@@ -166,26 +166,24 @@ export default function DiagnosticsModal({ printer, onClose, onResolve, complete
                 <footer className="px-10 py-6 border-t border-zinc-800/50 bg-zinc-900/30 flex justify-between items-center">
                     <div className="flex gap-2.5">
                         {tarefas.map((t, i) => (
-                            <div key={i} className={`h-1.5 w-8 rounded-full transition-all duration-500 ${
-                                completedTasks?.has?.(t.rotulo) ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-zinc-800'
-                            }`} />
+                            <div key={i} className={`h-1.5 w-8 rounded-full transition-all duration-500 ${completedTasks?.has?.(t.rotulo) ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]' : 'bg-zinc-800'
+                                }`} />
                         ))}
                     </div>
                     <div className="flex items-center gap-8">
-                        <button 
-                            onClick={onClose} 
+                        <button
+                            onClick={onClose}
                             className="text-[11px] font-bold uppercase text-zinc-500 hover:text-zinc-200 transition-all tracking-widest"
                         >
                             Cancelar
                         </button>
-                        <button 
+                        <button
                             disabled={tarefas.length > 0 && totalConcluidas < tarefas.length}
                             onClick={() => onResolve?.(printer.id)}
-                            className={`px-10 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 ${
-                                totalConcluidas === tarefas.length && tarefas.length > 0 
-                                ? 'bg-zinc-100 text-zinc-950 hover:bg-white shadow-lg active:scale-[0.98]' 
-                                : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed opacity-50'
-                            }`}
+                            className={`px-10 py-3 rounded-xl text-[11px] font-bold uppercase tracking-widest transition-all duration-300 ${totalConcluidas === tarefas.length && tarefas.length > 0
+                                    ? 'bg-zinc-100 text-zinc-950 hover:bg-white shadow-lg active:scale-[0.98]'
+                                    : 'bg-zinc-900 text-zinc-600 border border-zinc-800 cursor-not-allowed opacity-50'
+                                }`}
                         >
                             Finalizar Manutenção
                         </button>

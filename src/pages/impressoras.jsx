@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useDeferredValue, useCallback } from "react";
+import React, { useState, useEffect, useMemo, useDeferredValue } from "react";
 import { Printer, ChevronDown, Scan, AlertTriangle, Trash2 } from "lucide-react";
 
 // --- LAYOUT E INTERFACE GLOBAL ---
@@ -148,7 +148,7 @@ export default function ImpressorasPage() {
             await upsertPrinter(dados);
             setModalAberto(false);
             setToast({ visible: true, message: "Hardware sincronizado com sucesso!", type: 'success' });
-        } catch (erro) {
+        } catch (_erro) {
             setToast({ visible: true, message: "Erro ao salvar hardware.", type: 'error' });
         }
     };
@@ -159,7 +159,7 @@ export default function ImpressorasPage() {
         try {
             await removePrinter(item.id);
             setToast({ visible: true, message: "Impressora removida da frota.", type: 'success' });
-        } catch (erro) {
+        } catch (_erro) {
             setToast({ visible: true, message: "Erro ao excluir impressora.", type: 'error' });
         } finally {
             setConfirmacaoExclusao({ aberta: false, item: null });
@@ -181,7 +181,7 @@ export default function ImpressorasPage() {
                     return novo;
                 });
                 setToast({ visible: true, message: "Manutenção finalizada!", type: 'success' });
-            } catch (erro) {
+            } catch (_erro) {
                 setToast({ visible: true, message: "Erro ao finalizar manutenção.", type: 'error' });
             }
         }

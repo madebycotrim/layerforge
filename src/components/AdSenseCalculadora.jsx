@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+
 const AdSidebar = ({ slot }) => {
     useEffect(() => {
         try {
@@ -16,3 +18,5 @@ const AdSidebar = ({ slot }) => {
         </div>
     );
 };
+
+export default AdSidebar;

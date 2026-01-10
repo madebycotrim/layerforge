@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useLocation } from "wouter";
 import {
     Calculator, Package, ArrowRight, Zap,
@@ -32,7 +32,7 @@ const Badge = ({ icon: Icon, label, color, className = "" }) => {
 };
 
 const GlassCard = ({ children, className = "" }) => (
-    <div className={`bg-[#0a0a0c]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden transition-all duration-700 hover:border-white/10 group ${className}`}>
+    <div className={`bg-[#0a0a0c]/80 backdrop-blur-xl border border-white/5 rounded-[2.5rem] p-8 lg:p-10 overflow-hidden hover:border-white/10 group ${className}`}>
         {children}
     </div>
 );
@@ -69,7 +69,7 @@ const HeroVisual = () => (
         </svg>
 
         {/* CARD: LUCRO REAL */}
-        <div className="absolute top-12 left-0 xl:left-[-40px] z-30 bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-[0_0_30px_rgba(16,185,129,0.1)] animate-float-slow">
+        <div className="absolute top-12 left-0 xl:left-[-40px] z-30 bg-[#0c0c0e]/90 backdrop-blur-xl border border-white/10 rounded-2xl p-5 shadow-[0_0_30px_rgba(16,185,129,0.1)]">
             <div className="absolute inset-0 bg-emerald-500/5 rounded-2xl" />
             <div className="relative">
                 <div className="flex items-center gap-2 mb-1">
@@ -111,7 +111,7 @@ const HeroVisual = () => (
                 ].map((item, i) => (
                     <div key={i} className="group flex justify-between items-center">
                         <div className="flex items-center gap-4">
-                            <div className={`p-2 ${item.bg} rounded-xl group-hover:scale-110 transition-transform`}>
+                            <div className={`p-2 ${item.bg} rounded-xl group-hover:scale-110`}>
                                 <item.icon size={16} className={item.color} />
                             </div>
                             <span className="text-[11px] font-bold uppercase tracking-widest text-zinc-500">{item.label}</span>
@@ -134,7 +134,7 @@ const HeroVisual = () => (
 
         {/* CARD: FILAMENTO ACABANDO */}
         <div
-            className="absolute bottom-10 right-0 xl:right-[-50px] z-30 w-72 bg-[#0c0c0e]/90 backdrop-blur-xl border border-rose-500/20 rounded-[2rem] p-6 shadow-2xl animate-float-slow"
+            className="absolute bottom-10 right-0 xl:right-[-50px] z-30 w-72 bg-[#0c0c0e]/90 backdrop-blur-xl border border-rose-500/20 rounded-[2rem] p-6 shadow-2xl"
             style={{ animationDelay: '2s' }}
         >
             <div className="flex items-center justify-between mb-4">
@@ -148,7 +148,7 @@ const HeroVisual = () => (
             </div>
             <p className="text-xs font-black text-white uppercase italic mb-3 tracking-tight">PLA Silk Dourado (1kg)</p>
             <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden p-[2px]">
-                <div className="bg-gradient-to-r from-rose-600 to-rose-400 h-full w-[12%] rounded-full animate-pulse shadow-[0_0_12px_rgba(244,63,94,0.5)]" />
+                <div className="bg-gradient-to-r from-rose-600 to-rose-400 h-full w-[12%] rounded-full shadow-[0_0_12px_rgba(244,63,94,0.5)]" />
             </div>
         </div>
 
@@ -186,8 +186,8 @@ export default function LandingPage() {
                         <span className="text-xl font-bold tracking-tighter uppercase italic text-white">PrintLog</span>
                     </div>
                     <div className="flex items-center gap-8">
-                        <button onClick={() => setLocation('/login')} className="hidden sm:block text-[10px] font-bold text-zinc-500 hover:text-white transition-all uppercase tracking-widest">Entrar</button>
-                        <button onClick={() => setLocation('/register')} className="bg-white text-black px-7 py-2.5 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-sky-500 hover:text-white transition-all active:scale-95">Acessar</button>
+                        <button onClick={() => setLocation('/login')} className="hidden sm:block text-[10px] font-bold text-zinc-500 hover:text-white uppercase tracking-widest">Entrar</button>
+                        <button onClick={() => setLocation('/register')} className="bg-white text-black px-7 py-2.5 rounded-2xl text-[10px] font-bold uppercase tracking-widest hover:bg-sky-500 hover:text-white">Acessar</button>
                     </div>
                 </div>
             </nav>
@@ -208,10 +208,10 @@ export default function LandingPage() {
                             </p>
                         </div>
                         <div className="flex flex-col sm:flex-row gap-5 justify-center lg:justify-start">
-                            <button onClick={() => setLocation('/register')} className="h-16 px-10 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 active:scale-95 shadow-xl shadow-sky-500/20">
+                            <button onClick={() => setLocation('/register')} className="h-16 px-10 rounded-2xl bg-sky-600 hover:bg-sky-500 text-white font-bold text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 shadow-xl shadow-sky-500/20">
                                 Começar Agora <ArrowRight size={18} strokeWidth={3} />
                             </button>
-                            <button onClick={() => setLocation('/preview')} className="h-16 px-10 rounded-2xl bg-[#1a1a1c] border border-white/5 text-white font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-zinc-800 transition-all flex items-center justify-center gap-3">
+                            <button onClick={() => setLocation('/preview')} className="h-16 px-10 rounded-2xl bg-[#1a1a1c] border border-white/5 text-white font-bold text-[11px] uppercase tracking-[0.2em] hover:bg-zinc-800 flex items-center justify-center gap-3">
                                 <Calculator size={18} /> Orçar uma Peça
                             </button>
                         </div>
@@ -253,7 +253,7 @@ export default function LandingPage() {
                                 <div key={i} className="bg-white/5 p-4 rounded-2xl border border-white/5">
                                     <div className="flex justify-between items-center mb-2 font-bold text-[9px] uppercase">
                                         <span className="text-zinc-400">{item.name}</span>
-                                        <span className={item.alert ? "text-rose-500 animate-pulse" : "text-white"}>{item.weight}</span>
+                                        <span className={item.alert ? "text-rose-500" : "text-white"}>{item.weight}</span>
                                     </div>
                                     <div className="h-1.5 w-full bg-zinc-950 rounded-full overflow-hidden">
                                         <div className={`h-full ${item.color}`} style={{ width: `${item.p}%` }} />
@@ -282,7 +282,7 @@ export default function LandingPage() {
                                     <p>*Peça:* Samurai V2 (Resolução 0.12mm)</p>
                                     <p>*Valor total:* <span className="text-emerald-400 font-bold">R$ 180,00</span></p>
                                 </div>
-                                <button className="w-full bg-emerald-500 hover:bg-emerald-400 py-3.5 rounded-xl text-black font-bold text-[10px] uppercase transition-all">Copiar e mandar pro cliente</button>
+                                <button className="w-full bg-emerald-500 hover:bg-emerald-400 py-3.5 rounded-xl text-black font-bold text-[10px] uppercase">Copiar e mandar pro cliente</button>
                             </div>
                         </div>
                     </GlassCard>
@@ -311,7 +311,7 @@ export default function LandingPage() {
                             { title: 'Taxas de Venda', icon: ShoppingBag, desc: 'Saiba seu lucro de verdade após descontar as taxas de Shopee ou Mercado Livre.' },
                             { title: 'Seu tempo vale ouro', icon: History, desc: 'Não esqueça de cobrar pelo tempo que você gasta fatiando e limpando a peça.' }
                         ].map((item, i) => (
-                            <div key={i} className="p-10 rounded-[2.5rem] bg-[#0a0a0c] border border-white/5 hover:border-rose-500/20 transition-all">
+                            <div key={i} className="p-10 rounded-[2.5rem] bg-[#0a0a0c] border border-white/5 hover:border-rose-500/20">
                                 <item.icon size={28} className="text-rose-500 mb-8" />
                                 <h4 className="text-xl font-bold text-white uppercase mb-3 italic tracking-tighter">{item.title}</h4>
                                 <p className="text-zinc-500 text-xs leading-relaxed">{item.desc}</p>
@@ -338,10 +338,10 @@ export default function LandingPage() {
 
                     <button
                         onClick={() => setLocation('/register')}
-                        className="h-20 px-14 rounded-[2.5rem] bg-white text-black text-[13px] font-bold uppercase tracking-widest hover:bg-sky-500 hover:text-white transition-all shadow-2xl flex items-center gap-4 active:scale-95 group mx-auto"
+                        className="h-20 px-14 rounded-[2.5rem] bg-white text-black text-[13px] font-bold uppercase tracking-widest hover:bg-sky-500 hover:text-white shadow-2xl flex items-center gap-4 group mx-auto"
                     >
                         Ver Minhas Impressoras
-                        <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-2 transition-transform" />
+                        <ArrowRight size={24} strokeWidth={3} className="group-hover:translate-x-2" />
                     </button>
                 </div>
             </section>
@@ -355,8 +355,8 @@ export default function LandingPage() {
                         </div>
 
                         {/* Centralizado no desktop: Link de contato com ícone */}
-                        <a href="mailto:suporte@printlog.com.br" className="group flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 bg-white/[0.02] hover:bg-white/[0.05] transition-all">
-                            <Mail size={12} className="text-zinc-500 group-hover:text-sky-500 transition-colors" />
+                        <a href="mailto:suporte@printlog.com.br" className="group flex items-center gap-2 px-4 py-2 rounded-full border border-white/5 bg-white/[0.02] hover:bg-white/[0.05]">
+                            <Mail size={12} className="text-zinc-500 group-hover:text-sky-500" />
                             <span className="text-[10px] text-zinc-400 uppercase font-bold tracking-tighter">Falar com suporte</span>
                         </a>
 

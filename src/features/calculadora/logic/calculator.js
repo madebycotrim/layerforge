@@ -45,49 +45,73 @@ export function calcularTudo(dadosEntrada = {}) {
 
     // --- CÁLCULO DE MATERIAIS (Suporta Simples e Multi-Material) ---
     let custoMaterialUnitario = 0;
-    const slots = dadosEntrada.material?.slots || [];
+    const slots = Array.isArray(dadosEntrada.material?.slots) ? dadosEntrada.material.slots : [];
     if (slots.length > 0) {
         custoMaterialUnitario = slots.reduce((acc, slot) => {
-            const weight = parseFloat(String(slot.weight || "0").replace(',', '.'));
-            const priceKg = parseFloat(String(slot.priceKg || "0").replace(',', '.'));
-            return acc + ((priceKg / 1000) * weight);
+            const weight = Math.max(0, parseFloat(String(slot?.weight || "0").replace(',', '.')) || 0);
+            const priceKg = Math.max(0, parseFloat(String(slot?.priceKg || "0").replace(',', '.')) || 0);
+            const custoSlot = (priceKg / 1000) * weight;
+            return acc + (isFinite(custoSlot) ? custoSlot : 0);
         }, 0);
     } else {
-        custoMaterialUnitario = (obterValor('material.custoRolo', 'custoRolo') / 1000) * obterValor('material.pesoModelo', 'pesoModelo');
+        const custoRolo = Math.max(0, obterValor('material.custoRolo', 'custoRolo'));
+        const pesoModelo = Math.max(0, obterValor('material.pesoModelo', 'pesoModelo'));
+        custoMaterialUnitario = (custoRolo / 1000) * pesoModelo;
     }
+    // Garante que o custo material seja não-negativo e finito
+    custoMaterialUnitario = isFinite(custoMaterialUnitario) ? Math.max(0, custoMaterialUnitario) : 0;
 
     // --- CUSTOS OPERACIONAIS UNITÁRIOS ---
-    const custoEnergiaUnit = (p.tempoImp * p.consumoKw * p.custoKwh) / p.quantidade;
-    const custoBaseMaquinaUnit = (p.tempoImp * p.custoHoraMaquina) / p.quantidade;
-    const reservaManutencaoUnit = custoBaseMaquinaUnit * 0.10; // 10% de reserva padrão
-    const custoMaoDeObraUnit = (p.tempoTrab * p.valorHoraHumana) / p.quantidade;
-    const custoSetupUnit = p.taxaSetup / p.quantidade;
+    // Garante que todos os valores sejam não-negativos
+    const tempoImpSeguro = Math.max(0, p.tempoImp);
+    const tempoTrabSeguro = Math.max(0, p.tempoTrab);
+    const consumoKwSeguro = Math.max(0, p.consumoKw);
+    const custoKwhSeguro = Math.max(0, p.custoKwh);
+    const custoHoraMaquinaSeguro = Math.max(0, p.custoHoraMaquina);
+    const valorHoraHumanaSeguro = Math.max(0, p.valorHoraHumana);
+    const taxaSetupSegura = Math.max(0, p.taxaSetup);
 
-    const custoDiretoTotal = custoMaterialUnitario + custoEnergiaUnit + custoBaseMaquinaUnit + reservaManutencaoUnit + custoMaoDeObraUnit + custoSetupUnit;
+    const custoEnergiaUnit = Math.max(0, (tempoImpSeguro * consumoKwSeguro * custoKwhSeguro) / p.quantidade);
+    const custoBaseMaquinaUnit = Math.max(0, (tempoImpSeguro * custoHoraMaquinaSeguro) / p.quantidade);
+    const reservaManutencaoUnit = Math.max(0, custoBaseMaquinaUnit * 0.10); // 10% de reserva padrão
+    const custoMaoDeObraUnit = Math.max(0, (tempoTrabSeguro * valorHoraHumanaSeguro) / p.quantidade);
+    const custoSetupUnit = Math.max(0, taxaSetupSegura / p.quantidade);
+
+    const custoDiretoTotal = Math.max(0, custoMaterialUnitario + custoEnergiaUnit + custoBaseMaquinaUnit + reservaManutencaoUnit + custoMaoDeObraUnit + custoSetupUnit);
 
     // Aplicação da Taxa de Falha (Risco)
-    const fatorFalhaSeguro = Math.min(p.taxaFalha, 0.95);
-    const custoComRisco = custoDiretoTotal / (1 - fatorFalhaSeguro);
-    const valorRiscoUnitario = custoComRisco - custoDiretoTotal;
+    // Proteção contra divisão por zero: garante que fatorFalhaSeguro seja sempre < 1
+    const fatorFalhaSeguro = Math.min(Math.max(p.taxaFalha, 0), 0.99);
+    const divisorFalha = Math.max(0.01, 1 - fatorFalhaSeguro); // Garante mínimo de 0.01 para evitar divisão por zero
+    const custoComRisco = custoDiretoTotal / divisorFalha;
+    const valorRiscoUnitario = Math.max(0, custoComRisco - custoDiretoTotal);
 
-    const custoFixoSaidaUnitario = p.embalagem + p.frete + (p.extras / p.quantidade);
+    const custoFixoSaidaUnitario = Math.max(0, p.embalagem) + Math.max(0, p.frete) + (Math.max(0, p.extras) / p.quantidade);
     const custoTotalOperacional = custoComRisco + custoFixoSaidaUnitario;
 
     // --- FORMAÇÃO DE PREÇO (DIVISOR DE MARKUP) ---
-    const somaTaxasELucro = p.imposto + p.taxaMkt + p.margemLucro;
-    const divisor = Math.max(0.05, 1 - somaTaxasELucro);
+    // Proteção contra divisor inválido: garante que a soma não ultrapasse 0.99
+    const somaTaxasELucro = Math.min(0.99, Math.max(0, p.imposto + p.taxaMkt + p.margemLucro));
+    const divisor = Math.max(0.01, 1 - somaTaxasELucro); // Garante mínimo de 0.01 para evitar divisão por zero
 
     // Preço Sugerido (Tabela) e Preço Praticado (Com Desconto)
-    const precoSugerido = (custoTotalOperacional + (p.taxaMktFixa / p.quantidade)) / divisor;
-    const precoComDesconto = precoSugerido * (1 - p.desconto);
+    const taxaMktFixaUnit = Math.max(0, p.taxaMktFixa) / p.quantidade;
+    const precoSugerido = Math.max(0, (custoTotalOperacional + taxaMktFixaUnit) / divisor);
+    const descontoSeguro = Math.min(Math.max(p.desconto, 0), 0.99); // Garante desconto entre 0 e 99%
+    const precoComDesconto = Math.max(0, precoSugerido * (1 - descontoSeguro));
 
     // --- ANÁLISE REAL DE RESULTADOS ---
-    const impostoReal = precoComDesconto * p.imposto;
-    const taxaMktReal = (precoComDesconto * p.taxaMkt) + (p.taxaMktFixa / p.quantidade);
-    const lucroLiquidoReal = precoComDesconto - impostoReal - taxaMktReal - custoTotalOperacional;
-    const margemEfetivaReal = precoComDesconto > 0 ? (lucroLiquidoReal / precoComDesconto) * 100 : 0;
+    const impostoReal = Math.max(0, precoComDesconto * Math.max(0, p.imposto));
+    const taxaMktReal = Math.max(0, (precoComDesconto * Math.max(0, p.taxaMkt)) + taxaMktFixaUnit);
+    const lucroLiquidoReal = Math.max(0, precoComDesconto - impostoReal - taxaMktReal - custoTotalOperacional);
+    const margemEfetivaReal = precoComDesconto > 0.01 ? (lucroLiquidoReal / precoComDesconto) * 100 : 0;
 
-    const arredondar = (num) => isFinite(num) ? Math.round((num + Number.EPSILON) * 100) / 100 : 0;
+    // Função de arredondamento seguro que protege contra NaN, Infinity e valores negativos
+    const arredondar = (num) => {
+        if (typeof num !== 'number' || !isFinite(num) || isNaN(num)) return 0;
+        const valorSeguro = Math.max(0, num); // Garante que não seja negativo
+        return Math.round((valorSeguro + Number.EPSILON) * 100) / 100;
+    };
 
     return {
         custoMaterial: arredondar(custoMaterialUnitario),
@@ -96,9 +120,9 @@ export function calcularTudo(dadosEntrada = {}) {
         reservaManutencao: arredondar(reservaManutencaoUnit),
         custoMaoDeObra: arredondar(custoMaoDeObraUnit),
         custoSetup: arredondar(custoSetupUnit),
-        custoEmbalagem: arredondar(p.embalagem),
-        custoFrete: arredondar(p.frete),
-        custosExtras: arredondar(p.extras / p.quantidade),
+        custoEmbalagem: arredondar(Math.max(0, p.embalagem)),
+        custoFrete: arredondar(Math.max(0, p.frete)),
+        custosExtras: arredondar(Math.max(0, p.extras) / p.quantidade),
         valorRisco: arredondar(valorRiscoUnitario),
         valorImpostos: arredondar(impostoReal),
         valorMarketplace: arredondar(taxaMktReal),
@@ -107,8 +131,8 @@ export function calcularTudo(dadosEntrada = {}) {
         precoComDesconto: arredondar(precoComDesconto),
         lucroBrutoUnitario: arredondar(lucroLiquidoReal),
         margemEfetivaPct: arredondar(margemEfetivaReal),
-        tempoTotalHoras: arredondar(p.tempoImp),
-        quantidadePecas: p.quantidade
+        tempoTotalHoras: arredondar(Math.max(0, p.tempoImp)),
+        quantidadePecas: Math.max(1, p.quantidade)
     };
 }
 

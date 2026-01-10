@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import {
     X, FileText, MessageCircle, Trash2, User,
     TrendingUp, Weight, Clock, Monitor, Layers,
-    Zap, Hash, ShieldCheck, ArrowDownCircle, 
+    Zap, Hash, ShieldCheck, ArrowDownCircle,
     ExternalLink, Printer
 } from "lucide-react";
 import { formatCurrency } from "../../../utils/numbers";
@@ -20,7 +20,7 @@ export default function ModalDetalhes({ item, onClose, onExcluir }) {
     const d = item.data || {};
     const res = d.resultados || {};
     const ent = d.entradas || {};
-    
+
     const statusKey = d.status || 'rascunho';
     const config = CONFIG_STATUS[statusKey] || CONFIG_STATUS['rascunho'];
 
@@ -28,12 +28,11 @@ export default function ModalDetalhes({ item, onClose, onExcluir }) {
     const lucroReal = Number(res.lucroReal || 0);
     const margemPercent = precoFinal > 0 ? (lucroReal / precoFinal) * 100 : 0;
 
-    const pesoTotalCalculado = Number(res.pesoTotal || 0) > 0 
-        ? Number(res.pesoTotal) 
+    const pesoTotalCalculado = Number(res.pesoTotal || 0) > 0
+        ? Number(res.pesoTotal)
         : (Number(ent.material?.pesoModelo || ent.pesoPeca || 0) * Number(ent.quantidade || ent.qtdPecas || 1));
 
-    // CORES LOGO: Emerald (Forte), Sky (Médio), Cyan (Início/Risco)
-    const margemColor = margemPercent >= 25 ? 'bg-emerald-500' : margemPercent >= 15 ? 'bg-sky-500' : 'bg-cyan-500';
+    // O margemPercent é utilizado diretamente nas classes condicionais
 
     return (
         <div className="fixed inset-0 z-[100] flex justify-end bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
@@ -86,7 +85,7 @@ export default function ModalDetalhes({ item, onClose, onExcluir }) {
 
                 {/* CONTENT */}
                 <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar bg-gradient-to-b from-transparent to-black/20">
-                    
+
                     {/* FINANCEIRO */}
                     <div className="space-y-4">
                         <h4 className="text-[9px] font-black text-zinc-600 uppercase tracking-[0.3em] flex items-center gap-3">

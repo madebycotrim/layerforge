@@ -1,15 +1,15 @@
 import React from "react";
-import { 
-    ChevronRight, 
-    Clock, 
-    User, 
+import {
+    ChevronRight,
+    Clock,
+    User,
     Weight,
     Hash,
     Target,
     TrendingUp
 } from "lucide-react";
 import { formatCurrency } from "../../../utils/numbers";
-import { CONFIG_STATUS } from "../../../pages/orcamentos"; 
+import { CONFIG_STATUS } from "../../../pages/orcamentos";
 
 export default function CardOrcamento({ item, onClick }) {
     if (!item) return null;
@@ -29,16 +29,16 @@ export default function CardOrcamento({ item, onClick }) {
     return (
         <div
             onClick={onClick}
-            className="group relative flex flex-col w-full h-full min-h-[220px] bg-[#070708] border border-white/5 rounded-[2rem] p-6 transition-all duration-500 hover:scale-[1.01] hover:border-amber-500/30 cursor-pointer overflow-hidden shadow-2xl"
+            className="group relative flex flex-col w-full h-full min-h-[220px] bg-[#070708] border border-white/5 rounded-[2rem] p-6 hover-lift hover:border-amber-500/30 cursor-pointer overflow-hidden shadow-2xl hover:shadow-[0_10px_40px_rgba(245,158,11,0.15)]"
         >
             {/* 1. TEXTURA HUD AMBER (Sutil) */}
-            <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-700 pointer-events-none" 
-                style={{ backgroundImage: `radial-gradient(circle, #f59e0b 1px, transparent 1px)`, backgroundSize: '20px 20px' }} 
+            <div className="absolute inset-0 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-700 pointer-events-none"
+                style={{ backgroundImage: `radial-gradient(circle, #f59e0b 1px, transparent 1px)`, backgroundSize: '20px 20px' }}
             />
 
             {/* 2. BARRA DE TELEMETRIA (TOP) - FOCO AMBER */}
             <div className="absolute top-0 left-0 w-full h-[4px] bg-zinc-900/50">
-                <div 
+                <div
                     className="h-full bg-gradient-to-r from-amber-700 via-amber-400 to-orange-500 transition-all duration-1000 shadow-[0_0_15px_rgba(245,158,11,0.4)]"
                     style={{ width: `${Math.max(2, Math.min(margemPercent, 100))}%` }}
                 />

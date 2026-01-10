@@ -6,220 +6,220 @@ import api from './api';
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 
-export const useConfigLogic = () => {
-    const { signOut } = useClerk();
-    const { user, isLoaded } = useUser();
-    const fileInputRef = useRef(null);
+export const useLogicaConfiguracao = () => {
+    const { signOut: encerrarSessao } = useClerk();
+    const { user: usuario, isLoaded: estaCarregado } = useUser();
+    const referenciaEntradaArquivo = useRef(null);
 
-    const [larguraSidebar, setLarguraSidebar] = useState(68);
-    const [isSaving, setIsSaving] = useState(false);
-    const [toast, setToast] = useState({ show: false, message: '', type: 'success' });
-    const [firstName, setFirstName] = useState("");
-    const [originalName, setOriginalName] = useState("");
-    const [showPasswordModal, setShowPasswordModal] = useState(false);
-    const [passwordForm, setPasswordForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    const [larguraBarraLateral, setLarguraBarraLateral] = useState(68);
+    const [estaSalvando, setEstaSalvando] = useState(false);
+    const [aviso, setAviso] = useState({ exibir: false, mensagem: '', tipo: 'sucesso' });
+    const [primeiroNome, setPrimeiroNome] = useState("");
+    const [nomeOriginal, setNomeOriginal] = useState("");
+    const [exibirJanelaSenha, setExibirJanelaSenha] = useState(false);
+    const [formularioSenha, setFormularioSenha] = useState({ senhaAtual: "", novaSenha: "", confirmarSenha: "" });
 
-    const hasPassword = useMemo(() => user?.passwordEnabled, [user]);
+    const temSenhaDefinida = useMemo(() => usuario?.passwordEnabled, [usuario]);
 
     useEffect(() => {
-        if (isLoaded && user) {
-            setFirstName(user.firstName || "");
-            setOriginalName(user.firstName || "");
+        if (estaCarregado && usuario) {
+            setPrimeiroNome(usuario.firstName || "");
+            setNomeOriginal(usuario.firstName || "");
         }
-    }, [isLoaded, user]);
+    }, [estaCarregado, usuario]);
 
-    // --- SENHA E SEGURANÇA ---
-    const passwordStrength = useMemo(() => {
-        const pass = passwordForm.newPassword;
-        if (!pass) return { score: 0, label: "Aguardando", color: "zinc" };
-        let score = 0;
-        if (pass.length >= 8) score += 25;
-        if (pass.length >= 12) score += 25;
-        if (/[A-Z]/.test(pass) && /[0-9]/.test(pass)) score += 25;
-        if (/[^A-Za-z0-9]/.test(pass)) score += 25;
+    // --- SEGURANÇA E FORÇA DA SENHA ---
+    const forcaSenha = useMemo(() => {
+        const senha = formularioSenha.novaSenha;
+        if (!senha) return { pontuacao: 0, rotulo: "Aguardando", cor: "zinc" };
+        let pontuacao = 0;
+        if (senha.length >= 8) pontuacao += 25;
+        if (senha.length >= 12) pontuacao += 25;
+        if (/[A-Z]/.test(senha) && /[0-9]/.test(senha)) pontuacao += 25;
+        if (/[^A-Za-z0-9]/.test(senha)) pontuacao += 25;
 
-        if (score <= 25) return { score, label: "Fraca", color: "rose" };
-        if (score <= 50) return { score, label: "Média", color: "amber" };
-        if (score <= 75) return { score, label: "Forte", color: "sky" };
-        return { score, label: "NIST-Compliant", color: "emerald" };
-    }, [passwordForm.newPassword]);
+        if (pontuacao <= 25) return { pontuacao, rotulo: "Fraca", cor: "rose" };
+        if (pontuacao <= 50) return { pontuacao, rotulo: "Média", cor: "amber" };
+        if (pontuacao <= 75) return { pontuacao, rotulo: "Forte", cor: "sky" };
+        return { pontuacao, rotulo: "Excelente", cor: "emerald" };
+    }, [formularioSenha.novaSenha]);
 
-    const isPasswordValid = useMemo(() =>
-        passwordStrength.score >= 50 && passwordForm.newPassword === passwordForm.confirmPassword
-        , [passwordStrength, passwordForm]);
+    const senhaEhValida = useMemo(() =>
+        forcaSenha.pontuacao >= 50 && formularioSenha.novaSenha === formularioSenha.confirmarSenha
+        , [forcaSenha, formularioSenha]);
 
-    // --- UPLOAD E OTIMIZAÇÃO DE IMAGEM ---
-    const handleImageUpload = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        setIsSaving(true);
-        setToast({ show: true, message: "Otimizando Bio-ID...", type: 'info' });
+    // --- CARREGAMENTO E OTIMIZAÇÃO DE IMAGEM ---
+    const manipularCarregamentoImagem = async (evento) => {
+        const arquivo = evento.target.files[0];
+        if (!arquivo) return;
+        setEstaSalvando(true);
+        setAviso({ exibir: true, mensagem: "Otimizando imagem de perfil...", tipo: 'informativo' });
 
-        const compress = (f) => new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.readAsDataURL(f);
-            reader.onload = (ev) => {
-                const img = new Image();
-                img.src = ev.target.result;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const size = 400;
-                    canvas.width = size; canvas.height = size;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, size, size);
-                    canvas.toBlob((blob) => resolve(new File([blob], f.name, { type: "image/jpeg" })), "image/jpeg", 0.8);
+        const comprimirImagem = (arquivoOriginal) => new Promise((resolver) => {
+            const leitor = new FileReader();
+            leitor.readAsDataURL(arquivoOriginal);
+            leitor.onload = (eventoLeitura) => {
+                const imagem = new Image();
+                imagem.src = eventoLeitura.target.result;
+                imagem.onload = () => {
+                    const quadro = document.createElement('canvas');
+                    const tamanho = 400;
+                    quadro.width = tamanho; quadro.height = tamanho;
+                    const contexto = quadro.getContext('2d');
+                    contexto.drawImage(imagem, 0, 0, tamanho, tamanho);
+                    quadro.toBlob((blob) => resolver(new File([blob], arquivoOriginal.name, { type: "image/jpeg" })), "image/jpeg", 0.8);
                 };
             };
         });
 
         try {
-            const optimized = await compress(file);
-            await user.setProfileImage({ file: optimized });
-            setToast({ show: true, message: "Bio-ID visual sincronizado!", type: 'success' });
+            const imagemOtimizada = await comprimirImagem(arquivo);
+            await usuario.setProfileImage({ file: imagemOtimizada });
+            setAviso({ exibir: true, mensagem: "Foto de perfil atualizada!", tipo: 'sucesso' });
         } catch {
-            setToast({ show: true, message: "Erro no upload.", type: 'error' });
-        } finally { setIsSaving(false); }
+            setAviso({ exibir: true, mensagem: "Erro ao enviar imagem.", tipo: 'erro' });
+        } finally { setEstaSalvando(false); }
     };
 
-    // --- HELPER DE DOWNLOAD ---
-    const downloadFile = (blob, name) => {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = name;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
+    // --- AUXILIAR PARA BAIXAR ARQUIVOS ---
+    const baixarArquivo = (dadosBrutos, nome) => {
+        const enderecoUrl = window.URL.createObjectURL(dadosBrutos);
+        const link = document.createElement('a');
+        link.style.display = 'none';
+        link.href = enderecoUrl;
+        link.download = nome;
+        document.body.appendChild(link);
+        link.click();
+        window.URL.revokeObjectURL(enderecoUrl);
+        document.body.removeChild(link);
     };
 
-    // --- EXPORTAÇÃO COMPLETA (CSV / PDF) ---
-    const exportManifesto = async (format) => {
-        setIsSaving(true);
+    // --- EXPORTAÇÃO DE RELATÓRIOS (CSV / PDF) ---
+    const exportarRelatorio = async (formato) => {
+        setEstaSalvando(true);
         try {
-            const res = await api.get('/users/backup');
-            const fullData = res.data.data;
+            const resposta = await api.get('/users/backup');
+            const dadosCompletos = resposta.data.data;
 
-            if (!fullData) throw new Error("Dados não encontrados");
+            if (!dadosCompletos) throw new Error("Dados não encontrados");
 
-            const timestamp = new Date().toISOString().split('T')[0];
-            const fileName = `PRINTLOG_MANIFESTO_${timestamp}`;
+            const dataAtual = new Date().toISOString().split('T')[0];
+            const nomeArquivo = `RELATORIO_SISTEMA_${dataAtual}`;
 
-            // --- PROTOCOLO 1: CSV ---
-            if (format === 'csv') {
-                let csvContent = "\ufeff--- MANIFESTO DE DADOS PRINTLOG ---\n";
-                csvContent += `GERADO EM:;${new Date().toLocaleString()}\n\n`;
+            // --- OPÇÃO 1: FORMATO PLANILHA (CSV) ---
+            if (formato === 'csv') {
+                let conteudoCsv = "\ufeff--- RELATÓRIO DE DADOS DO SISTEMA ---\n";
+                conteudoCsv += `GERADO EM:;${new Date().toLocaleString()}\n\n`;
 
-                if (fullData.filaments?.length > 0) {
-                    csvContent += `--- FILAMENTOS ---\nID;NOME;MATERIAL;COR;PESO;PRECO\n`;
-                    fullData.filaments.forEach(f => {
-                        csvContent += `${f.id};"${f.nome}";${f.material};${f.cor};${f.peso_atual}g;${f.preco}\n`;
+                if (dadosCompletos.filaments?.length > 0) {
+                    conteudoCsv += `--- MATERIAIS (FILAMENTOS) ---\nID;NOME;MATERIAL;COR;PESO ATUAL;PRECO\n`;
+                    dadosCompletos.filaments.forEach(item => {
+                        conteudoCsv += `${item.id};"${item.nome}";${item.material};${item.cor};${item.peso_atual}g;${item.preco}\n`;
                     });
                 }
 
-                if (fullData.printers?.length > 0) {
-                    csvContent += `\n--- IMPRESSORAS ---\nNOME;MODELO;HORAS\n`;
-                    fullData.printers.forEach(p => {
-                        csvContent += `"${p.nome}";"${p.modelo}";${p.horas_totais}h\n`;
+                if (dadosCompletos.printers?.length > 0) {
+                    conteudoCsv += `\n--- MÁQUINAS (IMPRESSORAS) ---\nNOME;MODELO;HORAS DE USO\n`;
+                    dadosCompletos.printers.forEach(maquina => {
+                        conteudoCsv += `"${maquina.nome}";"${maquina.modelo}";${maquina.horas_totais}h\n`;
                     });
                 }
 
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                downloadFile(blob, `${fileName}.csv`);
+                const arquivoGerado = new Blob([conteudoCsv], { type: 'text/csv;charset=utf-8;' });
+                baixarArquivo(arquivoGerado, `${nomeArquivo}.csv`);
             }
 
-            // --- PROTOCOLO 2: PDF PROFISSIONAL .SYS ---
-            else if (format === 'pdf') {
-                const doc = new jsPDF('p', 'mm', 'a4');
-                const cores = { sky: [14, 165, 233], emerald: [16, 185, 129], dark: [10, 10, 10], grid: [235, 235, 235] };
+            // --- OPÇÃO 2: FORMATO DOCUMENTO (PDF) ---
+            else if (formato === 'pdf') {
+                const documentoPdf = new jsPDF('p', 'mm', 'a4');
+                const coresPaleta = { azul: [14, 165, 233], verde: [16, 185, 129], escuro: [10, 10, 10], grade: [235, 235, 235] };
 
-                // 1. FUNDO TÉCNICO (GRADE MAKER)
-                doc.setLineWidth(0.05);
-                doc.setDrawColor(...cores.grid);
-                for (let i = 0; i < 210; i += 5) doc.line(i, 0, i, 297);
-                for (let i = 0; i < 297; i += 5) doc.line(0, i, 210, i);
+                // 1. FUNDO COM GRADE DE DESIGN
+                documentoPdf.setLineWidth(0.05);
+                documentoPdf.setDrawColor(...coresPaleta.grade);
+                for (let i = 0; i < 210; i += 5) documentoPdf.line(i, 0, i, 297);
+                for (let i = 0; i < 297; i += 5) documentoPdf.line(0, i, 210, i);
 
-                // Marcas de Canto (Mira)
-                doc.setDrawColor(...cores.sky);
-                doc.setLineWidth(0.5);
-                doc.line(10, 10, 15, 10); doc.line(10, 10, 10, 15); // Topo esquerdo
+                // Detalhes de canto
+                documentoPdf.setDrawColor(...coresPaleta.azul);
+                documentoPdf.setLineWidth(0.5);
+                documentoPdf.line(10, 10, 15, 10); documentoPdf.line(10, 10, 10, 15);
 
-                // 2. CABEÇALHO INDUSTRIAL
-                doc.setFillColor(...cores.dark);
-                doc.rect(10, 15, 190, 30, 'F');
-                doc.setFillColor(...cores.sky);
-                doc.rect(10, 15, 2, 30, 'F'); // Detalhe lateral
+                // 2. CABEÇALHO PRINCIPAL
+                documentoPdf.setFillColor(...coresPaleta.escuro);
+                documentoPdf.rect(10, 15, 190, 30, 'F');
+                documentoPdf.setFillColor(...coresPaleta.azul);
+                documentoPdf.rect(10, 15, 2, 30, 'F');
 
-                doc.setTextColor(255, 255, 255);
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(20);
-                doc.text("MANIFESTO TÉCNICO", 18, 30);
-                doc.setTextColor(...cores.sky);
-                doc.text(".SYS", 98, 30);
+                documentoPdf.setTextColor(255, 255, 255);
+                documentoPdf.setFont("helvetica", "bold");
+                documentoPdf.setFontSize(20);
+                documentoPdf.text("RELATÓRIO TÉCNICO", 18, 30);
+                documentoPdf.setTextColor(...coresPaleta.azul);
+                documentoPdf.text("SISTEMA", 98, 30);
 
-                doc.setFont("courier", "bold");
-                doc.setFontSize(8);
-                doc.setTextColor(120, 120, 120);
-                const hash = Math.random().toString(36).toUpperCase().substring(2, 10);
-                doc.text(`OPERADOR: ${user?.fullName?.toUpperCase() || 'MAKER'}`, 18, 38);
-                doc.text(`ID_REF: ${hash} // ${new Date().toLocaleDateString()}`, 130, 38);
+                documentoPdf.setFont("courier", "bold");
+                documentoPdf.setFontSize(8);
+                documentoPdf.setTextColor(120, 120, 120);
+                const codigoIdentificador = Math.random().toString(36).toUpperCase().substring(2, 10);
+                documentoPdf.text(`OPERADOR: ${usuario?.fullName?.toUpperCase() || 'USUÁRIO'}`, 18, 38);
+                documentoPdf.text(`CÓDIGO: ${codigoIdentificador} // ${new Date().toLocaleDateString()}`, 130, 38);
 
-                let currentY = 55;
+                let posicaoY = 55;
 
-                // 3. SEÇÃO: FILAMENTOS (Condicional)
-                if (fullData.filaments?.length > 0) {
-                    doc.setTextColor(...cores.dark);
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(12);
-                    doc.text("> 01. INVENTÁRIO DE INSUMOS (FILAMENTOS)", 10, currentY);
+                // 3. SEÇÃO DE FILAMENTOS
+                if (dadosCompletos.filaments?.length > 0) {
+                    documentoPdf.setTextColor(...coresPaleta.escuro);
+                    documentoPdf.setFont("helvetica", "bold");
+                    documentoPdf.setFontSize(12);
+                    documentoPdf.text("> 01. INVENTÁRIO DE MATERIAIS (FILAMENTOS)", 10, posicaoY);
 
-                    autoTable(doc, {
-                        startY: currentY + 4,
-                        head: [['NOME', 'MATERIAL', 'COR', 'PESO DISPONÍVEL', 'VALOR/KG']],
-                        body: fullData.filaments.map(f => [f.nome, f.material, f.cor, `${f.peso_atual}g`, `R$ ${f.preco}`]),
-                        headStyles: { fillColor: cores.sky, font: 'courier' },
+                    autoTable(documentoPdf, {
+                        startY: posicaoY + 4,
+                        head: [['NOME', 'MATERIAL', 'COR', 'PESO DISPONÍVEL', 'PREÇO/KG']],
+                        body: dadosCompletos.filaments.map(item => [item.nome, item.material, item.cor, `${item.peso_atual}g`, `R$ ${item.preco}`]),
+                        headStyles: { fillColor: coresPaleta.azul, font: 'courier' },
                         theme: 'striped',
                         margin: { left: 10, right: 10 }
                     });
-                    currentY = doc.lastAutoTable.finalY + 15;
+                    posicaoY = documentoPdf.lastAutoTable.finalY + 15;
                 }
 
-                // 4. SEÇÃO: IMPRESSORAS (Condicional)
-                if (fullData.printers?.length > 0) {
-                    if (currentY > 250) { doc.addPage(); currentY = 20; }
-                    doc.setTextColor(...cores.dark);
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(12);
-                    doc.text("> 02. UNIDADES DE PROCESSAMENTO (MÁQUINAS)", 10, currentY);
+                // 4. SEÇÃO DE MÁQUINAS
+                if (dadosCompletos.printers?.length > 0) {
+                    if (posicaoY > 250) { documentoPdf.addPage(); posicaoY = 20; }
+                    documentoPdf.setTextColor(...coresPaleta.escuro);
+                    documentoPdf.setFont("helvetica", "bold");
+                    documentoPdf.setFontSize(12);
+                    documentoPdf.text("> 02. EQUIPAMENTOS (IMPRESSORAS)", 10, posicaoY);
 
-                    autoTable(doc, {
-                        startY: currentY + 4,
-                        head: [['IMPRESSORA', 'MODELO', 'HORAS ACUMULADAS', 'STATUS']],
-                        body: fullData.printers.map(p => [p.nome, p.modelo, `${p.horas_totais}h`, 'OPERACIONAL']),
-                        headStyles: { fillColor: cores.emerald, font: 'courier' },
+                    autoTable(documentoPdf, {
+                        startY: posicaoY + 4,
+                        head: [['MÁQUINA', 'MODELO', 'USO ACUMULADO', 'SITUAÇÃO']],
+                        body: dadosCompletos.printers.map(maquina => [maquina.nome, maquina.modelo, `${maquina.horas_totais}h`, 'ATIVO']),
+                        headStyles: { fillColor: coresPaleta.verde, font: 'courier' },
                         theme: 'grid',
                         margin: { left: 10, right: 10 }
                     });
-                    currentY = doc.lastAutoTable.finalY + 15;
+                    posicaoY = documentoPdf.lastAutoTable.finalY + 15;
                 }
 
-                // 5. SEÇÃO: PROJETOS (Condicional)
-                if (fullData.projects?.length > 0) {
-                    if (currentY > 250) { doc.addPage(); currentY = 20; }
-                    doc.setTextColor(...cores.dark);
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(12);
-                    doc.text("> 03. LOG DE PRODUÇÃO (ÚLTIMOS PROJETOS)", 10, currentY);
+                // 5. SEÇÃO DE PROJETOS
+                if (dadosCompletos.projects?.length > 0) {
+                    if (posicaoY > 250) { documentoPdf.addPage(); posicaoY = 20; }
+                    documentoPdf.setTextColor(...coresPaleta.escuro);
+                    documentoPdf.setFont("helvetica", "bold");
+                    documentoPdf.setFontSize(12);
+                    documentoPdf.text("> 03. HISTÓRICO DE PRODUÇÃO (ÚLTIMOS PROJETOS)", 10, posicaoY);
 
-                    autoTable(doc, {
-                        startY: currentY + 4,
+                    autoTable(documentoPdf, {
+                        startY: posicaoY + 4,
                         head: [['PROJETO', 'CLIENTE', 'CUSTO ESTIMADO', 'DATA']],
-                        body: fullData.projects.slice(0, 15).map(p => [
-                            p.nome,
-                            p.cliente || 'INTERNO',
-                            `R$ ${p.custo_total || 0}`,
-                            new Date(p.created_at || Date.now()).toLocaleDateString()
+                        body: dadosCompletos.projects.slice(0, 15).map(projeto => [
+                            projeto.nome,
+                            projeto.cliente || 'USO INTERNO',
+                            `R$ ${projeto.custo_total || 0}`,
+                            new Date(projeto.created_at || Date.now()).toLocaleDateString()
                         ]),
                         headStyles: { fillColor: [80, 80, 80], font: 'courier' },
                         theme: 'striped',
@@ -227,113 +227,137 @@ export const useConfigLogic = () => {
                     });
                 }
 
-                // 6. RODAPÉ TÉCNICO
-                const pageCount = doc.internal.getNumberOfPages();
-                for (let i = 1; i <= pageCount; i++) {
-                    doc.setPage(i);
-                    doc.setFontSize(7);
-                    doc.setTextColor(150, 150, 150);
-                    doc.setFont("courier", "normal");
-                    doc.text(`PRINTLOG DASHBOARD // BUILD_2026.MAKER // PÁGINA ${i} DE ${pageCount}`, 105, 290, { align: "center" });
+                // 6. RODAPÉ DO DOCUMENTO
+                const totalPaginas = documentoPdf.internal.getNumberOfPages();
+                for (let i = 1; i <= totalPaginas; i++) {
+                    documentoPdf.setPage(i);
+                    documentoPdf.setFontSize(7);
+                    documentoPdf.setTextColor(150, 150, 150);
+                    documentoPdf.setFont("courier", "normal");
+                    documentoPdf.text(`RELATÓRIO DO SISTEMA // PÁGINA ${i} DE ${totalPaginas}`, 105, 290, { align: "center" });
                 }
 
-                // ABRIR EM NOVA ABA
-                const blobURL = doc.output('bloburl');
-                window.open(blobURL, '_blank');
+                const urlArquivo = documentoPdf.output('bloburl');
+                window.open(urlArquivo, '_blank');
             }
 
-            setToast({ show: true, message: `${format.toUpperCase()} gerado com sucesso!`, type: 'success' });
-        } catch (error) {
-            console.error("Erro na exportação:", error);
-            setToast({ show: true, message: "Falha técnica ao gerar manifesto.", type: 'error' });
+            setAviso({ exibir: true, mensagem: `Arquivo ${formato.toUpperCase()} gerado com sucesso!`, tipo: 'sucesso' });
+        } catch (erro) {
+            console.error("Erro na exportação:", erro);
+            setAviso({ exibir: true, mensagem: "Falha ao gerar o arquivo solicitado.", tipo: 'erro' });
         } finally {
-            setIsSaving(false);
+            setEstaSalvando(false);
         }
     };
 
-    const handleGlobalSave = async () => {
-        setIsSaving(true);
+    const salvarAlteracoesGerais = async () => {
+        setEstaSalvando(true);
         try {
-            await user.update({ firstName });
-            setOriginalName(firstName);
-            setToast({ show: true, message: "Bio-ID atualizado.", type: 'success' });
-        } catch { setToast({ show: true, message: "Erro ao salvar.", type: 'error' }); }
-        finally { setIsSaving(false); }
+            await usuario.update({ firstName: primeiroNome });
+            setNomeOriginal(primeiroNome);
+            setAviso({ exibir: true, mensagem: "Nome de perfil atualizado.", tipo: 'sucesso' });
+        } catch {
+            setAviso({ exibir: true, mensagem: "Erro ao salvar alterações.", tipo: 'erro' });
+        } finally {
+            setEstaSalvando(false);
+        }
     };
 
-    const handleUpdatePassword = async () => {
-        setIsSaving(true);
+    const atualizarSenha = async () => {
+        setEstaSalvando(true);
         try {
-            if (hasPassword) {
-                await user.update({ password: passwordForm.newPassword, currentPassword: passwordForm.currentPassword });
+            if (temSenhaDefinida) {
+                await usuario.update({ password: formularioSenha.novaSenha, currentPassword: formularioSenha.senhaAtual });
             } else {
-                await user.createPassword({ password: passwordForm.newPassword });
+                await usuario.createPassword({ password: formularioSenha.novaSenha });
             }
-            setToast({ show: true, message: "Protocolo de segurança atualizado.", type: 'success' });
-            setShowPasswordModal(false);
-            setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
-        } catch (err) {
-            setToast({ show: true, message: err.errors?.[0]?.longMessage, type: 'error' });
-        } finally { setIsSaving(false); }
+            setAviso({ exibir: true, mensagem: "Senha de segurança atualizada!", tipo: 'sucesso' });
+            setExibirJanelaSenha(false);
+            setFormularioSenha({ senhaAtual: "", novaSenha: "", confirmarSenha: "" });
+        } catch (erroServidor) {
+            setAviso({ exibir: true, mensagem: erroServidor.errors?.[0]?.longMessage || "Erro ao atualizar senha.", tipo: 'erro' });
+        } finally { setEstaSalvando(false); }
     };
 
-    const handleDeleteAccount = async () => {
-        if (!confirm("PROTOCOLAR EXPURGO TOTAL? Esta ação não pode ser desfeita.")) return;
-        setIsSaving(true);
+    const excluirContaPermanente = async () => {
+        if (!confirm("DESEJA EXCLUIR TODOS OS DADOS? Esta ação não pode ser desfeita.")) return;
+        setEstaSalvando(true);
         try {
             await api.delete('/users');
-            setToast({ show: true, message: "Dados eliminados. Encerrando sessão...", type: 'success' });
-            setTimeout(() => signOut(), 2000);
-        } catch { setToast({ show: true, message: "Erro no expurgo.", type: 'error' }); setIsSaving(false); }
+            setAviso({ exibir: true, mensagem: "Sua conta foi removida. Saindo do sistema...", tipo: 'sucesso' });
+            setTimeout(() => encerrarSessao(), 2000);
+        } catch {
+            setAviso({ exibir: true, mensagem: "Erro ao tentar excluir os dados.", tipo: 'erro' });
+            setEstaSalvando(false);
+        }
     };
 
-    const [cloudStatus, setCloudStatus] = useState({
-        label: 'Sincronizando',
-        color: 'sky',
-        info: 'Escaneando link D1...',
-        icon: Loader2 // Ícone de carregamento inicial
+    const [statusConexaoNuvem, setStatusConexaoNuvem] = useState({
+        rotulo: 'Conectando',
+        cor: 'sky',
+        informacao: 'Verificando sistema...',
+        Icone: Loader2
     });
 
     useEffect(() => {
-        const checkHealth = async () => {
+        const verificarSaudeSistema = async () => {
             try {
-                const res = await api.get('/users/health');
-                const latency = res.data.latency;
+                const resposta = await api.get('/users/health');
+                const tempoResposta = resposta.data.latency;
 
-                if (res.data.status === 'online') {
-                    if (latency > 500) {
-                        setCloudStatus({
-                            label: 'Instável',
-                            color: 'amber',
-                            info: `Latência: ${latency}ms (Alta)`,
-                            icon: Zap // Ícone de raio/energia instável
+                if (resposta.data.status === 'online') {
+                    if (tempoResposta > 500) {
+                        setStatusConexaoNuvem({
+                            rotulo: 'Lenta',
+                            cor: 'amber',
+                            informacao: `Resposta em: ${tempoResposta}ms (Instável)`,
+                            Icone: Zap
                         });
                     } else {
-                        setCloudStatus({
-                            label: 'Conectada',
-                            color: 'sky',
-                            info: `Sincronia: ${latency}ms (Real-time)`,
-                            icon: Globe // Ícone de rede global estável
+                        setStatusConexaoNuvem({
+                            rotulo: 'Conectada',
+                            cor: 'sky',
+                            informacao: `Resposta em: ${tempoResposta}ms (Estável)`,
+                            Icone: Globe
                         });
                     }
                 }
-            } catch (err) {
-                setCloudStatus({
-                    label: 'Offline',
-                    color: 'rose',
-                    info: 'Link com o banco rompido',
-                    icon: WifiOff // Ícone de wifi cortado
+            } catch (_erro) {
+                setStatusConexaoNuvem({
+                    rotulo: 'Desconectada',
+                    cor: 'rose',
+                    informacao: 'Sem comunicação com o servidor',
+                    Icone: WifiOff
                 });
             }
         };
-        checkHealth();
+        verificarSaudeSistema();
     }, []);
 
     return {
-        user, isLoaded, fileInputRef, larguraSidebar, setLarguraSidebar,
-        isSaving, toast, setToast, firstName, setFirstName, isDirty: firstName !== originalName,
-        showPasswordModal, setShowPasswordModal, passwordForm, setPasswordForm,
-        hasPassword, passwordStrength, isPasswordValid, cloudStatus,
-        handleGlobalSave, handleImageUpload, handleUpdatePassword, exportManifesto, handleDeleteAccount
+        usuario,
+        estaCarregado,
+        referenciaEntradaArquivo,
+        larguraBarraLateral,
+        setLarguraBarraLateral,
+        estaSalvando,
+        aviso,
+        setAviso,
+        primeiroNome,
+        setPrimeiroNome,
+        temAlteracao: primeiroNome !== nomeOriginal,
+        exibirJanelaSenha,
+        setExibirJanelaSenha,
+        formularioSenha,
+        setFormularioSenha,
+        temSenhaDefinida,
+        forcaSenha,
+        senhaEhValida,
+        statusConexaoNuvem,
+        salvarAlteracoesGerais,
+        manipularCarregamentoImagem,
+        atualizarSenha,
+        exportarRelatorio,
+        excluirContaPermanente
     };
 };

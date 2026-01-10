@@ -87,11 +87,11 @@ const LegalModal = ({ isOpen, onClose, title, content }) => {
             <div className="relative w-full max-w-xl bg-[#0a0a0c] border border-white/10 rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh]">
                 <div className="p-6 border-b border-white/5 flex justify-between items-center bg-[#0d0d0f]">
                     <h3 className="text-lg font-bold text-white uppercase italic tracking-tighter">{title}</h3>
-                    <button onClick={onClose} className="text-zinc-500 hover:text-white transition-colors"><X size={20} /></button>
+                    <button onClick={onClose} className="text-zinc-500 hover:text-white"><X size={20} /></button>
                 </div>
                 <div className="p-8 overflow-y-auto custom-scrollbar">{content}</div>
                 <div className="p-6 border-t border-white/5 bg-[#0d0d0f] flex justify-end">
-                    <button onClick={onClose} className="px-6 py-2 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-sky-500 hover:text-white transition-all">Entendido</button>
+                    <button onClick={onClose} className="px-6 py-2 bg-white text-black text-[10px] font-black uppercase tracking-widest rounded-full hover:bg-sky-500 hover:text-white">Entendido</button>
                 </div>
             </div>
         </div>
@@ -123,11 +123,11 @@ const PrimaryButton = ({ children, onClick, icon: Icon, variant = "sky", classNa
             type={type}
             disabled={disabled || isLoading}
             onClick={onClick}
-            className={`h-14 px-8 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 ${styles[variant]} ${className}`}
+            className={`h-14 px-8 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 ${styles[variant]} ${className}`}
         >
             {isLoading ? (
                 <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
                     <span>Processando...</span>
                 </div>
             ) : (
@@ -185,7 +185,7 @@ export default function RegisterPage() {
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
     const [error, setError] = useState("");
-    const [location, setLocation] = useLocation();
+    const [, setLocation] = useLocation();
 
     // Captura o redirecionamento inteligente
     const queryParams = new URLSearchParams(window.location.search);
@@ -211,9 +211,9 @@ export default function RegisterPage() {
                 redirectUrl: `/sso-callback?redirect=${encodeURIComponent(redirectUrl)}`,
                 redirectUrlComplete: redirectUrl,
             });
-        } catch (err) { 
-            setIsGoogleLoading(false); 
-            handleClerkError(err); 
+        } catch (err) {
+            setIsGoogleLoading(false);
+            handleClerkError(err);
         }
     };
 
@@ -224,10 +224,10 @@ export default function RegisterPage() {
         setError("");
         try {
             // Sincroniza o Nome do usuário com o firstName do Clerk
-            await signUp.create({ 
-                emailAddress: email, 
-                password, 
-                firstName: name 
+            await signUp.create({
+                emailAddress: email,
+                password,
+                firstName: name
             });
             await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
             setPendingVerification(true);
@@ -240,9 +240,9 @@ export default function RegisterPage() {
         setIsLoading(true);
         setError("");
         try {
-            await signUp.create({ 
-                emailAddress: email, 
-                firstName: name 
+            await signUp.create({
+                emailAddress: email,
+                firstName: name
             });
             await signUp.prepareEmailAddressVerification({
                 strategy: 'email_link',
@@ -279,7 +279,7 @@ export default function RegisterPage() {
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-sky-500/5 blur-[120px] pointer-events-none" />
 
                 <div className="absolute top-10 left-10">
-                    <button onClick={() => setLocation('/')} className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white transition-all">
+                    <button onClick={() => setLocation('/')} className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white">
                         <ArrowLeft size={16} />
                         Voltar ao site
                     </button>
@@ -315,7 +315,7 @@ export default function RegisterPage() {
                                 <label className="text-xs font-bold text-zinc-500 ml-1">Seu Nome ou Nome da Oficina</label>
                                 <div className="relative">
                                     <User className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={18} />
-                                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800" placeholder="Ex: João ou Minha Oficina 3D" />
+                                    <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 text-white placeholder:text-zinc-800" placeholder="Ex: João ou Minha Oficina 3D" />
                                 </div>
                             </div>
 
@@ -323,19 +323,19 @@ export default function RegisterPage() {
                                 <label className="text-xs font-bold text-zinc-500 ml-1">Seu melhor e-mail</label>
                                 <div className="relative">
                                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={18} />
-                                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800" placeholder="seu@email.com" />
+                                    <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 text-white placeholder:text-zinc-800" placeholder="seu@email.com" />
                                 </div>
                             </div>
 
                             {regMode === 'password' && (
-                                <div className="space-y-2 animate-in fade-in slide-in-from-top-2">
+                                <div className="space-y-2">
                                     <label className="text-xs font-bold text-zinc-500 ml-1">Crie uma senha</label>
                                     <div className="relative">
                                         <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={18} />
                                         <input
                                             type={showPassword ? "text" : "password"} required value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800"
+                                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-12 outline-none focus:border-sky-500/50 text-white placeholder:text-zinc-800"
                                             placeholder="Use pelo menos 8 caracteres"
                                         />
                                         <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-700 hover:text-white">
@@ -351,7 +351,7 @@ export default function RegisterPage() {
                                     {regMode === 'magic' ? "Receber link por e-mail" : "Abrir minha farm"}
                                 </PrimaryButton>
 
-                                <button type="button" onClick={() => { setRegMode(regMode === 'magic' ? 'password' : 'magic'); setError(""); }} className="flex items-center gap-2 mx-auto text-xs font-bold text-zinc-500 hover:text-white transition-colors">
+                                <button type="button" onClick={() => { setRegMode(regMode === 'magic' ? 'password' : 'magic'); setError(""); }} className="flex items-center gap-2 mx-auto text-xs font-bold text-zinc-500 hover:text-white">
                                     <KeyRound size={14} className="text-sky-500" />
                                     {regMode === 'magic' ? "Prefiro usar e-mail e senha" : "Cadastrar sem senha (Link rápido)"}
                                 </button>
@@ -364,7 +364,7 @@ export default function RegisterPage() {
                                 <input
                                     type="text" maxLength={6} required value={code}
                                     onChange={(e) => setCode(e.target.value)}
-                                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 text-center text-3xl font-mono font-bold tracking-[0.4em] text-white outline-none focus:border-sky-500 transition-all"
+                                    className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 text-center text-3xl font-mono font-bold tracking-[0.4em] text-white outline-none focus:border-sky-500"
                                     placeholder="000000"
                                 />
                                 <p className="text-[11px] text-zinc-500 font-medium">Confira o código que chegou no seu e-mail.</p>
@@ -381,7 +381,7 @@ export default function RegisterPage() {
                                 <h3 className="text-white font-bold text-xl uppercase">E-mail enviado!</h3>
                                 <p className="text-zinc-400 text-sm">Dê uma olhada na sua caixa de entrada em <strong>{email}</strong> para ativar sua oficina.</p>
                             </div>
-                            <button onClick={() => setIsSent(false)} className="text-zinc-500 text-xs font-bold uppercase hover:text-white transition-colors">← Tentar outro e-mail</button>
+                            <button onClick={() => setIsSent(false)} className="text-zinc-500 text-xs font-bold uppercase hover:text-white">← Tentar outro e-mail</button>
                         </div>
                     )}
 
@@ -390,8 +390,8 @@ export default function RegisterPage() {
                             <div className="absolute inset-0 border-t border-white/5" />
                             <span className="relative bg-[#050506] px-4 text-[10px] font-bold uppercase text-zinc-600">Ou cadastre-se com</span>
                         </div>
-                        <button onClick={signUpWithGoogle} disabled={isGoogleLoading || isLoading} className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 transition-all font-bold text-sm text-white disabled:opacity-50">
-                            {isGoogleLoading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Chrome size={20} /> Continuar com Google</>}
+                        <button onClick={signUpWithGoogle} disabled={isGoogleLoading || isLoading} className="flex items-center justify-center gap-3 w-full h-14 rounded-2xl bg-white/5 border border-white/5 hover:bg-white/10 font-bold text-sm text-white disabled:opacity-50">
+                            {isGoogleLoading ? <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full" /> : <><Chrome size={20} /> Continuar com Google</>}
                         </button>
                         <p className="text-center text-zinc-500 text-sm">
                             Já tem acesso? <button onClick={() => setLocation('/login')} className="text-sky-500 font-bold hover:text-sky-400 ml-2">Entrar agora</button>
@@ -401,14 +401,14 @@ export default function RegisterPage() {
                             Ao criar sua conta, você concorda com nossos <br />
                             <button
                                 onClick={() => setModal({ isOpen: true, title: 'Termos de Uso', content: TERMS_CONTENT })}
-                                className="text-zinc-400 hover:text-sky-500 underline decoration-zinc-800 underline-offset-4 transition-colors"
+                                className="text-zinc-400 hover:text-sky-500 underline decoration-zinc-800 underline-offset-4"
                             >
                                 Termos de Uso
                             </button>
                             {' '} e {' '}
                             <button
                                 onClick={() => setModal({ isOpen: true, title: 'Política de Privacidade', content: PRIVACY_CONTENT })}
-                                className="text-zinc-400 hover:text-sky-500 underline decoration-zinc-800 underline-offset-4 transition-colors"
+                                className="text-zinc-400 hover:text-sky-500 underline decoration-zinc-800 underline-offset-4"
                             >
                                 Privacidade
                             </button>.

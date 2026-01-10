@@ -7,8 +7,8 @@ const normalizeFilament = (f) => {
   if (!f) return null;
 
   const pesoTotal = Math.max(0, Number(f.peso_total) || 1000);
-  const pesoAtual = Math.min(pesoTotal, Math.max(0, Number(f.peso_atual) ?? pesoTotal));
-  
+  const pesoAtual = Math.min(pesoTotal, Math.max(0, Number(f.peso_atual) || pesoTotal));
+
   return {
     id: f.id || null,
     nome: String(f.nome || "Novo Material").trim(),
@@ -34,12 +34,12 @@ export const useFilamentStore = create((set, get) => ({
   // --- ACTIONS: BUSCA ---
   fetchFilaments: async (silent = false) => {
     if (!silent) set({ loading: true, error: null });
-    
+
     try {
       const { data } = await api.get('/filaments');
       const rawList = Array.isArray(data) ? data : (data?.data || []);
       const normalized = rawList.map(normalizeFilament);
-      
+
       set({ filaments: normalized, loading: false });
     } catch (error) {
       const msg = "Falha na sincronização com o banco de dados.";
@@ -55,7 +55,7 @@ export const useFilamentStore = create((set, get) => ({
 
     const isUpdate = !!filamentData.id;
     const originalFilaments = [...get().filaments];
-    
+
     // Preparação Otimista
     const treated = normalizeFilament(filamentData);
     const tempId = isUpdate ? treated.id : `temp-${Date.now()}`;
@@ -63,7 +63,7 @@ export const useFilamentStore = create((set, get) => ({
 
     // Aplicação Otimista na UI
     set(state => ({
-      filaments: isUpdate 
+      filaments: isUpdate
         ? state.filaments.map(f => f.id === treated.id ? optimisticItem : f)
         : [optimisticItem, ...state.filaments]
     }));
@@ -110,7 +110,7 @@ export const useFilamentStore = create((set, get) => ({
     try {
       // Usamos PATCH para atualizações parciais
       await api.patch(`/filaments/${id}`, { peso_atual: pesoFinal });
-    } catch (error) {
+    } catch (_error) {
       set({ filaments: originalFilaments, error: "Erro ao sincronizar peso." });
     }
   },
@@ -118,13 +118,13 @@ export const useFilamentStore = create((set, get) => ({
   // --- ACTIONS: DELETE ---
   deleteFilament: async (id) => {
     if (!id || String(id).startsWith('temp-')) return;
-    
+
     const originalFilaments = [...get().filaments];
     set(state => ({ filaments: state.filaments.filter(f => f.id !== id) }));
 
     try {
       await api.delete(`/filaments/${id}`);
-    } catch (error) {
+    } catch (_error) {
       set({ filaments: originalFilaments, error: "O servidor impediu a exclusão." });
     }
   },
@@ -136,8 +136,8 @@ export const useFilamentStore = create((set, get) => ({
     return {
       totalWeight: filaments.reduce((acc, f) => acc + (f.peso_atual / 1000), 0), // Em KG
       totalValue: filaments.reduce((acc, f) => {
-          const custoGrama = f.preco / f.peso_total;
-          return acc + (custoGrama * f.peso_atual);
+        const custoGrama = f.preco / f.peso_total;
+        return acc + (custoGrama * f.peso_atual);
       }, 0),
       lowStockCount: filaments.filter(f => (f.peso_atual / f.peso_total) <= 0.2).length,
       count: filaments.length
@@ -149,7 +149,7 @@ export const useFilamentStore = create((set, get) => ({
     const term = search.toLowerCase().trim();
     if (!term) return get().filaments;
 
-    return get().filaments.filter(f => 
+    return get().filaments.filter(f =>
       f.nome.toLowerCase().includes(term) ||
       f.marca.toLowerCase().includes(term) ||
       f.material.toLowerCase().includes(term)

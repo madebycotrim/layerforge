@@ -1,9 +1,10 @@
+/* eslint-disable react-refresh/only-export-components */
 import { StrictMode, Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { Router } from "wouter";
 import { ClerkProvider, useAuth } from "@clerk/clerk-react";
 
-import "./main.css";
+import "./styles/main.css";
 import AppRoutes from "./routes/route";
 import { setupAxiosInterceptors } from "./utils/api";
 import PageLoading from "./components/Loading";

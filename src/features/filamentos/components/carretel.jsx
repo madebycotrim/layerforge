@@ -2,12 +2,12 @@ import React, { useMemo, useId } from "react";
 
 const generateColors = (hex) => {
     // Tratamento rigoroso para garantir que o hex seja válido
-    let cleanHex = String(hex || "#3b82f6").replace(/^\#/, '');
-    
+    let cleanHex = String(hex || "#3b82f6").replace(/^#/, '');
+
     if (cleanHex.length === 3) {
         cleanHex = cleanHex.split('').map(c => c + c).join('');
     }
-    
+
     // Fallback para azul se o hex for inválido
     if (!/^[0-9A-Fa-f]{6}$/.test(cleanHex)) {
         cleanHex = "3b82f6";
@@ -20,7 +20,7 @@ const generateColors = (hex) => {
 
     // Função de mixagem para gerar variações de sombra
     const mix = (c, t, p) => Math.round(c + (t - c) * p);
-    
+
     return {
         base: "#" + cleanHex,
         // Sombra mais profunda para dar volume ao carretel
@@ -37,9 +37,9 @@ export default function SpoolSideView({
     className = ""
 }) {
     // useId gera IDs únicos para os gradientes SVG, evitando conflitos se houver múltiplos carretéis na tela
-    const uniqueId = useId().replace(/:/g, ""); 
+    const uniqueId = useId().replace(/:/g, "");
     const { base, shadow, light } = useMemo(() => generateColors(color), [color]);
-    
+
     // Garantia de que o percentual seja um número entre 0 e 100
     const safePercent = Math.max(0, Math.min(100, Number(percent) || 0));
 
@@ -49,7 +49,7 @@ export default function SpoolSideView({
     const cy = 50;
     const coreRadius = 12; // Raio do eixo central (vazio)
     const maxRadius = 38;  // Raio máximo do filamento (cheio)
-    
+
     // Cálculo do raio atual baseado no preenchimento (interpolação linear)
     const currentRadius = coreRadius + ((maxRadius - coreRadius) * (safePercent / 100));
 
@@ -90,28 +90,28 @@ export default function SpoolSideView({
                 </defs>
 
                 {/* --- EIXO CENTRAL (Onde o filamento enrola) --- */}
-                <rect 
-                    x={cxLeft} 
-                    y={cy - coreRadius} 
-                    width={cxRight - cxLeft} 
-                    height={coreRadius * 2} 
-                    fill="#050505" 
+                <rect
+                    x={cxLeft}
+                    y={cy - coreRadius}
+                    width={cxRight - cxLeft}
+                    height={coreRadius * 2}
+                    fill="#050505"
                 />
 
                 {/* --- MASSA DE FILAMENTO --- */}
                 {safePercent > 0 && (
                     <g className="transition-all duration-700 ease-in-out">
                         <rect
-                            x={cxLeft + 2} 
+                            x={cxLeft + 2}
                             y={cy - currentRadius}
-                            width={filamentWidth} 
+                            width={filamentWidth}
                             height={currentRadius * 2}
                             fill={`url(#filamentGrad-${uniqueId})`}
                         />
                         <rect
-                            x={cxLeft + 2} 
+                            x={cxLeft + 2}
                             y={cy - currentRadius}
-                            width={filamentWidth} 
+                            width={filamentWidth}
                             height={currentRadius * 2}
                             fill={`url(#wires-${uniqueId})`}
                         />

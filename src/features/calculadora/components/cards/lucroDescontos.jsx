@@ -22,13 +22,20 @@ export default function Precificacao({
   // Baseado no Método do Divisor: Markup = 1 / (1 - Margem)
   useEffect(() => {
     const margemNumerica = parseFloat(margemLucro) || 0;
-    if (margemNumerica >= 100) {
+    if (isNaN(margemNumerica) || margemNumerica < 0) {
+      setMarkupLocal("1.00");
+    } else if (margemNumerica >= 100) {
       setMarkupLocal("INVÁLIDO");
-    } else if (margemNumerica <= 0) {
+    } else if (margemNumerica === 0) {
       setMarkupLocal("1.00");
     } else {
-      const calculoMarkup = (1 / (1 - margemNumerica / 100)).toFixed(2);
-      setMarkupLocal(calculoMarkup);
+      const divisor = 1 - (margemNumerica / 100);
+      if (divisor <= 0.01) {
+        setMarkupLocal("INVÁLIDO");
+      } else {
+        const calculoMarkup = (1 / divisor).toFixed(2);
+        setMarkupLocal(isFinite(parseFloat(calculoMarkup)) ? calculoMarkup : "INVÁLIDO");
+      }
     }
   }, [margemLucro]);
 
@@ -38,11 +45,16 @@ export default function Precificacao({
     setMarkupLocal(valor);
 
     const multiplicador = parseFloat(valor);
-    if (!isNaN(multiplicador) && multiplicador >= 1) {
+    if (!isNaN(multiplicador) && isFinite(multiplicador) && multiplicador >= 1) {
       // Margem = (1 - 1 / Markup) * 100
       const margemEquivalente = ((1 - 1 / multiplicador) * 100).toFixed(1);
-      setMargemLucro(margemEquivalente);
-    } else if (valor === "" || multiplicador < 1) {
+      const margemNum = parseFloat(margemEquivalente);
+      if (isFinite(margemNum) && margemNum >= 0 && margemNum < 100) {
+        setMargemLucro(margemEquivalente);
+      } else {
+        setMargemLucro("0");
+      }
+    } else if (valor === "" || isNaN(multiplicador) || multiplicador < 1) {
       setMargemLucro("0");
     }
   };
@@ -113,7 +125,18 @@ export default function Precificacao({
             onChange={(e) => {
               const val = e.target.value;
               // Evita que a margem seja 100% ou mais (para não zerar ou negativar o divisor)
-              if (parseFloat(val) < 101 || val === "") setMargemLucro(val);
+              const valorNumerico = parseFloat(val);
+              if (val === "" || (isNaN(valorNumerico) && val !== "")) {
+                // Permite campo vazio ou apenas vírgula/ponto enquanto digita
+                if (val === "" || val === "." || val === ",") {
+                  setMargemLucro(val);
+                }
+              } else if (!isNaN(valorNumerico) && valorNumerico <= 100) {
+                setMargemLucro(val);
+              } else if (valorNumerico > 100) {
+                // Limita a 100% se o usuário tentar digitar mais
+                setMargemLucro("100");
+              }
             }}
           />
           <span className="absolute -bottom-3 left-1 text-[7px] font-black text-zinc-600 uppercase tracking-tighter">Margem Real</span>

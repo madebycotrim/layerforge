@@ -1,7 +1,6 @@
 // src/features/calculadora/logic/projects.js
 import { create } from 'zustand';
 import api from '../../../utils/api';
-import { parseNumber } from "../../../utils/numbers";
 
 /**
  * useProjectsStore - Gestão de Orçamentos e Produção

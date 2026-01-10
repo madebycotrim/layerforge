@@ -24,14 +24,14 @@ const formatarMoeda = (valor) => {
 /**
  * Componente de Card Estatístico Genérico (Seguindo o estilo de Hardware)
  */
-const StatCard = ({ title, value, icon: Icon, colorClass, label, description, glowColor }) => (
+const StatCard = ({ title, value, icon: IconCard, colorClass, label, description, glowColor }) => (
     <div className="h-[130px] p-6 rounded-2xl bg-zinc-900/40 border border-zinc-800/50 backdrop-blur-sm flex items-center justify-between group transition-all duration-300 hover:border-amber-500/30 hover:bg-zinc-900/60 shadow-sm relative overflow-hidden">
         {/* Background Glow sutil no hover */}
         <div className={`absolute -right-2 -bottom-2 w-12 h-12 blur-[40px] opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${glowColor}`} />
 
         <div className="flex items-center gap-5 relative z-10">
             <div className={`p-3.5 rounded-xl bg-zinc-950 border border-zinc-800/80 ${colorClass} shadow-inner group-hover:scale-105 transition-transform duration-500`}>
-                <Icon size={24} strokeWidth={2} />
+                <IconCard size={24} strokeWidth={2} />
             </div>
             <div>
                 <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-[0.15em] mb-1.5">

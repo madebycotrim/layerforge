@@ -58,7 +58,6 @@ export default function Toast({ message, type = 'success', onClose }) {
                 fixed top-6 right-6 z-[300] 
                 flex items-center gap-4 p-4 pr-5
                 rounded-xl border backdrop-blur-2xl
-                animate-in slide-in-from-right-10 fade-in duration-300
                 ${config.bg} ${config.border} ${config.glow}
                 min-w-[320px] max-w-[420px]
                 overflow-hidden group
@@ -73,7 +72,7 @@ export default function Toast({ message, type = 'success', onClose }) {
                 w-10 h-10 rounded-lg border
                 ${config.bg} ${config.border} ${config.color}
             `}>
-                <div className="absolute inset-0 animate-ping opacity-20 bg-current rounded-lg" />
+                <div className="absolute inset-0 opacity-20 bg-current rounded-lg" />
                 {config.icon}
             </div>
 
@@ -93,7 +92,7 @@ export default function Toast({ message, type = 'success', onClose }) {
             {/* BOTÃO FECHAR CUSTOM */}
             <button 
                 onClick={onClose} 
-                className="ml-2 p-1 rounded-md hover:bg-white/10 text-zinc-500 hover:text-white transition-colors"
+                className="ml-2 p-1 rounded-md hover:bg-white/10 text-zinc-500 hover:text-white"
             >
                 <X size={14} />
             </button>
@@ -101,10 +100,9 @@ export default function Toast({ message, type = 'success', onClose }) {
             {/* BARRA DE PROGRESSO ANIMADA */}
             <div className="absolute bottom-0 left-0 w-full h-[3px] bg-zinc-800/50">
                 <div 
-                    className={`h-full transition-all linear ${config.color.replace('text', 'bg')}`}
+                    className={`h-full ${config.color.replace('text', 'bg')}`}
                     style={{ 
                         width: isPaused ? '100%' : '0%',
-                        transitionDuration: isPaused ? '0s' : '4000ms',
                         boxShadow: `0 0 10px ${config.color.split('-')[1]}`
                     }}
                 />

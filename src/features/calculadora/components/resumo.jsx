@@ -32,7 +32,8 @@ const AnimatedNumber = ({ value, duration = 800 }) => {
         };
         frameRef.current = requestAnimationFrame(animate);
         return () => cancelAnimationFrame(frameRef.current);
-    }, [value]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps -- displayValue excluído intencionalmente para evitar loop infinito
+    }, [value, duration]);
 
     return <span>{formatCurrency(displayValue)}</span>;
 };
@@ -74,8 +75,9 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
     }, [resultados, entradas]);
 
     const paybackInsumo = useMemo(() => {
-        if (!custoMaterial || !lucroBrutoUnitario) return 0;
-        return (lucroBrutoUnitario / custoMaterial).toFixed(1);
+        if (!custoMaterial || custoMaterial < 0.001 || !lucroBrutoUnitario || lucroBrutoUnitario < 0) return 0;
+        const resultado = lucroBrutoUnitario / custoMaterial;
+        return isFinite(resultado) && !isNaN(resultado) ? resultado.toFixed(1) : "0.0";
     }, [custoMaterial, lucroBrutoUnitario]);
 
     const saudeProjeto = useMemo(() => {
@@ -117,7 +119,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 setShowSuccessPopup(true);
             }
         }
-        catch (error) { setGenericModal({ open: true, type: 'ERROR', title: 'Erro', icon: AlertTriangle, message: 'Falha ao salvar.' }); }
+        catch (_error) { setGenericModal({ open: true, type: 'ERROR', title: 'Erro', icon: AlertTriangle, message: 'Falha ao salvar.' }); }
         finally { setEstaGravando(false); }
     };
 
@@ -156,8 +158,17 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 </div>
 
                 <div className="h-[2px] w-full bg-zinc-900 rounded-full flex overflow-hidden">
-                    <div style={{ width: `${temMaterial ? (custoUnitario / Math.max(precoFinalVenda, 0.01) * 100) : 0}%` }} className="bg-zinc-800 h-full transition-all duration-1000" />
-                    <div style={{ width: `${temMaterial ? (lucroBrutoUnitario / Math.max(precoFinalVenda, 0.01) * 100) : 0}%` }} className={`${saudeProjeto.bar} h-full transition-all duration-1000`} />
+                    {(() => {
+                        const precoFinalSeguro = Math.max(0.01, precoFinalVenda || 0.01);
+                        const percentualCusto = temMaterial && precoFinalSeguro > 0 ? Math.min(100, Math.max(0, (custoUnitario / precoFinalSeguro) * 100)) : 0;
+                        const percentualLucro = temMaterial && precoFinalSeguro > 0 ? Math.min(100, Math.max(0, (lucroBrutoUnitario / precoFinalSeguro) * 100)) : 0;
+                        return (
+                            <>
+                                <div style={{ width: `${percentualCusto}%` }} className="bg-zinc-800 h-full transition-all duration-1000" />
+                                <div style={{ width: `${percentualLucro}%` }} className={`${saudeProjeto.bar} h-full transition-all duration-1000`} />
+                            </>
+                        );
+                    })()}
                 </div>
             </div>
 
@@ -224,17 +235,17 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
             {/* AÇÕES FIXAS */}
             <div className="flex flex-col gap-2 shrink-0">
                 <div className="flex gap-2 h-14">
-                    <button onClick={lidarSalvarResumo} disabled={!temMaterial || estaSalvo || estaGravando} className={`flex-1 rounded-2xl flex items-center justify-center gap-3 font-bold text-[10px] uppercase tracking-[0.2em] transition-all ${estaSalvo ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-[#0095ff] hover:bg-[#007cd6] text-white shadow-lg shadow-sky-500/10 disabled:opacity-20'}`}>
-                        {estaGravando ? <Loader2 className="animate-spin" size={16} /> : <Save size={18} />}
+                    <button onClick={lidarSalvarResumo} disabled={!temMaterial || estaSalvo || estaGravando} className={`flex-1 rounded-2xl flex items-center justify-center gap-3 font-bold text-[10px] uppercase tracking-[0.2em] transition-all duration-300 hover:scale-[1.02] active:scale-95 ${estaSalvo ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20' : 'bg-[#0095ff] hover:bg-[#007cd6] text-white shadow-lg hover:shadow-xl shadow-sky-500/10 disabled:opacity-20'}`}>
+                        {estaGravando ? <Loader2 className="animate-spin" size={16} /> : <Save size={18} className="transition-transform duration-300 group-hover:scale-110" />}
                         {estaSalvo ? "PROJETO SINCRONIZADO" : "GERAR E SALVAR"}
                     </button>
-                    <button onClick={() => { if (temMaterial) { const template = settings?.whatsappTemplate || "Olá! Segue orçamento: *{valor}*"; setMensagemEditavel(template.replace(/{projeto}/g, nomeProjeto || "3D").replace(/{valor}/g, formatCurrency(precoFinalVenda)).replace(/{tempo}/g, `${tempoTotalHoras}h`)); setWhatsappModal(true); } }} disabled={!temMaterial} className="w-14 h-14 rounded-2xl bg-[#10b981] hover:bg-[#0da472] text-white flex items-center justify-center transition-all disabled:opacity-20">
-                        <MessageCircle size={24} fill="currentColor" />
+                    <button onClick={() => { if (temMaterial) { const template = settings?.whatsappTemplate || "Olá! Segue orçamento: *{valor}*"; setMensagemEditavel(template.replace(/{projeto}/g, nomeProjeto || "3D").replace(/{valor}/g, formatCurrency(precoFinalVenda)).replace(/{tempo}/g, `${tempoTotalHoras}h`)); setWhatsappModal(true); } }} disabled={!temMaterial} className="w-14 h-14 rounded-2xl bg-[#10b981] hover:bg-[#0da472] text-white flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95 disabled:opacity-20 group">
+                        <MessageCircle size={24} fill="currentColor" className="transition-transform duration-300 group-hover:rotate-12" />
                     </button>
                 </div>
                 <div className="grid grid-cols-2 gap-2 h-10">
-                    <button onClick={() => setGenericModal({ open: true, type: 'CONFIRM', title: 'Reiniciar', icon: RotateCcw, message: 'Apagar dados atuais?', onConfirm: () => window.location.reload() })} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all"><RotateCcw size={12} /> Reiniciar</button>
-                    <button onClick={() => generateProfessionalPDF(resultados, entradas, precoFinalVenda)} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all"><FileText size={12} /> Orçamento</button>
+                    <button onClick={() => setGenericModal({ open: true, type: 'CONFIRM', title: 'Reiniciar', icon: RotateCcw, message: 'Apagar dados atuais?', onConfirm: () => window.location.reload() })} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all duration-300 hover:bg-zinc-800/50 group"><RotateCcw size={12} className="transition-transform duration-300 group-hover:rotate-180" /> Reiniciar</button>
+                    <button onClick={() => generateProfessionalPDF(resultados, entradas, precoFinalVenda)} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all duration-300 hover:bg-zinc-800/50 group"><FileText size={12} className="transition-transform duration-300 group-hover:scale-110" /> Orçamento</button>
                 </div>
             </div>
 

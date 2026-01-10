@@ -35,11 +35,11 @@ const PrimaryButton = ({ children, onClick, icon: Icon, variant = "sky", classNa
             type={type}
             disabled={disabled || isLoading}
             onClick={onClick}
-            className={`h-14 px-8 rounded-2xl font-bold text-sm transition-all active:scale-[0.98] flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 ${styles[variant]} ${className}`}
+            className={`h-14 px-8 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed border border-white/10 ${styles[variant]} ${className}`}
         >
             {isLoading ? (
                 <div className="flex items-center gap-2">
-                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full" />
                     <span>Validando...</span>
                 </div>
             ) : (
@@ -151,7 +151,7 @@ export default function ForgotPasswordPage() {
                             setError("");
                             step === 1 ? setLocation('/login') : setStep(1);
                         }} 
-                        className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white transition-all"
+                        className="flex items-center gap-3 text-xs font-bold text-zinc-500 hover:text-white"
                     >
                         <ArrowLeft size={16} />
                         {step === 1 ? "Voltar ao login" : "Trocar e-mail"}
@@ -180,7 +180,7 @@ export default function ForgotPasswordPage() {
                     </div>
 
                     {error && (
-                        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-start gap-3 text-red-400 text-xs font-medium animate-in fade-in slide-in-from-top-1">
+                        <div className="bg-red-500/10 border border-red-500/20 p-4 rounded-xl flex items-start gap-3 text-red-400 text-xs font-medium">
                             <ShieldAlert size={16} className="shrink-0" />
                             <span>{error}</span>
                         </div>
@@ -188,14 +188,14 @@ export default function ForgotPasswordPage() {
 
                     <form onSubmit={step === 1 ? handleSendCode : handleResetPassword} className="space-y-6">
                         {step === 1 ? (
-                            <div className="space-y-5 animate-in fade-in slide-in-from-right-4 duration-500">
+                            <div className="space-y-5">
                                 <div className="space-y-2">
                                     <label className="text-xs font-bold text-zinc-500 ml-1">Qual seu e-mail cadastrado?</label>
                                     <div className="relative">
                                         <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-700" size={18} />
                                         <input
                                             type="email" required value={email} onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 transition-all text-white placeholder:text-zinc-800"
+                                            className="w-full bg-[#0a0a0c] border border-white/5 rounded-2xl py-4 pl-12 pr-4 outline-none focus:border-sky-500/50 text-white placeholder:text-zinc-800"
                                             placeholder="seu@email.com"
                                         />
                                     </div>
@@ -207,12 +207,12 @@ export default function ForgotPasswordPage() {
                                 </PrimaryButton>
                             </div>
                         ) : (
-                            <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
+                            <div className="space-y-6">
                                 <div className="space-y-4 text-center bg-sky-500/5 border border-sky-500/20 p-8 rounded-[2rem]">
                                     <label className="text-xs font-bold uppercase tracking-widest text-sky-500 block">Digite o código do e-mail</label>
                                     <input
                                         type="text" required value={code} onChange={(e) => setCode(e.target.value)}
-                                        className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 text-center text-3xl font-mono font-bold tracking-[0.4em] text-white outline-none focus:border-sky-500 transition-all"
+                                        className="w-full bg-black/40 border border-white/10 rounded-2xl py-5 text-center text-3xl font-mono font-bold tracking-[0.4em] text-white outline-none focus:border-sky-500"
                                         placeholder="000000"
                                         maxLength={6}
                                     />

@@ -39,7 +39,7 @@ export default function Popup({
 
             {/* OVERLAY */}
             <div
-                className="absolute inset-0 bg-black/80 backdrop-blur-sm transition-opacity duration-300"
+                className="absolute inset-0 bg-black/80 backdrop-blur-sm"
                 onClick={() => !isLoading && onClose()}
             />
 
@@ -47,8 +47,7 @@ export default function Popup({
             <div className={`
                 relative z-[1000] w-full ${maxWidth} max-h-[90vh] 
                 bg-[#050506] border border-white/10 rounded-[2.5rem] 
-                shadow-[0_0_80px_rgba(0,0,0,1)] flex flex-col overflow-hidden 
-                animate-in zoom-in-95 fade-in duration-300
+                shadow-[0_0_80px_rgba(0,0,0,1)] flex flex-col overflow-hidden
             `}>
                 
                 {/* GRADE DE FUNDO */}
@@ -66,7 +65,7 @@ export default function Popup({
                             ${isLoading ? 'text-sky-500' : 'text-zinc-500'}
                         `}>
                             {isLoading ? (
-                                <Loader2 size={20} className="animate-spin" />
+                                <Loader2 size={20} />
                             ) : (
                                 Icon ? <Icon size={20} strokeWidth={2.5} /> : <Cpu size={20} strokeWidth={2.5} />
                             )}
@@ -86,15 +85,15 @@ export default function Popup({
                         type="button"
                         onClick={onClose}
                         disabled={isLoading}
-                        className="p-2 rounded-xl text-zinc-600 hover:text-white hover:bg-white/5 transition-all group disabled:opacity-20"
+                        className="p-2 rounded-xl text-zinc-600 hover:text-white hover:bg-white/5 group disabled:opacity-20"
                     >
-                        <X size={20} className="group-active:scale-90 transition-transform" />
+                        <X size={20} />
                     </button>
                 </div>
 
                 {/* ÁREA DE CONTEÚDO */}
                 <div className="flex-1 overflow-y-auto custom-scrollbar relative z-10 px-8 py-4 mb-2">
-                    <div className="relative animate-in slide-in-from-bottom-4 fade-in duration-500">
+                    <div className="relative">
                         {children}
                     </div>
                 </div>

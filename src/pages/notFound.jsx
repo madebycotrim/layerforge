@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useLocation } from "wouter";
 import {
     Home, AlertTriangle, Terminal, ArrowLeft,
@@ -31,7 +31,7 @@ const GCodeTerminal = () => {
                         {line}
                     </div>
                 ))}
-                <div className="w-2 h-4 bg-rose-500 animate-pulse mt-1 inline-block align-middle"></div>
+                <div className="w-2 h-4 bg-rose-500 mt-1 inline-block align-middle"></div>
             </div>
         </div>
     );
@@ -45,10 +45,10 @@ const LayerShiftVisual = () => {
             <div className="w-24 h-3 bg-zinc-600/80 rounded-sm mb-1 shadow-sm"></div>
 
             <div className="relative group cursor-help">
-                <div className="w-24 h-3 bg-rose-600 rounded-sm mb-1 translate-x-8 shadow-[0_0_20px_rgba(225,29,72,0.6)] animate-[glitch_2s_infinite]">
-                    <div className="absolute right-0 top-full w-1 h-2 bg-rose-500/50 blur-[1px] animate-pulse"></div>
+                <div className="w-24 h-3 bg-rose-600 rounded-sm mb-1 translate-x-8 shadow-[0_0_20px_rgba(225,29,72,0.6)]">
+                    <div className="absolute right-0 top-full w-1 h-2 bg-rose-500/50 blur-[1px]"></div>
                 </div>
-                <div className="absolute -right-8 -top-8 bg-rose-950 text-rose-200 text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity border border-rose-500/30 whitespace-nowrap">
+                <div className="absolute -right-8 -top-8 bg-rose-950 text-rose-200 text-[9px] px-2 py-1 rounded opacity-0 group-hover:opacity-100 border border-rose-500/30 whitespace-nowrap">
                     O eixo falhou
                 </div>
             </div>
@@ -80,14 +80,14 @@ export default function NotFound() {
                         maskImage: 'radial-gradient(circle at 50% 40%, black 20%, transparent 80%)'
                     }}
                 />
-                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-rose-600/10 blur-[100px] rounded-full animate-pulse-slow"></div>
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-rose-600/10 blur-[100px] rounded-full-slow"></div>
             </div>
 
             <main className="flex-grow flex items-center justify-center relative z-10 px-6 py-12">
-                <div className="max-w-md w-full text-center animate-[fadeIn_0.8s_ease-out]">
+                <div className="max-w-md w-full text-center">
 
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-rose-500/5 border border-rose-500/20 mb-8 backdrop-blur-md">
-                        <AlertOctagon size={14} className="text-rose-500 animate-pulse" />
+                        <AlertOctagon size={14} className="text-rose-500" />
                         <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">
                             Erro de Impressão • 404
                         </span>
@@ -111,7 +111,7 @@ export default function NotFound() {
                     <div className="flex flex-col sm:flex-row gap-3 justify-center w-full">
                         <button
                             onClick={handleGoBack}
-                            className="h-12 px-6 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold text-xs uppercase tracking-widest hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
+                            className="h-12 px-6 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-300 font-bold text-xs uppercase tracking-widest hover:bg-zinc-800 flex items-center justify-center gap-2"
                         >
                             <ArrowLeft size={16} />
                             Voltar
@@ -119,7 +119,7 @@ export default function NotFound() {
 
                         <button
                             onClick={() => setLocation('/')}
-                            className="h-12 px-6 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-rose-50 transition-all flex items-center justify-center gap-2"
+                            className="h-12 px-6 rounded-xl bg-white text-black font-bold text-xs uppercase tracking-widest hover:bg-rose-50 flex items-center justify-center gap-2"
                         >
                             <Home size={16} />
                             Voltar ao Início

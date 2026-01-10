@@ -11,7 +11,7 @@ const PageLoading = () => {
             Print<span className="text-sky-500">Log</span>
           </h1>
           {/* Linha de "scan" que passa pelo texto */}
-          <div className="h-[1px] w-full bg-sky-500/50 shadow-[0_0_8px_#0ea5e9] animate-scan-slow mt-1"></div>
+          <div className="h-[1px] w-full bg-sky-500/50 shadow-[0_0_8px_#0ea5e9] mt-1"></div>
         </div>
 
         {/* Loader de Camadas (Simulando impressão 3D) */}
@@ -19,7 +19,7 @@ const PageLoading = () => {
           {[0, 200, 400].map((delay) => (
             <div key={delay} className="h-[2px] w-full bg-sky-500/10 overflow-hidden rounded-full">
               <div 
-                className="h-full bg-sky-500 animate-loading-bar" 
+                className="h-full bg-sky-500" 
                 style={{ animationDelay: `${delay}ms` }}
               ></div>
             </div>
@@ -28,24 +28,6 @@ const PageLoading = () => {
 
       </div>
 
-      <style dangerouslySetInnerHTML={{ __html: `
-        @keyframes scan-slow {
-          0% { transform: translateX(-100%); opacity: 0; }
-          50% { opacity: 1; }
-          100% { transform: translateX(100%); opacity: 0; }
-        }
-        @keyframes loading-bar {
-          0% { transform: translateX(-100%); }
-          50% { transform: translateX(0); }
-          100% { transform: translateX(100%); }
-        }
-        .animate-scan-slow {
-          animation: scan-slow 2s linear infinite;
-        }
-        .animate-loading-bar {
-          animation: loading-bar 2s ease-in-out infinite;
-        }
-      `}} />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { X, Layers, PaintbrushVertical, DollarSign, Box, Activity, Plus, Terminal, AlertCircle, Loader2 } from "lucide-react";
 import { UnifiedInput } from "../../../components/UnifiedInput";
 import SpoolSideView from "./carretel";
+import FormFeedback, { useFormFeedback } from "../../../components/FormFeedback";
 
 // Limpeza avançada de valores numéricos
 const safeParse = (val) => {
@@ -39,11 +40,12 @@ const CONFIG = {
     peso_total: { label: "Qual o peso total do carretel?", icon: Layers, suffix: "gramas", placeholder: "1000", type: "text" }
 };
 
-export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosIniciais }) {
+export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosIniciais = null }) {
     const [form, setForm] = useState(INITIAL_STATE);
     const [manualEntry, setManualEntry] = useState({ marca: false });
     const [isDirty, setIsDirty] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const { feedback, showSuccess, showError, hide: hideFeedback } = useFormFeedback();
 
     useEffect(() => {
         if (aberto) {
@@ -67,13 +69,24 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
         }
     }, [aberto, dadosIniciais]);
 
+    const handleTentativaFechar = useCallback(() => {
+        if (isSaving) return;
+        if (isDirty) {
+            if (window.confirm("Você tem alterações que não foram salvas. Quer mesmo sair?")) {
+                aoFechar();
+            }
+        } else {
+            aoFechar();
+        }
+    }, [isSaving, isDirty, aoFechar]);
+
     useEffect(() => {
         const handleEsc = (e) => {
             if (e.key === "Escape" && !isSaving) handleTentativaFechar();
         };
         if (aberto) window.addEventListener("keydown", handleEsc);
         return () => window.removeEventListener("keydown", handleEsc);
-    }, [aberto, isDirty, isSaving]);
+    }, [aberto, isSaving, handleTentativaFechar]);
 
     const marcasOptions = useMemo(() => [{
         group: "Fabricantes",
@@ -97,16 +110,6 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
         setIsDirty(true);
     };
 
-    const handleTentativaFechar = () => {
-        if (isSaving) return;
-        if (isDirty) {
-            if (window.confirm("Você tem alterações que não foram salvas. Quer mesmo sair?")) {
-                aoFechar();
-            }
-        } else {
-            aoFechar();
-        }
-    };
 
     const handleSalvar = useCallback(async () => {
         if (isSaving) return;
@@ -129,13 +132,20 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
 
         try {
             setIsSaving(true);
+            hideFeedback();
             await aoSalvar(payload);
+            showSuccess(dadosIniciais ? 'Material atualizado com sucesso!' : 'Material adicionado com sucesso!');
+            // Fecha o modal após 1 segundo para mostrar o feedback
+            setTimeout(() => {
+                aoFechar();
+            }, 1000);
         } catch (error) {
             console.error("Erro ao salvar filamento:", error);
+            showError('Erro ao salvar material. Tente novamente.');
         } finally {
             setIsSaving(false);
         }
-    }, [form, dadosIniciais, aoSalvar, isSaving]);
+    }, [form, dadosIniciais, aoSalvar, isSaving, showSuccess, showError, hideFeedback, aoFechar]);
 
     if (!aberto) return null;
 
@@ -143,10 +153,10 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
     const isValid = form.marca.trim() !== "" && form.nome.trim().length >= 2 && safeParse(form.peso_total) > 0;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-sm animate-in fade-in duration-300">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-zinc-950/90 backdrop-blur-sm modal-backdrop">
             <div className="absolute inset-0" onClick={handleTentativaFechar} />
 
-            <div className={`relative bg-zinc-950 border border-zinc-800/80 rounded-[2rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[96vh] transition-all duration-300 ${isSaving ? 'opacity-90 grayscale-[0.3]' : 'opacity-100'}`}>
+            <div className={`relative bg-zinc-950 border border-zinc-800/80 rounded-[2rem] w-full max-w-5xl shadow-2xl overflow-hidden flex flex-col md:flex-row max-h-[96vh] modal-content ${isSaving ? 'opacity-90 grayscale-[0.3]' : 'opacity-100'}`}>
 
                 {/* Lateral de Visualização */}
                 <div className="w-full md:w-[320px] bg-zinc-900/30 border-b md:border-b-0 md:border-r border-zinc-800/50 p-10 flex flex-col justify-between shrink-0 relative overflow-hidden">
@@ -214,7 +224,7 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
                     </header>
 
                     <div className={`p-10 overflow-y-auto custom-scrollbar flex-1 space-y-8 ${isSaving ? 'pointer-events-none' : ''}`}>
-                        
+
                         {/* Seção 01 */}
                         <section className="space-y-5">
                             <div className="flex items-center gap-4">
@@ -291,24 +301,35 @@ export default function ModalFilamento({ aberto, aoFechar, aoSalvar, dadosInicia
                         </section>
                     </div>
 
-                    <footer className="p-8 border-t border-zinc-800/50 bg-zinc-900/10 flex gap-4">
+                    <footer className="p-8 border-t border-zinc-800/50 bg-zinc-900/10 flex flex-col gap-4">
+                        {/* Feedback de Sucesso/Erro */}
+                        <FormFeedback
+                            type={feedback.type}
+                            message={feedback.message}
+                            show={feedback.show}
+                            onClose={hideFeedback}
+                        />
+
                         {!isValid && isDirty && !isSaving && (
-                            <div className="absolute top-[-35px] left-8 flex items-center gap-2 text-rose-500 animate-bounce">
+                            <div className="flex items-center gap-2 text-rose-500 animate-shake">
                                 <AlertCircle size={14} />
                                 <span className="text-[10px] font-bold uppercase tracking-tighter">Preencha os campos obrigatórios</span>
                             </div>
                         )}
-                        <button disabled={isSaving} onClick={handleTentativaFechar} className="flex-1 py-3 px-4 rounded-xl border border-zinc-800 text-[11px] font-bold uppercase text-zinc-400 hover:text-zinc-100 transition-all disabled:opacity-20">
-                            Cancelar
-                        </button>
-                        <button
-                            disabled={!isValid || isSaving}
-                            onClick={handleSalvar}
-                            className={`flex-[2] py-3 px-6 rounded-xl text-[11px] font-bold uppercase flex items-center justify-center gap-3 transition-all ${isValid && !isSaving ? "bg-zinc-100 text-zinc-950 hover:bg-white active:scale-95 shadow-xl" : "bg-zinc-900 text-zinc-600 cursor-not-allowed"}`}
-                        >
-                            {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Terminal size={16} />}
-                            {isSaving ? "Sincronizando..." : dadosIniciais ? "Salvar Alterações" : "Adicionar ao Estoque"}
-                        </button>
+
+                        <div className="flex gap-4">
+                            <button disabled={isSaving} onClick={handleTentativaFechar} className="flex-1 py-3 px-4 rounded-xl border border-zinc-800 text-[11px] font-bold uppercase text-zinc-400 hover:text-zinc-100 transition-all disabled:opacity-20">
+                                Cancelar
+                            </button>
+                            <button
+                                disabled={!isValid || isSaving}
+                                onClick={handleSalvar}
+                                className={`flex-[2] py-3 px-6 rounded-xl text-[11px] font-bold uppercase flex items-center justify-center gap-3 transition-all duration-300 ${isValid && !isSaving ? "bg-zinc-100 text-zinc-950 hover:bg-white active:scale-95 hover:shadow-xl shadow-lg" : "bg-zinc-900 text-zinc-600 cursor-not-allowed"}`}
+                            >
+                                {isSaving ? <Loader2 size={16} className="animate-spin" /> : <Terminal size={16} />}
+                                {isSaving ? "Sincronizando..." : dadosIniciais ? "Salvar Alterações" : "Adicionar ao Estoque"}
+                            </button>
+                        </div>
                     </footer>
                 </div>
             </div>
