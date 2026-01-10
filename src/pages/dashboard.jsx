@@ -1,20 +1,28 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Calendar, Clock } from 'lucide-react';
+import { Calendar, Clock, Package, Printer, BadgeDollarSign, FolderOpen, ArrowRight } from 'lucide-react';
+
+// import { useLocation } from 'wouter'; // Not needed here anymore
+// Removing parseGCode and Upload import
 import MainSidebar from '../layouts/mainSidebar';
 import { useDashboardData } from '../features/dashboard/hooks/useDashboardData';
 import FinancialSummaryWidget from '../features/dashboard/components/FinancialSummaryWidget';
 import AlertsWidget from '../features/dashboard/components/AlertsWidget';
+import FailureWidget from '../features/dashboard/components/FailureWidget'; // Import Widget
+import GCodeImportWidget from '../features/dashboard/components/GCodeImportWidget'; // Import Widget
 import QuickActionsButton from '../features/dashboard/components/QuickActionsButton';
+import axios from 'axios'; // Import axios
 
 // Importar modais para ações rápidas
 import ModalFilamento from '../features/filamentos/components/modalFilamento';
 import ModalImpressora from '../features/impressoras/components/modalImpressora';
 import { useFilamentStore } from '../features/filamentos/logic/filaments';
 import { usePrinterStore } from '../features/impressoras/logic/printer';
+import { useProjectsStore } from '../features/orcamentos/logic/projects';
 
 export default function Dashboard() {
     const [larguraSidebar, setLarguraSidebar] = useState(68);
     const [currentTime, setCurrentTime] = useState(new Date());
+    // Removed isDragging, setLocation (is dragging logic moved to widget)
 
     // Estados para modais de ações rápidas
     const [modalFilamento, setModalFilamento] = useState(false);
@@ -26,7 +34,9 @@ export default function Dashboard() {
         filamentFinancials,
         printerStats,
         criticalAlertsCount,
-        loading
+        loading,
+        failureStats, // Get stats
+        fetchFailures // Get refresh function
     } = useDashboardData();
 
     const { saveFilament } = useFilamentStore();
@@ -49,6 +59,9 @@ export default function Dashboard() {
                 break;
             case 'add-printer':
                 setModalImpressora(true);
+                break;
+            case 'upload-gcode':
+                document.getElementById('hidden-gcode-input')?.click();
                 break;
             default:
                 break;
@@ -93,11 +106,28 @@ export default function Dashboard() {
         }).format(date);
     };
 
-    // Mock de projetos - em produção, virá de uma store/API
-    const mockProjects = [];
+    // Registrar Falha
+    const handleRegisterFailure = async (data) => {
+        await axios.post('/api/failures', data);
+        await fetchFailures(); // Refresh stats
+        await fetchHistory(); // Refresh history if needed
+    };
+
+    // Dados de Projetos (Reais)
+
+    // Dados de Projetos (Reais)
+    const { projects, fetchHistory } = useProjectsStore();
+
+    useEffect(() => {
+        fetchHistory();
+    }, [fetchHistory]);
+
+    // --- DRAG & DROP REMOVED (Moved to Widget) ---
 
     return (
         <div className="flex h-screen w-full bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden">
+            {/* Hidden inputs removed */}
+
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 68 : 256)} />
 
             <main
@@ -158,7 +188,7 @@ export default function Dashboard() {
                         {/* Linha 1: Resumo Financeiro + Alertas */}
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                             <FinancialSummaryWidget
-                                projects={mockProjects}
+                                projects={projects}
                                 className="lg:col-span-2"
                             />
                             <AlertsWidget
@@ -166,16 +196,16 @@ export default function Dashboard() {
                             />
                         </div>
 
-                        {/* Linha 2: Stats Cards */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                        {/* Linha 2: Stats Cards (4 Columns) */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                             {/* Card de Filamentos */}
-                            <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 hover-lift">
+                            <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 hover-lift group">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
                                         Inventário
                                     </h3>
-                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                                        <Calendar size={20} className="text-emerald-400" />
+                                    <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Package size={20} className="text-emerald-400" />
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -195,13 +225,13 @@ export default function Dashboard() {
                             </div>
 
                             {/* Card de Impressoras */}
-                            <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 hover-lift">
+                            <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 hover-lift group">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
                                         Impressoras
                                     </h3>
-                                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
-                                        <Calendar size={20} className="text-sky-400" />
+                                    <div className="w-10 h-10 rounded-xl bg-sky-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <Printer size={20} className="text-sky-400" />
                                     </div>
                                 </div>
                                 <div className="space-y-3">
@@ -211,24 +241,28 @@ export default function Dashboard() {
                                         </p>
                                         <p className="text-sm text-zinc-600">/ {printerStats.total} ativas</p>
                                     </div>
-                                    {printerStats.error > 0 && (
+                                    {printerStats.error > 0 ? (
                                         <div className="px-3 py-2 rounded-lg bg-rose-500/10 border border-rose-500/20">
                                             <p className="text-xs font-bold text-rose-400">
                                                 {printerStats.error} com erro
                                             </p>
+                                        </div>
+                                    ) : (
+                                        <div className="pt-3 border-t border-zinc-800/50">
+                                            <p className="text-xs text-zinc-500">Todas operacionais</p>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
                             {/* Card de Valor do Inventário */}
-                            <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 hover-lift">
+                            <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 hover-lift group">
                                 <div className="flex items-center justify-between mb-4">
                                     <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
                                         Valor Estoque
                                     </h3>
-                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                                        <Calendar size={20} className="text-amber-400" />
+                                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <BadgeDollarSign size={20} className="text-amber-400" />
                                     </div>
                                 </div>
                                 <div>
@@ -240,14 +274,77 @@ export default function Dashboard() {
                                     </p>
                                 </div>
                             </div>
+
+                            {/* Card de Projetos (Novo) */}
+                            <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 hover-lift group">
+                                <div className="flex items-center justify-between mb-4">
+                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500">
+                                        Projetos
+                                    </h3>
+                                    <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                        <FolderOpen size={20} className="text-purple-400" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <p className="text-3xl font-mono font-black text-purple-400">
+                                        {projects?.length || 0}
+                                    </p>
+                                    <p className="text-xs text-zinc-600 mt-2">
+                                        Orçamentos criados
+                                    </p>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Linha 3: Info adicional ou placeholder para expansão */}
-                        <div className="p-12 border border-dashed border-zinc-800/50 rounded-2xl bg-zinc-900/10 opacity-40 text-center animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                            <Calendar size={40} strokeWidth={1} className="mx-auto mb-3 text-zinc-600" />
-                            <p className="text-xs font-black uppercase tracking-[0.4em] text-zinc-600">
-                                Mais funcionalidades em breve
-                            </p>
+                        {/* Linha 3: Atividade Recente + G-Code Import */}
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                            {/* Lista de Projetos Recentes */}
+                            <div className="lg:col-span-2 bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 flex flex-col">
+                                <div className="flex items-center justify-between mb-6">
+                                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 flex items-center gap-2">
+                                        <FolderOpen size={14} /> Recentes
+                                    </h3>
+                                    <a href="/calculadora" className="text-[10px] font-bold text-sky-500 hover:text-sky-400 uppercase tracking-wider flex items-center gap-1">
+                                        Ver Todos <ArrowRight size={12} />
+                                    </a>
+                                </div>
+
+                                <div className="flex-1 space-y-3">
+                                    {projects && projects.length > 0 ? (
+                                        projects.slice(0, 4).map(proj => (
+                                            <div key={proj.id} className="flex items-center justify-between p-4 rounded-xl bg-zinc-900/50 border border-zinc-800 hover:border-zinc-700 transition-all group">
+                                                <div className="flex items-center gap-4">
+                                                    <div className="w-10 h-10 rounded-lg bg-zinc-950 border border-zinc-800 flex items-center justify-center font-black text-xs text-zinc-600 group-hover:text-zinc-400 group-hover:border-zinc-600 transition-colors">
+                                                        #{String(proj.id).slice(0, 3)}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-sm font-bold text-zinc-200 group-hover:text-sky-400 transition-colors">{proj.label}</h4>
+                                                        <p className="text-[10px] text-zinc-600 uppercase tracking-wider">{new Date(proj.created_at || Date.now()).toLocaleDateString('pt-BR')}</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-4">
+                                                    <div className="text-right">
+                                                        <span className="block text-xs font-mono font-bold text-emerald-500">
+                                                            R$ {new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(proj.resultados?.precoFinal || 0)}
+                                                        </span>
+                                                        <span className="block text-[9px] text-zinc-600 uppercase">Valor Final</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))
+                                    ) : (
+                                        <div className="h-full flex flex-col items-center justify-center text-zinc-600 opacity-50 py-10">
+                                            <FolderOpen size={32} className="mb-2" />
+                                            <p className="text-xs font-bold uppercase">Nenhum projeto recente</p>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Widget de Importação (Lateral) */}
+                            <div className="lg:col-span-1 h-full">
+                                <GCodeImportWidget />
+                            </div>
                         </div>
                     </div>
                 </div>

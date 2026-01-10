@@ -1,4 +1,5 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react'; // Added useState, useEffect, useCallback
+import axios from 'axios'; // Added axios
 import { useFilamentStore } from '../../filamentos/logic/filaments';
 import { usePrinterStore } from '../../impressoras/logic/printer';
 
@@ -9,6 +10,21 @@ import { usePrinterStore } from '../../impressoras/logic/printer';
 export function useDashboardData() {
     const { filaments, loading: filamentsLoading } = useFilamentStore();
     const { printers, loading: printersLoading } = usePrinterStore();
+    const [failureStats, setFailureStats] = useState({ totalWeight: 0, totalCost: 0 }); // New state
+
+    // Fetch Failures
+    const fetchFailures = useCallback(async () => {
+        try {
+            const res = await axios.get('/api/failures');
+            if (res.data?.stats) setFailureStats(res.data.stats);
+        } catch (error) {
+            console.error("Erro ao buscar falhas:", error);
+        }
+    }, []);
+
+    useEffect(() => {
+        fetchFailures();
+    }, [fetchFailures]);
 
     // Alertas críticos de filamentos
     const filamentAlerts = useMemo(() => {
@@ -110,6 +126,9 @@ export function useDashboardData() {
         filamentFinancials,
         printerStats,
         loading: filamentsLoading || printersLoading,
-        criticalAlertsCount: allAlerts.filter(a => a.severity === 'critical').length
+        criticalAlertsCount: allAlerts.filter(a => a.severity === 'critical').length,
+        failureStats, // Expose failure stats
+        fetchFailures // Explore fetch function
     };
-}
+};
+

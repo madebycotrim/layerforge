@@ -245,7 +245,7 @@ export default function Resumo({ resultados = {}, entradas = {}, salvar = () => 
                 </div>
                 <div className="grid grid-cols-2 gap-2 h-10">
                     <button onClick={() => setGenericModal({ open: true, type: 'CONFIRM', title: 'Reiniciar', icon: RotateCcw, message: 'Apagar dados atuais?', onConfirm: () => window.location.reload() })} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all duration-300 hover:bg-zinc-800/50 group"><RotateCcw size={12} className="transition-transform duration-300 group-hover:rotate-180" /> Reiniciar</button>
-                    <button onClick={() => generateProfessionalPDF(resultados, entradas, precoFinalVenda)} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-zinc-300 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all duration-300 hover:bg-zinc-800/50 group"><FileText size={12} className="transition-transform duration-300 group-hover:scale-110" /> Orçamento</button>
+                    <button onClick={() => generateProfessionalPDF(resultados, entradas, precoFinalVenda)} className="rounded-xl bg-zinc-900 border border-white/[0.05] text-zinc-600 hover:text-sky-500 flex items-center justify-center gap-2 text-[9px] font-bold uppercase tracking-widest transition-all duration-300 hover:bg-zinc-800/50 group"><FileText size={12} className="transition-transform duration-300 group-hover:scale-110" /> Gerar Proposta</button>
                 </div>
             </div>
 

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useDeferredValue } from "react";
-import { Printer, ChevronDown, Scan, AlertTriangle, Trash2 } from "lucide-react";
+import { Printer, ChevronDown, Scan, AlertTriangle, Trash2, Search, Plus, X } from "lucide-react";
 
 // --- LAYOUT E INTERFACE GLOBAL ---
 import MainSidebar from "../layouts/mainSidebar";
@@ -11,7 +11,6 @@ import PrinterCard from "../features/impressoras/components/cardsImpressoras";
 import PrinterModal from "../features/impressoras/components/modalImpressora";
 import DiagnosticsModal from "../features/impressoras/components/modalDiagnostico";
 import StatusImpressoras from "../features/impressoras/components/statusImpressoras";
-import HeaderImpressoras from "../features/impressoras/components/header";
 
 // --- LÓGICA E STORE (ARMAZENAMENTO) ---
 import { usePrinterStore } from "../features/impressoras/logic/printer";
@@ -196,11 +195,11 @@ export default function ImpressorasPage() {
                 <Toast {...toast} onClose={() => setToast(prev => ({ ...prev, visible: false }))} />
             )}
 
-            <main className="flex-1 flex flex-col relative transition-all duration-300 ease-in-out" style={{ marginLeft: `${larguraSidebar}px` }}>
+            <main className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar transition-all duration-300 ease-in-out" style={{ marginLeft: `${larguraSidebar}px` }}>
 
                 {/* FUNDO DECORATIVO */}
                 <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
-                    <div className="absolute inset-0 opacity-[0.1]" style={{
+                    <div className="absolute inset-0 opacity-[0.08]" style={{
                         backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
                         backgroundSize: '50px 50px',
                         maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
@@ -211,10 +210,88 @@ export default function ImpressorasPage() {
                     </div>
                 </div>
 
-                <HeaderImpressoras busca={busca} setBusca={setBusca} onAddClick={() => { setItemParaEdicao(null); setModalAberto(true); }} />
+                {/* CONTEÚDO PRINCIPAL */}
+                <div className="relative z-10 p-8 xl:p-12 max-w-[1600px] mx-auto w-full">
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 xl:p-12 relative z-10 scroll-smooth">
-                    <div className="max-w-[1600px] mx-auto space-y-16">
+                    {/* Header unificado (Estilo Dashboard) */}
+                    <div className="mb-12 animate-fade-in-up">
+                        <div className="flex items-start justify-between flex-wrap gap-4">
+                            <div>
+                                <h1 className="text-4xl font-black tracking-tight text-white mb-2">
+                                    Minhas Impressoras
+                                </h1>
+                                <p className="text-sm text-zinc-500 capitalize">
+                                    Gestão de Máquinas
+                                </p>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                                {/* Barra de Busca */}
+                                <div className="relative group hidden md:block">
+                                    <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${busca ? 'text-emerald-400' : 'text-zinc-600'}`}>
+                                        <Search size={14} strokeWidth={3} />
+                                    </div>
+                                    <input
+                                        className="
+                                            w-64 bg-zinc-900/40 border border-zinc-800/50 rounded-xl py-2.5 pl-11 pr-10 
+                                            text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest 
+                                            focus:border-emerald-500/50 focus:bg-zinc-900/80 focus:ring-4 focus:ring-emerald-500/10 
+                                            placeholder:text-zinc-700 placeholder:text-[9px]
+                                        "
+                                        placeholder="BUSCAR IMPRESSORA..."
+                                        value={busca}
+                                        onChange={(e) => setBusca(e.target.value)}
+                                    />
+                                    {busca && (
+                                        <button
+                                            onClick={() => setBusca("")}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-rose-500 transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Botão Nova Impressora */}
+                                <button
+                                    onClick={() => { setItemParaEdicao(null); setModalAberto(true); }}
+                                    className="
+                                        group relative h-11 px-6 overflow-hidden bg-emerald-500 hover:bg-emerald-400 
+                                        rounded-xl transition-all duration-300 active:scale-95 shadow-lg shadow-emerald-900/40
+                                        flex items-center gap-3 text-zinc-950
+                                    "
+                                >
+                                    <Plus size={16} strokeWidth={3} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+                                        Nova
+                                    </span>
+                                    {/* Brilho */}
+                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Busca Mobile */}
+                        <div className="mt-4 md:hidden relative group">
+                            <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${busca ? 'text-emerald-400' : 'text-zinc-600'}`}>
+                                <Search size={14} strokeWidth={3} />
+                            </div>
+                            <input
+                                className="
+                                    w-full bg-zinc-900/40 border border-zinc-800/50 rounded-xl py-2.5 pl-11 pr-10 
+                                    text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest 
+                                    focus:border-emerald-500/50 focus:bg-zinc-900/80 focus:ring-4 focus:ring-emerald-500/10 
+                                    placeholder:text-zinc-700 placeholder:text-[9px]
+                                "
+                                placeholder="BUSCAR IMPRESSORA..."
+                                value={busca}
+                                onChange={(e) => setBusca(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+
+                    <div className="space-y-8">
 
                         <div className="animate-in fade-in slide-in-from-top-4 duration-700">
                             <StatusImpressoras
@@ -225,7 +302,7 @@ export default function ImpressorasPage() {
                         </div>
 
                         {Object.entries(gruposMapeados).length > 0 ? (
-                            <div className="space-y-24 pb-40 animate-in fade-in slide-in-from-bottom-6 duration-1000">
+                            <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                                 {Object.entries(gruposMapeados).map(([fabricante, lista]) => (
                                     <SessaoImpressoras
                                         key={fabricante}
@@ -242,9 +319,9 @@ export default function ImpressorasPage() {
                             </div>
                         ) : (
                             !loading && (
-                                <div className="py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800 rounded-[2rem] bg-zinc-900/10 opacity-40">
-                                    <Scan size={48} strokeWidth={1} className="mb-4" />
-                                    <p className="text-[10px] font-black uppercase tracking-[0.4em]">Nenhuma impressora na frota</p>
+                                <div className="py-24 flex flex-col items-center justify-center border border-dashed border-zinc-800/60 rounded-[3rem] bg-zinc-900/5 backdrop-blur-sm">
+                                    <Scan size={48} strokeWidth={1} className="mb-4 text-zinc-700" />
+                                    <p className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">Nenhuma impressora na frota</p>
                                 </div>
                             )
                         )}

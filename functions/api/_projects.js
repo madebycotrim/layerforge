@@ -33,7 +33,7 @@ export async function handleProjects({ request, db, userId, url, params }) {
         }
 
         if (method === 'DELETE') {
-            const id = url.searchParams.get('id');
+            const id = url.searchParams.get('id') || idFromPath;
             if (id) {
                 await db.prepare("DELETE FROM projects WHERE id = ? AND user_id = ?").bind(id, userId).run();
             } else {

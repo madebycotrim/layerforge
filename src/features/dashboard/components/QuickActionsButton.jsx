@@ -14,8 +14,8 @@ export default function QuickActionsButton({ onActionClick }) {
     const actions = [
         {
             id: 'calculator',
-            label: 'Nova Calculadora',
-            icon: Calculator,
+            label: 'Novo Orçamento',
+            icon: FileText,
             color: 'sky',
             route: '/calculadora'
         },
@@ -32,13 +32,6 @@ export default function QuickActionsButton({ onActionClick }) {
             icon: Printer,
             color: 'amber',
             action: 'add-printer'
-        },
-        {
-            id: 'budget',
-            label: 'Novo Orçamento',
-            icon: FileText,
-            color: 'purple',
-            route: '/orcamentos'
         }
     ];
 

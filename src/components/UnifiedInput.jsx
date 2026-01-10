@@ -22,15 +22,19 @@ const InternalSelect = ({ value, onChange, options, placeholder, isOpen, setOpen
     <div className="w-full h-full flex items-center">
       {/* Gatilho interno apenas para área de texto */}
       <div className="w-full h-full flex items-center select-none">
-        <span className={`text-[11px] font-mono font-bold uppercase truncate transition-colors ${
-          selected ? "text-zinc-100" : "text-zinc-600"
-        }`}>
-          {selected ? selected.label : placeholder}
+        <span className={`text-[11px] font-mono font-bold uppercase truncate transition-colors ${selected ? "text-zinc-100" : "text-zinc-600"
+          }`}>
+          <div className="flex items-center gap-2 truncate">
+            {selected?.color && selected.color !== 'transparent' && (
+              <div className="w-2 h-2 rounded-full shrink-0 border border-white/10" style={{ backgroundColor: selected.color }} />
+            )}
+            {selected ? selected.label : placeholder}
+          </div>
         </span>
       </div>
 
       {isOpen && (
-        <div 
+        <div
           className="absolute left-0 top-[calc(100%+6px)] bg-[#0c0c0e] border border-white/10 rounded-xl shadow-[0_20px_50px_rgba(0,0,0,0.5)] z-[1000] overflow-hidden w-max min-w-full max-w-[320px] animate-in fade-in zoom-in-95 duration-150"
         >
           <div className="max-h-64 overflow-y-auto p-1.5 custom-scrollbar flex flex-col">
@@ -42,20 +46,24 @@ const InternalSelect = ({ value, onChange, options, placeholder, isOpen, setOpen
                   </div>
                 )}
                 {g.items?.map(item => (
-                  <div 
-                    key={item.value} 
-                    onClick={(e) => { 
-                        e.stopPropagation(); // Evita reabrir ao selecionar
-                        onChange(item.value); 
-                        setOpen(false); 
+                  <div
+                    key={item.value}
+                    onClick={(e) => {
+                      e.stopPropagation(); // Evita reabrir ao selecionar
+                      onChange(item.value);
+                      setOpen(false);
                     }}
-                    className={`px-3 py-2.5 rounded-lg flex items-center justify-between text-[10px] font-bold uppercase cursor-pointer transition-all duration-200 whitespace-nowrap gap-6 ${
-                      String(value) === String(item.value) 
-                        ? "bg-sky-500/15 text-sky-400" 
-                        : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
-                    }`}
+                    className={`px-3 py-2.5 rounded-lg flex items-center justify-between text-[10px] font-bold uppercase cursor-pointer transition-all duration-200 whitespace-nowrap gap-6 ${String(value) === String(item.value)
+                      ? "bg-sky-500/15 text-sky-400"
+                      : "text-zinc-400 hover:bg-white/5 hover:text-zinc-200"
+                      }`}
                   >
-                    <span className="truncate">{item.label}</span>
+                    <div className="flex items-center gap-2 truncate">
+                      {item.color && String(value) === "manual" && item.value !== "manual" ? null : (
+                        item.color && item.color !== 'transparent' && <div className="w-2 h-2 rounded-full shrink-0 border border-white/10" style={{ backgroundColor: item.color }} />
+                      )}
+                      <span className="truncate">{item.label}</span>
+                    </div>
                     {String(value) === String(item.value) && (
                       <Check size={12} className="shrink-0" />
                     )}
@@ -77,7 +85,7 @@ export const UnifiedInput = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isSelectOpen, setIsSelectOpen] = useState(false);
-  
+
   // Referências para disparar o foco
   const containerRef = useRef(null);
   const mainInputRef = useRef(null);
@@ -104,9 +112,9 @@ export const UnifiedInput = ({
   };
 
   useEffect(() => {
-    const handleClickOutside = (e) => { 
+    const handleClickOutside = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
-        setIsSelectOpen(false); 
+        setIsSelectOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -130,13 +138,13 @@ export const UnifiedInput = ({
         </div>
       )}
 
-      <div 
+      <div
         ref={containerRef}
         onClick={handleContainerClick}
         className={`relative flex items-center h-11 transition-all duration-300 cursor-pointer
           ${isGhost ? "bg-transparent border-none" : "bg-[#070708] border rounded-xl"} 
-          ${!isGhost && (isActive || isLucro 
-            ? "border-sky-500/60 shadow-[0_0_20px_-5px_rgba(14,165,233,0.2)] ring-1 ring-sky-500/10" 
+          ${!isGhost && (isActive || isLucro
+            ? "border-sky-500/60 shadow-[0_0_20px_-5px_rgba(14,165,233,0.2)] ring-1 ring-sky-500/10"
             : "border-zinc-800/60 hover:border-zinc-600")}
           ${!isSelect ? "cursor-text" : "cursor-pointer"}`}
       >
@@ -152,33 +160,33 @@ export const UnifiedInput = ({
           {isTime ? (
             <>
               <div className="relative flex items-center group">
-                <input 
+                <input
                   ref={hoursInputRef}
-                  type="number" 
-                  value={hoursValue ?? ""} 
-                  onChange={e => onHoursChange?.(e.target.value)} 
-                  onFocus={(e) => { e.target.select(); setIsFocused(true); }} 
+                  type="number"
+                  value={hoursValue ?? ""}
+                  onChange={e => onHoursChange?.(e.target.value)}
+                  onFocus={(e) => { e.target.select(); setIsFocused(true); }}
                   onBlur={() => setIsFocused(false)}
                   onWheel={handleWheel}
-                  className={`w-full h-full bg-transparent text-zinc-100 text-[13px] font-mono font-bold outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${Icon ? 'pl-9' : ''} pr-6`} 
-                  placeholder="0" 
+                  className={`w-full h-full bg-transparent text-zinc-100 text-[13px] font-mono font-bold outline-none text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none ${Icon ? 'pl-9' : ''} pr-6`}
+                  placeholder="0"
                 />
                 <span className="absolute right-2 text-[7px] font-black text-zinc-800 uppercase pointer-events-none group-focus-within:text-sky-500/40">H</span>
               </div>
               <div className="relative flex items-center group">
-                <input 
-                  type="number" 
-                  min={0} max={59} 
-                  value={minutesValue ?? ""} 
+                <input
+                  type="number"
+                  min={0} max={59}
+                  value={minutesValue ?? ""}
                   onChange={e => {
                     const val = Math.min(59, Math.max(0, parseInt(e.target.value || 0)));
                     onMinutesChange?.(e.target.value === "" ? "" : val);
-                  }} 
-                  onFocus={(e) => { e.target.select(); setIsFocused(true); }} 
+                  }}
+                  onFocus={(e) => { e.target.select(); setIsFocused(true); }}
                   onBlur={() => setIsFocused(false)}
                   onWheel={handleWheel}
-                  className="w-full h-full bg-transparent text-zinc-100 text-[13px] font-mono font-bold outline-none text-center pl-2 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none" 
-                  placeholder="00" 
+                  className="w-full h-full bg-transparent text-zinc-100 text-[13px] font-mono font-bold outline-none text-center pl-2 pr-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                  placeholder="00"
                 />
                 <span className="absolute right-2 text-[7px] font-black text-zinc-800 uppercase pointer-events-none group-focus-within:text-sky-500/40">MIN</span>
               </div>
@@ -186,21 +194,21 @@ export const UnifiedInput = ({
           ) : (
             <div className={`h-full flex items-center ${Icon ? 'pl-10' : 'pl-4'} ${suffix || isSelect ? 'pr-9' : 'pr-4'}`}>
               {isSelect ? (
-                <InternalSelect 
-                  {...props} 
-                  options={options} 
-                  isOpen={isSelectOpen} 
-                  setOpen={setIsSelectOpen} 
+                <InternalSelect
+                  {...props}
+                  options={options}
+                  isOpen={isSelectOpen}
+                  setOpen={setIsSelectOpen}
                 />
               ) : (
-                <input 
+                <input
                   ref={mainInputRef}
-                  {...props} 
+                  {...props}
                   type={type}
-                  onFocus={(e) => { e.target.select(); setIsFocused(true); }} 
+                  onFocus={(e) => { e.target.select(); setIsFocused(true); }}
                   onBlur={() => setIsFocused(false)}
                   onWheel={handleWheel}
-                  className="w-full h-full bg-transparent text-zinc-100 text-[12px] font-mono font-bold outline-none placeholder:text-zinc-800" 
+                  className="w-full h-full bg-transparent text-zinc-100 text-[12px] font-mono font-bold outline-none placeholder:text-zinc-800"
                 />
               )}
             </div>

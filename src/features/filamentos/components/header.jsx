@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef } from "react";
-import { Search, LayoutGrid, List, Plus, X } from "lucide-react";
+import { Search, LayoutGrid, List, Plus, X, Trash2 } from "lucide-react";
 
 /**
  * Componente de cabeçalho com estilo técnico HUD.
@@ -10,7 +10,9 @@ export default function FilamentHeader({
     setBusca,
     viewMode,
     setViewMode,
-    onAddClick
+
+    onAddClick,
+    onWasteClick
 }) {
     const inputRef = useRef(null);
     const termoBusca = busca || "";
@@ -104,8 +106,18 @@ export default function FilamentHeader({
                     </button>
                 </div>
 
-                {/* DIVISOR ESTILO FIBRA ÓPTICA */}
-                <div className="h-8 w-px bg-gradient-to-b from-transparent via-white/10 to-transparent mx-1" aria-hidden="true" />
+                {/* BOTÃO DE DESPERDÍCIO (Ícone Quadrado) */}
+                <button
+                    onClick={() => onWasteClick?.()}
+                    className="
+                        group relative h-11 w-11 flex items-center justify-center rounded-xl 
+                        bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40
+                        transition-all duration-300 active:scale-95 mr-2
+                    "
+                    title="Registrar Desperdício"
+                >
+                    <Trash2 size={18} className="text-rose-500 group-hover:scale-110 transition-transform" />
+                </button>
 
                 {/* BOTÃO PRA ADICIONAR (SKY SOLID) */}
                 <button

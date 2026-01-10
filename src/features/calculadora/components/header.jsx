@@ -1,5 +1,5 @@
 import React from "react";
-import { Printer, History, Settings2, ChevronDown } from "lucide-react";
+import { Printer, History, Settings2, ChevronDown, Trash2 } from "lucide-react";
 
 export default function Header({
     nomeProjeto,
@@ -9,6 +9,7 @@ export default function Header({
     onCyclePrinter,
     onOpenHistory,
     onOpenSettings,
+    onOpenWaste, // New Prop
     needsConfig = false,
     hud
 }) {
@@ -121,6 +122,15 @@ export default function Header({
                 <div className="h-8 w-px bg-zinc-800/60" />
 
                 <div className="flex bg-zinc-900/50 border border-zinc-800/50 p-1 rounded-xl backdrop-blur-sm">
+                    <button
+                        type="button"
+                        onClick={onOpenWaste}
+                        title="Registrar Falha / Desperdício"
+                        className="p-2 rounded-lg text-rose-500 hover:text-rose-400 hover:bg-rose-500/10 transition-all border border-transparent hover:border-rose-500/20"
+                    >
+                        <Trash2 size={16} />
+                    </button>
+                    <div className="w-px h-4 bg-zinc-800 my-auto mx-1" />
                     <button
                         type="button"
                         onClick={onOpenSettings}

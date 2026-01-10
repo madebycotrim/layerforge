@@ -14,34 +14,39 @@ import AvisoFlutuante from "../components/Toast";
 // --- COMPONENTE DE CARTÃO (ESTILO DASHBOARD) ---
 const CartaoInformativo = ({ titulo, subtitulo, Icone, classeCor = "sky", children, etiqueta }) => {
     const temas = {
-        sky: "text-sky-400 bg-sky-500/10 border-sky-500/30",
-        emerald: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30",
-        amber: "text-amber-400 bg-amber-500/10 border-amber-500/30",
-        rose: "text-rose-400 bg-rose-500/10 border-rose-500/30",
+        sky: "text-sky-400 bg-sky-500/10",
+        emerald: "text-emerald-400 bg-emerald-500/10",
+        amber: "text-amber-400 bg-amber-500/10",
+        rose: "text-rose-400 bg-rose-500/10",
     };
     const temaEscolhido = temas[classeCor] || temas.sky;
 
     return (
-        <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-[2rem] p-8 relative overflow-hidden hover-lift">
+        <div className="bg-zinc-950/40 border border-zinc-800/50 rounded-2xl p-6 relative overflow-hidden hover-lift transition-all duration-300 group">
             {/* Header do Card */}
-            <div className="flex items-center justify-between mb-8">
-                <div className="flex items-center gap-4">
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${temaEscolhido}`}>
-                        <Icone size={22} />
-                    </div>
-                    <div>
-                        <h2 className="text-sm font-black text-white uppercase tracking-wide">{titulo}</h2>
-                        <p className="text-xs text-zinc-500 font-medium">{subtitulo}</p>
+            <div className="flex items-start justify-between mb-6">
+                <div className="flex flex-col gap-1">
+                    <h2 className="text-xs font-black uppercase tracking-[0.2em] text-zinc-500 group-hover:text-zinc-400 transition-colors">
+                        {titulo}
+                    </h2>
+                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-wider">
+                        {subtitulo}
+                    </p>
+                </div>
+
+                <div className="flex items-start gap-4">
+                    {etiqueta && (
+                        <span className="text-[9px] font-black px-2 py-1 rounded bg-zinc-900 border border-zinc-800 text-zinc-500 uppercase tracking-widest leading-none">
+                            {etiqueta}
+                        </span>
+                    )}
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${temaEscolhido} group-hover:scale-110 transition-transform duration-300`}>
+                        <Icone size={20} strokeWidth={2} />
                     </div>
                 </div>
-                {etiqueta && (
-                    <span className="text-[10px] font-black px-3 py-1 rounded-lg bg-zinc-900/50 border border-zinc-800 text-zinc-500 uppercase tracking-wider">
-                        {etiqueta}
-                    </span>
-                )}
             </div>
             {/* Content */}
-            <div>
+            <div className="pt-2 border-t border-zinc-800/50">
                 {children}
             </div>
         </div>
@@ -67,18 +72,7 @@ export default function PaginaConfiguracao() {
 
     return (
         <div className="flex h-screen w-full bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden">
-            {/* FUNDO DECORATIVO - igual ao dashboard */}
-            <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
-                <div className="absolute inset-0 opacity-[0.08]" style={{
-                    backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
-                    backgroundSize: '50px 50px',
-                    maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
-                }} />
 
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1600px] h-full">
-                    <div className="absolute top-0 left-0 h-full w-px bg-gradient-to-b from-sky-500/30 via-transparent to-transparent" />
-                </div>
-            </div>
 
             <input
                 type="file"
@@ -101,9 +95,22 @@ export default function PaginaConfiguracao() {
 
             <main className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar" style={{ marginLeft: `${logica.larguraBarraLateral}px` }}>
 
+                {/* FUNDO DECORATIVO - igual ao dashboard */}
+                <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
+                    <div className="absolute inset-0 opacity-[0.08]" style={{
+                        backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
+                        backgroundSize: '50px 50px',
+                        maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
+                    }} />
+
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-[1600px] h-full">
+                        <div className="absolute top-0 left-0 h-full w-px bg-gradient-to-b from-sky-500/30 via-transparent to-transparent" />
+                    </div>
+                </div>
+
                 {/* CABEÇALHO DA PÁGINA - estilo dashboard */}
-                <div className="p-8 xl:p-12 relative z-10">
-                    <div className="max-w-[1600px] mx-auto mb-12 animate-fade-in-up">
+                <div className="p-8 xl:p-12 relative z-10 max-w-[1600px] mx-auto w-full">
+                    <div className="mb-12 animate-fade-in-up">
                         <div className="flex items-start justify-between flex-wrap gap-4">
                             <div>
                                 <h1 className="text-4xl font-black tracking-tight text-white mb-2">
@@ -133,7 +140,7 @@ export default function PaginaConfiguracao() {
                         </div>
                     </div>
 
-                    <div className="max-w-[1600px] mx-auto space-y-8">
+                    <div className="space-y-8">
 
                         {/* 1. CARTÕES DE RESUMO RÁPIDO */}
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
@@ -314,6 +321,35 @@ export default function PaginaConfiguracao() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Rodapé de Ajuda "Super Widget" Style (Igual Central Maker) */}
+                    <div className="mt-12 p-6 rounded-2xl bg-gradient-to-br from-zinc-900/50 to-zinc-900/20 border border-zinc-800/50 flex flex-col md:flex-row items-center justify-between gap-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-xl bg-zinc-800/50 flex items-center justify-center text-zinc-400">
+                                <Info size={20} />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-black text-zinc-300 uppercase tracking-wide">Precisa de suporte extra?</h3>
+                                <p className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider mt-0.5">Nossa equipe pode ajudar com dúvidas específicas.</p>
+                            </div>
+                        </div>
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => window.open('https://wa.me/5511999999999', '_blank')}
+                                className="px-5 py-2.5 bg-zinc-900 border border-zinc-800 hover:border-sky-500/50 hover:bg-sky-500/10 rounded-lg text-[10px] font-black text-zinc-400 hover:text-sky-400 uppercase tracking-widest transition-all flex items-center gap-2 group"
+                            >
+                                <Wrench size={12} className="text-zinc-600 group-hover:text-sky-500 transition-colors" />
+                                Abrir Chamado
+                            </button>
+                            <button
+                                onClick={() => { navigator.clipboard.writeText("suporte@printlog.com.br"); logica.setAviso({ exibir: true, tipo: 'sucesso', mensagem: 'E-mail copiado!' }); }}
+                                className="px-5 py-2.5 bg-zinc-950 border border-zinc-800 hover:border-zinc-700 rounded-lg text-[10px] font-black text-zinc-400 uppercase tracking-widest transition-all flex items-center gap-2"
+                            >
+                                <Mail size={12} className="text-zinc-600" />
+                                Copiar Email
+                            </button>
                         </div>
                     </div>
                 </div>

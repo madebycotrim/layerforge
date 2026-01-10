@@ -1,5 +1,5 @@
 import React, { useMemo } from "react";
-import { Box, AlertTriangle, BadgeDollarSign, Activity, Thermometer, RefreshCw } from "lucide-react";
+import { Box, AlertTriangle, BadgeDollarSign, Activity, Thermometer, RefreshCw, Trash2 } from "lucide-react";
 
 /**
  * Utilitário de formatação de moeda (Memoizado no componente principal para performance)
@@ -21,22 +21,22 @@ const StockOverviewCard = ({ totalWeight = 0, lowStockCount = 0 }) => {
   const count = Math.max(0, parseInt(lowStockCount, 10) || 0);
   const peso = Math.max(0, parseFloat(totalWeight) || 0);
   const isAlert = count > 0;
-  
+
   // Cálculo de progresso visual (seguro entre 0 e 100)
   const progressWidth = isAlert ? '100%' : '75%';
 
   return (
-    <div 
+    <div
       role="status"
       aria-live="polite"
       className={`relative h-[130px] p-6 rounded-2xl overflow-hidden flex items-center justify-between transition-all duration-500 group border
-        ${isAlert 
-            ? 'bg-rose-950/10 border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.05)]' 
-            : 'bg-zinc-900/40 border-sky-500/30 backdrop-blur-sm shadow-[0_0_15px_rgba(14,165,233,0.05)]'}`}
+        ${isAlert
+          ? 'bg-rose-950/10 border-rose-500/30 shadow-[0_0_20px_rgba(244,63,94,0.05)]'
+          : 'bg-zinc-900/40 border-sky-500/30 backdrop-blur-sm shadow-[0_0_15px_rgba(14,165,233,0.05)]'}`}
     >
-      
+
       <div className={`absolute -right-4 -top-4 w-24 h-24 blur-[60px] transition-all duration-700 
-          ${isAlert ? 'bg-rose-500/10' : 'bg-sky-500/10'}`} 
+          ${isAlert ? 'bg-rose-500/10' : 'bg-sky-500/10'}`}
       />
 
       <div className="flex items-center gap-5 relative z-10">
@@ -48,7 +48,7 @@ const StockOverviewCard = ({ totalWeight = 0, lowStockCount = 0 }) => {
             <Box size={24} strokeWidth={2.5} />
           )}
         </div>
-        
+
         <div>
           <div className="flex items-center gap-2 mb-1.5">
             <span className={`w-1.5 h-1.5 rounded-full ${isAlert ? 'bg-rose-500 animate-pulse' : 'bg-sky-500'}`} />
@@ -62,8 +62,8 @@ const StockOverviewCard = ({ totalWeight = 0, lowStockCount = 0 }) => {
           </h3>
           <p className={`text-[11px] font-medium mt-2 uppercase tracking-wide
               ${isAlert ? 'text-rose-400/70' : 'text-zinc-500'}`}>
-            {isAlert 
-              ? `${count} ${count === 1 ? 'carretel abaixo do limite' : 'carretéis abaixo do limite'}` 
+            {isAlert
+              ? `${count} ${count === 1 ? 'carretel abaixo do limite' : 'carretéis abaixo do limite'}`
               : `Peso total: ${peso.toFixed(2)}kg`
             }
           </p>
@@ -115,13 +115,14 @@ const StatCard = ({ title, value, icon: Icon, colorClass, secondaryLabel, second
   </div>
 );
 
-export default function StatusFilamentos({ 
-  totalWeight = 0, 
-  lowStockCount = 0, 
-  valorTotal = 0, 
-  weather = { loading: true } 
+export default function StatusFilamentos({
+  totalWeight = 0,
+  lowStockCount = 0,
+  valorTotal = 0,
+  weather = { loading: true },
+  failureStats = { totalWeight: 0, totalCost: 0 }
 }) {
-  
+
   const displayStats = useMemo(() => {
     // Tratamento de segurança para o objeto de clima
     const isWeatherLoading = !weather || weather.loading;
@@ -137,32 +138,43 @@ export default function StatusFilamentos({
   }, [valorTotal, weather]);
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {/* 1. Saúde do Estoque - Analisa quantidade e peso */}
-      <StockOverviewCard 
-        totalWeight={totalWeight} 
-        lowStockCount={lowStockCount} 
+      <StockOverviewCard
+        totalWeight={totalWeight}
+        lowStockCount={lowStockCount}
       />
-      
+
       {/* 2. Custo do Inventário - Valor proporcional ao que resta nos carretéis */}
-      <StatCard 
-        title="Financeiro" 
-        value={displayStats.financial} 
-        icon={BadgeDollarSign} 
-        colorClass="text-sky-500" 
-        secondaryLabel="Valor Estimado" 
-        secondaryValue="Custo proporcional ao peso" 
+      <StatCard
+        title="Financeiro"
+        value={displayStats.financial}
+        icon={BadgeDollarSign}
+        colorClass="text-sky-500"
+        secondaryLabel="Valor Estimado"
+        secondaryValue="Custo proporcional ao peso"
       />
 
       {/* 3. Clima Local - Essencial para conservação de filamentos (PLA/PETG/Nylon) */}
-      <StatCard 
-        title="Ambiente" 
-        value={displayStats.temperature} 
-        icon={Thermometer} 
-        colorClass="text-amber-500/90" 
-        secondaryLabel="Espaço Maker" 
+      <StatCard
+        title="Ambiente"
+        value={displayStats.temperature}
+        icon={Thermometer}
+        colorClass="text-amber-500/90"
+        secondaryLabel="Espaço Maker"
         secondaryValue={displayStats.humidity}
         isLoading={displayStats.weatherLoading}
+      />
+
+      {/* 4. Desperdício - Monitoramento de Falhas */}
+      <StatCard
+        title="Desperdício (30d)"
+        value={failureStats?.totalWeight ? `${Math.round(failureStats.totalWeight)}g` : '0g'}
+        icon={Trash2}
+        colorClass="text-rose-500"
+        secondaryLabel="Custo Total"
+        secondaryValue={formatCurrency(failureStats?.totalCost || 0)}
+        isLoading={false}
       />
     </div>
   );

@@ -1,18 +1,18 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { useEffect, useMemo, useState } from "react";
-import { Inbox, Loader2, SearchX } from "lucide-react";
+import { Inbox, Loader2, SearchX, Plus, Search, X, FolderOpen } from "lucide-react";
+import { useLocation } from "wouter";
 
 // Layout & Store
 import MainSidebar from "../layouts/mainSidebar";
 import { useProjectsStore } from "../features/orcamentos/logic/projects";
 
 // Sub-componentes
-import Header from "../features/orcamentos/components/header";
 import StatusOrcamentos from "../features/orcamentos/components/statusOrcamentos";
 import CardOrcamento from "../features/orcamentos/components/cardOrcamento";
 import ModalDetalhes from "../features/orcamentos/components/modalDetalhes";
 
-// 1. CONFIGURAÇÃO DE STATUS (Mantendo a semântica, mas o foco visual da página será Amber)
+// 1. CONFIGURAÇÃO DE STATUS
 export const CONFIG_STATUS = {
     rascunho: { label: "Rascunho", color: "text-zinc-500", bg: "bg-zinc-500/10", border: "border-zinc-500/20" },
     aprovado: {
@@ -81,6 +81,7 @@ function useOrcamentosLogic(projetos, filtroStatus, termoBusca) {
 
 export default function OrcamentosPage() {
     const { projects, fetchHistory, removeHistoryEntry } = useProjectsStore();
+    const [, setLocation] = useLocation();
 
     const [filtroStatus, setFiltroStatus] = useState("todos");
     const [termoBusca, setTermoBusca] = useState("");
@@ -100,16 +101,16 @@ export default function OrcamentosPage() {
     }, [fetchHistory]);
 
     return (
-        <div className="flex h-screen w-full bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden"
-            style={{ '--sidebar-w': `${larguraSidebar}px` }}>
-
+        <div className="flex h-screen w-full bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden">
             <MainSidebar onCollapseChange={(collapsed) => setLarguraSidebar(collapsed ? 68 : 256)} />
 
-            <main className="flex-1 flex flex-col relative ml-[var(--sidebar-w)]">
-
-                {/* BACKGROUND DECORATIVO */}
+            <main
+                className="flex-1 flex flex-col relative overflow-y-auto custom-scrollbar"
+                style={{ marginLeft: `${larguraSidebar}px` }}
+            >
+                {/* Fundo Decorativo (Igual Dashboard) */}
                 <div className="absolute inset-x-0 top-0 h-[600px] z-0 pointer-events-none overflow-hidden select-none">
-                    <div className="absolute inset-0 opacity-[0.1]" style={{
+                    <div className="absolute inset-0 opacity-[0.08]" style={{
                         backgroundImage: `linear-gradient(to right, #52525b 1px, transparent 1px), linear-gradient(to bottom, #52525b 1px, transparent 1px)`,
                         backgroundSize: '50px 50px',
                         maskImage: 'radial-gradient(ellipse 60% 50% at 50% 0%, black, transparent)'
@@ -119,12 +120,87 @@ export default function OrcamentosPage() {
                     </div>
                 </div>
 
-                {/* Header (Sem as props de modoVisualizacao, focado apenas em busca) */}
-                <Header termoBusca={termoBusca} setTermoBusca={setTermoBusca} />
+                {/* Conteúdo Principal */}
+                <div className="relative z-10 p-8 xl:p-12 max-w-[1600px] mx-auto w-full">
 
-                <div className="flex-1 overflow-y-auto custom-scrollbar p-8 xl:p-12 relative z-10">
-                    <div className="max-w-[1600px] mx-auto space-y-12">
+                    {/* Header do Layout (Igual Dashboard) */}
+                    <div className="mb-12 animate-fade-in-up">
+                        <div className="flex items-start justify-between flex-wrap gap-4">
+                            <div>
+                                <h1 className="text-4xl font-black tracking-tight text-white mb-2">
+                                    Meus Orçamentos
+                                </h1>
+                                <p className="text-sm text-zinc-500 capitalize">
+                                    Gestão de Propostas Comerciais
+                                </p>
+                            </div>
 
+                            <div className="flex items-center gap-4">
+                                {/* Barra de Pesquisa */}
+                                <div className="relative group hidden md:block">
+                                    <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${termoBusca ? 'text-amber-400' : 'text-zinc-600'}`}>
+                                        <Search size={14} strokeWidth={3} />
+                                    </div>
+                                    <input
+                                        className="
+                                            w-64 bg-zinc-900/40 border border-zinc-800/50 rounded-xl py-2.5 pl-11 pr-10 
+                                            text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest 
+                                            focus:border-amber-500/50 focus:bg-zinc-900/80 focus:ring-4 focus:ring-amber-500/10 
+                                            placeholder:text-zinc-700 placeholder:text-[9px]
+                                        "
+                                        placeholder="BUSCAR ORÇAMENTO..."
+                                        value={termoBusca}
+                                        onChange={(e) => setTermoBusca(e.target.value)}
+                                    />
+                                    {termoBusca && (
+                                        <button
+                                            onClick={() => setTermoBusca("")}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-rose-500 transition-colors"
+                                        >
+                                            <X size={14} />
+                                        </button>
+                                    )}
+                                </div>
+
+                                {/* Botão Novo Orçamento */}
+                                <button
+                                    onClick={() => setLocation("/calculadora")}
+                                    className="
+                                        group relative h-11 px-6 overflow-hidden bg-amber-500 hover:bg-amber-400 
+                                        rounded-xl transition-all duration-300 active:scale-95 shadow-lg shadow-amber-900/40
+                                        flex items-center gap-3 text-zinc-950
+                                    "
+                                >
+                                    <Plus size={16} strokeWidth={3} />
+                                    <span className="text-[10px] font-black uppercase tracking-[0.15em]">
+                                        Novo
+                                    </span>
+                                    {/* Brilho */}
+                                    <div className="absolute inset-0 bg-white/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Barra de Pesquisa Mobile (Abaixo do Header) */}
+                        <div className="mt-4 md:hidden relative group">
+                            <div className={`absolute left-4 top-1/2 -translate-y-1/2 transition-all duration-300 ${termoBusca ? 'text-amber-400' : 'text-zinc-600'}`}>
+                                <Search size={14} strokeWidth={3} />
+                            </div>
+                            <input
+                                className="
+                                    w-full bg-zinc-900/40 border border-zinc-800/50 rounded-xl py-2.5 pl-11 pr-10 
+                                    text-[11px] text-zinc-200 outline-none transition-all font-bold uppercase tracking-widest 
+                                    focus:border-amber-500/50 focus:bg-zinc-900/80 focus:ring-4 focus:ring-amber-500/10 
+                                    placeholder:text-zinc-700 placeholder:text-[9px]
+                                "
+                                placeholder="BUSCAR ORÇAMENTO..."
+                                value={termoBusca}
+                                onChange={(e) => setTermoBusca(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    <div className="space-y-8">
                         {/* 1. DASHBOARD STATS */}
                         <div>
                             <StatusOrcamentos
@@ -135,26 +211,26 @@ export default function OrcamentosPage() {
                             />
                         </div>
 
-                        {/* 2. FILTROS COM INDICADOR AMBER */}
+                        {/* 2. FILTROS (Estilo Dash) */}
                         <div className="flex justify-between items-center border-b border-white/5 pb-6">
                             <div className="flex p-1 bg-zinc-900/40 rounded-xl border border-white/5 backdrop-blur-md">
                                 {["todos", "aprovado", "producao", "finalizado"].map((s) => (
                                     <button
                                         key={s}
                                         onClick={() => setFiltroStatus(s)}
-                                        className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest relative ${filtroStatus === s ? "text-amber-500" : "text-zinc-500 hover:text-zinc-300"
+                                        className={`px-6 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest relative transition-all ${filtroStatus === s ? "text-amber-500 bg-white/5" : "text-zinc-500 hover:text-zinc-300 hover:bg-white/5"
                                             }`}
                                     >
                                         {s === "todos" ? "Geral" : CONFIG_STATUS[s]?.label || s}
                                         {filtroStatus === s && (
-                                            <div className="absolute -bottom-1 left-2 right-2 h-[2px] bg-gradient-to-r from-amber-600 to-orange-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
+                                            <div className="absolute bottom-0 left-2 right-2 h-[2px] bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]" />
                                         )}
                                     </button>
                                 ))}
                             </div>
                         </div>
 
-                        {/* 3. CONTEÚDO PRINCIPAL (GRID FIXO) */}
+                        {/* 3. CONTEÚDO PRINCIPAL (GRID) */}
                         {loading ? (
                             <div className="w-full h-96 flex flex-col items-center justify-center gap-6 border border-white/5 bg-white/[0.02] rounded-[3rem]">
                                 <div className="relative">
@@ -162,11 +238,11 @@ export default function OrcamentosPage() {
                                     <div className="absolute inset-0 bg-amber-500/10 blur-3xl opacity-20" />
                                 </div>
                                 <span className="text-[10px] font-black uppercase tracking-[0.4em] text-zinc-600">
-                                    Sincronizando registros comerciais...
+                                    Sincronizando registros...
                                 </span>
                             </div>
                         ) : filtrados.length > 0 ? (
-                            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 3xl:grid-cols-4 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-6 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                                 {filtrados.map(item => (
                                     <CardOrcamento key={item.id} item={item} onClick={() => setProjetoSelecionado(item)} />
                                 ))}
@@ -192,11 +268,11 @@ export default function OrcamentosPage() {
                                     <div className="flex flex-col items-center">
                                         <div className="relative mb-6">
                                             <div className="absolute inset-0 bg-amber-500/10 blur-2xl rounded-full" />
-                                            <Inbox size={48} strokeWidth={1} className="text-amber-500/30 relative z-10" />
+                                            <FolderOpen size={48} strokeWidth={1} className="text-amber-500/30 relative z-10" />
                                         </div>
-                                        <h3 className="text-zinc-300 text-[11px] font-black uppercase tracking-[0.3em]">Fila de Pedidos Vazia</h3>
+                                        <h3 className="text-zinc-300 text-[11px] font-black uppercase tracking-[0.3em]">Nenhum orçamento ainda</h3>
                                         <p className="text-zinc-600 text-[10px] uppercase mt-3 tracking-widest leading-relaxed text-center">
-                                            Aguardando novos Blueprints para <br /> processamento comercial.
+                                            Seus projetos salvos aparecerão aqui.
                                         </p>
                                     </div>
                                 )}

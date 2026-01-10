@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from "react";
 import {
     Settings2, BarChart3, HelpCircle, ChevronRight,
     CheckCircle2, AlertCircle, AlertTriangle, History as HistoryIcon,
-    Layout, Zap
+    Layout, Zap, FileCode, Upload
 } from "lucide-react";
 
 // Layout e Componentes Universais
@@ -14,6 +14,7 @@ import Header from "../features/calculadora/components/header.jsx";
 import Summary from "../features/calculadora/components/resumo.jsx";
 import HistoryDrawer from "../features/calculadora/components/historico.jsx";
 import PainelConfiguracoesCalculo from "../features/calculadora/components/configCalculo.jsx";
+import ModalRegistrarFalha from "../features/filamentos/components/ModalRegistrarFalha.jsx";
 
 // Cards de Entrada
 import CardMaterial from "../features/calculadora/components/cards/materiaPrima.jsx";
@@ -24,6 +25,7 @@ import CardPreco from "../features/calculadora/components/cards/lucroDescontos.j
 
 // Lógica e Armazenamento
 import { formatCurrency } from "../utils/numbers";
+import { parseGCode } from "../utils/gcodeParser"; // Parser G-Code
 import useDebounce from "../hooks/useDebounce";
 import { calcularTudo, useSettingsStore } from "../features/calculadora/logic/calculator";
 import { usePrinterStore } from "../features/impressoras/logic/printer.js";
@@ -71,11 +73,13 @@ export default function CalculadoraPage() {
     const [historicoAberto, setHistoricoAberto] = useState(false);
     const [precisaConfigurar, setPrecisaConfigurar] = useState(false);
     const [idProjetoAtual, setIdProjetoAtual] = useState(null);
+    const [isDragging, setIsDragging] = useState(false); // Estado de Drag & Drop
 
     // Estado para Popups (Centralizado)
     const [modalConfig, setModalConfig] = useState({
         open: false, title: "", message: "", icon: AlertCircle, color: "text-sky-500"
     });
+    const [modalFalhaAberto, setModalFalhaAberto] = useState(false); // Novo estado
 
     const { printers: impressoras, fetchPrinters: buscarImpressoras } = usePrinterStore();
     const { settings: configuracoesGerais, fetchSettings: buscarConfiguracoes } = useSettingsStore();
@@ -115,6 +119,25 @@ export default function CalculadoraPage() {
         };
         inicializar();
     }, [buscarImpressoras, buscarHistorico, buscarConfiguracoes]);
+
+    // Check for G-Code Auto-Fill Params from Dashboard
+    useEffect(() => {
+        const searchParams = new URLSearchParams(window.location.search);
+        if (searchParams.get('auto') === 'true') {
+            const hours = searchParams.get('hours') || "0";
+            const minutes = searchParams.get('minutes') || "0";
+            const weight = searchParams.get('weight') || "0";
+
+            setDadosFormulario(prev => ({
+                ...prev,
+                tempo: { ...prev.tempo, impressaoHoras: hours, impressaoMinutos: minutes },
+                material: { ...prev.material, pesoModelo: weight }
+            }));
+
+            // Optional: Provide visual feedback or clean URL
+            window.history.replaceState({}, '', '/calculadora');
+        }
+    }, []);
 
     useEffect(() => {
         if (configuracoesGerais && (configuracoesGerais.custoKwh || configuracoesGerais.valorHoraHumana)) {
@@ -246,8 +269,84 @@ export default function CalculadoraPage() {
         );
     }, [abaAtiva, ehNeutro, resultados, corSaude]);
 
+
+
+    // --- DRAG & DROP HANDLERS ---
+    const handleDragOver = useCallback((e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    }, []);
+
+    const handleDragLeave = useCallback((e) => {
+        e.preventDefault();
+        if (e.currentTarget.contains(e.relatedTarget)) return;
+        setIsDragging(false);
+    }, []);
+
+    const handleDrop = useCallback(async (e) => {
+        e.preventDefault();
+        setIsDragging(false);
+
+        const files = Array.from(e.dataTransfer.files);
+        const gcodeFile = files.find(f => f.name.toLowerCase().endsWith('.gcode') || f.name.toLowerCase().endsWith('.gco'));
+
+        if (gcodeFile) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                const content = event.target.result;
+                const { timeSeconds, weightGrams, success } = parseGCode(content);
+
+                if (success) {
+                    const hours = Math.floor(timeSeconds / 3600);
+                    const minutes = Math.floor((timeSeconds % 3600) / 60);
+
+                    // Atualiza estados
+                    atualizarCampo('tempo', 'impressaoHoras', String(hours));
+                    atualizarCampo('tempo', 'impressaoMinutos', String(minutes));
+                    if (weightGrams > 0) atualizarCampo('material', 'pesoModelo', String(weightGrams));
+
+                    // Feedback Visual
+                    setModalConfig({
+                        open: true,
+                        title: "Arquivo Processado",
+                        message: `G-Code lido com sucesso! Tempo: ${hours}h ${minutes}m | Peso: ${weightGrams}g`,
+                        icon: CheckCircle2,
+                        color: "text-emerald-500"
+                    });
+                } else {
+                    setModalConfig({
+                        open: true,
+                        title: "Arquivo Desconhecido",
+                        message: "Não foi possível extrair dados desse G-Code. Verifique se é um arquivo padrão (Cura, Prusa, Orca).",
+                        icon: AlertTriangle,
+                        color: "text-amber-500"
+                    });
+                }
+            };
+            reader.readAsText(gcodeFile);
+        }
+    }, [atualizarCampo]);
+
     return (
-        <div className="flex h-screen bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden">
+        <div
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            className="flex h-screen bg-zinc-950 text-zinc-200 font-sans antialiased overflow-hidden relative"
+        >
+            {/* OVERLAY DE DRAG & DROP */}
+            {isDragging && (
+                <div className="absolute inset-0 z-[200] bg-zinc-950/90 backdrop-blur-sm flex items-center justify-center animate-in fade-in duration-200 pointer-events-none">
+                    <div className="flex flex-col items-center gap-6 p-10 border-2 border-dashed border-sky-500 bg-sky-500/10 rounded-3xl animate-pulse">
+                        <Upload size={64} className="text-sky-500" />
+                        <div className="text-center">
+                            <h2 className="text-2xl font-black text-white uppercase tracking-tighter">Solte o G-Code Aqui</h2>
+                            <p className="text-sm font-bold text-sky-400 mt-2 uppercase tracking-widest">Extração Automática de Tempo e Peso</p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <MainSidebar onCollapseChange={(colapsado) => setLarguraSidebar(colapsado ? 68 : 256)} />
 
             <main className="flex-1 flex flex-row relative h-full overflow-hidden transition-all duration-300" style={{ marginLeft: `${larguraSidebar}px` }}>
@@ -266,6 +365,7 @@ export default function CalculadoraPage() {
                         onCyclePrinter={lidarCicloHardware}
                         onOpenHistory={() => setHistoricoAberto(true)}
                         onOpenSettings={() => setAbaAtiva('config')}
+                        onOpenWaste={() => setModalFalhaAberto(true)}
                         needsConfig={precisaConfigurar}
                         hud={elementoHud}
                     />
@@ -366,6 +466,11 @@ export default function CalculadoraPage() {
             </main>
 
             <HistoryDrawer open={historicoAberto} onClose={() => setHistoricoAberto(false)} onRestore={lidarRestauracao} />
+
+            <ModalRegistrarFalha
+                aberto={modalFalhaAberto}
+                aoFechar={() => setModalFalhaAberto(false)}
+            />
 
             {/* POPUP GLOBAL DE MENSAGENS (Unificado) */}
             <Popup

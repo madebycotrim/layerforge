@@ -88,12 +88,13 @@ export default function MaterialModule({
 
             grupos[tipoMaterial].push({
                 value: String(item.id),
-                label: item.nome
+                label: item.nome,
+                color: item.cor_hex // Passando a cor para usar no select personalizado
             });
         });
 
         return [
-            { group: "ENTRADA MANUAL", items: [{ value: "manual", label: "Preço Manual" }] },
+            { group: "ENTRADA MANUAL", items: [{ value: "manual", label: "Preço Manual", color: "transparent" }] },
             ...Object.keys(grupos).map(tipo => ({
                 group: `ESTOQUE: ${tipo}`,
                 items: grupos[tipo]

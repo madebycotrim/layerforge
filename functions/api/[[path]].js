@@ -2,6 +2,7 @@ import { createClerkClient } from '@clerk/backend';
 import { handleFilaments } from './_filaments';
 import { handlePrinters } from './_printers';
 import { handleSettings } from './_settings';
+import { handleFailures } from './_failures';
 import { handleProjects } from './_projects';
 import { handleApprove } from './_approve';
 import { handleUsers } from './_users';
@@ -57,6 +58,7 @@ export async function onRequest(context) {
             case 'filaments': case 'filamentos': return await handleFilaments(ctx);
             case 'printers': case 'impressoras': return await handlePrinters(ctx);
             case 'settings': return await handleSettings(ctx);
+            case 'failures': return await handleFailures(ctx);
             case 'projects': return await handleProjects(ctx);
             case 'approve-budget': return await handleApprove(ctx);
             case 'users': return await handleUsers(ctx);
